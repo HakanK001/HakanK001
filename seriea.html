@@ -597,9 +597,13 @@
     return [Math.min(hg, 6), Math.min(ag, 6)];
   }
 
+  let standingsCache = null;
+  function invalidateStandings(){ standingsCache = null; }
   function computeStandings(){
+    if(standingsCache) return standingsCache;
     const table = {};
     state.teams.forEach(function(t, i){ table[i] = {idx:i, name:t.name, P:0, W:0, D:0, L:0, GF:0, GA:0, Pts:0}; });
+    const pairGames = [];
     state.results.forEach(function(week, wi){
       week.forEach(function(res, mi){
         if(!res || res[0] === null || res[1] === null) return;
@@ -612,9 +616,33 @@
         if(hg > ag){ table[home].W++; table[home].Pts += 3; table[away].L++; }
         else if(hg < ag){ table[away].W++; table[away].Pts += 3; table[home].L++; }
         else { table[home].D++; table[away].D++; table[home].Pts++; table[away].Pts++; }
+        pairGames.push({h: home, a: away, hg: hg, ag: ag});
       });
     });
-    return Object.values(table).sort(function(a,b){ return b.Pts - a.Pts || (b.GF-b.GA)-(a.GF-a.GA) || b.GF - a.GF; });
+    const rows = Object.values(table).sort(function(a,b){ return b.Pts - a.Pts || (b.GF-b.GA)-(a.GF-a.GA) || b.GF - a.GF; });
+    // Puan eşitliğinde önce ikili averaj (Serie A kuralı), sonra genel averaj
+    let s = 0;
+    while(s < rows.length){
+      let e = s + 1;
+      while(e < rows.length && rows[e].Pts === rows[s].Pts) e++;
+      if(e - s > 1){
+        const group = rows.slice(s, e);
+        const inG = {}; group.forEach(function(r){ inG[r.idx] = {pts: 0, gd: 0}; });
+        pairGames.forEach(function(g){
+          if(inG[g.h] === undefined || inG[g.a] === undefined) return;
+          inG[g.h].gd += g.hg - g.ag; inG[g.a].gd += g.ag - g.hg;
+          if(g.hg > g.ag) inG[g.h].pts += 3; else if(g.ag > g.hg) inG[g.a].pts += 3; else { inG[g.h].pts++; inG[g.a].pts++; }
+        });
+        group.sort(function(a, b){
+          return inG[b.idx].pts - inG[a.idx].pts || inG[b.idx].gd - inG[a.idx].gd ||
+            (b.GF-b.GA)-(a.GF-a.GA) || b.GF - a.GF || a.name.localeCompare(b.name, 'tr');
+        });
+        for(let k = 0; k < group.length; k++) rows[s + k] = group[k];
+      }
+      s = e;
+    }
+    standingsCache = rows;
+    return rows;
   }
   function teamStats(teamIdx){ return computeTeamStatsFromMatches(getTeamMatches(teamIdx)); }
   function computeTeamStatsFromMatches(matches){
@@ -670,10 +698,10 @@
     const teamPts = {}, teamGD = {};
     state.teams.forEach(function(_, i){ teamPts[i] = [0]; teamGD[i] = [0]; });
     let maxWeek = 0;
-    for(let wi = 0; wi < totalWeeks; wi++){
-      const wp = state.results[wi].some(function(r){ return r && r[0] !== null && r[1] !== null; });
-      if(!wp) break;
-      maxWeek = wi + 1;
+    for(let wi = totalWeeks - 1; wi >= 0; wi--){
+      if(state.results[wi].some(function(r){ return r && r[0] !== null && r[1] !== null; })){ maxWeek = wi + 1; break; }
+    }
+    for(let wi = 0; wi < maxWeek; wi++){
       const dP = {}, dGD = {};
       state.teams.forEach(function(_, i){ dP[i]=0; dGD[i]=0; });
       state.fixtures[wi].forEach(function(pair, mi){
@@ -941,7 +969,7 @@
       if(r.hg > r.ag && r.aStr > r.hStr + 14) surprise = {w: r.hName, l: r.aName, hg: r.hg, ag: r.ag, m: r};
       else if(r.ag > r.hg && r.hStr > r.aStr + 14) surprise = {w: r.aName, l: r.hName, hg: r.hg, ag: r.ag, m: r};
     });
-    if(surprise && (!derbyMatch || (surprise.m.hName !== derbyMatch.hName))){
+    if(surprise && (!derbyMatch || surprise.m !== derbyMatch)){
       const headline = 'Sürpriz ' + surprise.w + '\'den: Favori ' + surprise.l + ' devrildi';
       const body = (weekIdx+1) + '. haftanın en büyük sürprizine ' + surprise.w + ' imza attı. Kağıt üzerinde açık favori görünen ' + surprise.l + '\'i ' + surprise.m.hName + ' ' + surprise.m.hg + '-' + surprise.m.ag + ' ' + surprise.m.aName + ' skoruyla geçen ' + surprise.w + ', sezonun en konuşulacak sonuçlarından birini aldı.\n\nKendi sınıfının çok üzerinde bir performans sergileyen ' + surprise.w + ', bu galibiyetle ' + rankOf(surprise.w) + '. sıraya tutundu ve ' + ptsOf(surprise.w) + ' puana ulaştı. ' + surprise.l + ' ise beklenmedik bu yenilgiyle puan kaybetti; bu sonucun sezon hedefleri açısından erken bir uyarı olup olmadığı önümüzdeki haftalarda netleşecek.';
       news.push({week: weekIdx+1, headline: headline, body: body, teamName: surprise.w});
@@ -1673,7 +1701,7 @@
       teamMatches: archiveTeamMatches(), teamCount: state.teams.length,
       topScorer: ss.topScorer ? ss.topScorer.name + ' (' + ss.topScorer.goals + ' gol)' : null
     });
-    if(history.length > 10) history.length = 10;
+    if(history.length > 40) history.length = 40;
     saveHistory();
     // Şampiyonun kalıcı Serie A (Scudetto) kupası sayısını artır (küme düşse bile korunur)
     addTitle(champion.name, 'scudetto');
@@ -1688,6 +1716,7 @@
     const npH = (state.promotedTeams || []).concat(pN);
     state = initState(newTeams, nsLabel, npH);
     state.seasonsCompleted = history.length;
+    invalidateStandings();
     saveNow();
     buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderTrophies();
     document.getElementById('leader-banner-container').innerHTML = '';
@@ -1713,6 +1742,7 @@
         state.results[wk][mi] = simScore(pair[0], pair[1], wk);
       }
     });
+    invalidateStandings();
     const allDone = state.results[wk].every(function(r){ return r && r[0] !== null && r[1] !== null; });
     renderStandings(); renderWeekSummary(); checkLeaderChange();
     if(allDone) maybeGenerateNews(wk);
@@ -1795,6 +1825,7 @@
       if(minute >= 90){
         clearInterval(timer);
         toPlay.forEach(function(m){ state.results[wk][m.mi] = m.final; });
+        invalidateStandings();
         liveSimRunning = false;
         setSimControls(false);
         renderStandings(); renderWeekSummary(); checkLeaderChange();
@@ -1925,6 +1956,7 @@
       state.fixtures[wi].forEach(function(pair, mi){
         if(!week[mi] || week[mi][0] === null || week[mi][1] === null){ state.results[wi][mi] = simScore(pair[0], pair[1], wi); }
       });
+      invalidateStandings();
       maybeGenerateNews(wi);
     });
     state.viewWeek = state.fixtures.length - 1;
@@ -1934,6 +1966,7 @@
   function clearWeek(){
     const wk = state.viewWeek;
     state.results[wk] = state.fixtures[wk].map(function(){ return null; });
+    invalidateStandings();
     state.news = (state.news || []).filter(function(n){ return n.week !== wk + 1; });
     state.newsGeneratedWeeks = (state.newsGeneratedWeeks || []).filter(function(w){ return w !== wk; });
     updateFixtureValues(); renderStandings(); renderWeekSummary();
@@ -1954,6 +1987,7 @@
     history = [];
     titles = baselineTitles(); saveTitles();
     state = initState(INITIAL_TEAMS.slice(), '2026-27', []);
+    invalidateStandings();
     document.getElementById('champion-banner').style.display = 'none';
     document.getElementById('leader-banner-container').innerHTML = '';
     chartSelectedTeams = null;
@@ -2012,6 +2046,7 @@
     if(val === '') current[side] = null;
     else current[side] = Math.max(0, Math.min(15, parseInt(val)));
     state.results[wk][mi] = current;
+    invalidateStandings();
     renderStandings(); updateFixtureValues(); renderWeekSummary(); checkLeaderChange();
     refreshNewsForWeek(wk);
     if(teamDetailIdx !== null) renderTeamDetail();
