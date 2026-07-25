@@ -1,0 +1,14 @@
+{
+  "name": "Serie A Simülatörü",
+  "short_name": "Serie A Sim",
+  "description": "Serie A sezon simülatörü: lig, kupa, transferler, oyuncular ve tahmin oyunu — tamamen çevrimdışı.",
+  "lang": "tr",
+  "start_url": "./seriea.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#080a0e",
+  "theme_color": "#080a0e",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

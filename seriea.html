@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#080a0e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
 <title>Serie A Simülatörü</title>
 <style>
   :root {
@@ -28,6 +31,26 @@
     --radius-md: 10px;
     --radius-lg: 16px;
   }
+  :root[data-theme="light"] {
+    --bg: #eef1f6;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f0f2f6;
+    --bg-tertiary: #e3e7ee;
+    --text-primary: #1a1e26;
+    --text-secondary: #4a5261;
+    --text-tertiary: #8a92a1;
+    --border-tertiary: #dfe3ea;
+    --border-secondary: #c8cfda;
+    --accent: #1d7fe0;
+    --accent-dim: #1668ba;
+    --accent-bg: rgba(29,127,224,0.10);
+    --accent-border: rgba(29,127,224,0.35);
+    --accent-soft: rgba(29,127,224,0.06);
+    --card-shadow: 0 1px 2px rgba(16,24,40,0.06), 0 8px 24px rgba(16,24,40,0.08);
+    --card-glow: 1px solid rgba(255,255,255,0.9);
+  }
+  :root[data-theme="light"] body { background: radial-gradient(1200px 600px at 50% -200px, #dfe6f0 0%, var(--bg) 55%) fixed; }
+  :root[data-theme="light"] .sl-card { background: var(--bg-primary); }
   * { box-sizing: border-box; }
   body {
     margin: 0; color: var(--text-primary);
@@ -230,6 +253,11 @@
         <button class="sl-btn" id="live-toggle" title="Canlı simülasyon modu">⚡ Canlı: Açık</button>
         <button class="sl-btn" id="speed-toggle" title="Canlı simülasyon hızı (sim sırasında da değiştirilebilir)">⏱ Hız: Normal</button>
         <button class="sl-btn" id="sim-season-btn">⏩ Sezonu bitir</button>
+        <select id="fav-select" class="sl-btn" title="Favori takımını seç; taktiğini sen belirle" style="max-width:132px;"></select>
+        <button class="sl-btn sl-btn-icon" id="theme-toggle" title="Açık/koyu tema">🌙</button>
+        <button class="sl-btn sl-btn-icon" id="export-btn" title="Kaydı dosya olarak indir">⬇</button>
+        <button class="sl-btn sl-btn-icon" id="import-btn" title="Kayıt dosyası yükle">⬆</button>
+        <input type="file" id="import-file" accept="application/json,.json" style="display:none;">
         <button class="sl-btn sl-btn-icon" id="reset-btn" title="Sıfırla">↻</button>
       </div>
 
@@ -247,6 +275,7 @@
             <button class="sl-btn" id="clear-week-btn" style="height:26px; font-size:11px; padding:0 8px;">⌫ Temizle</button>
           </div>
         </div>
+        <div id="tactic-row"></div>
         <div id="fixtures-list" style="display:flex; flex-direction:column; gap:6px;"></div>
       </div>
 
@@ -714,11 +743,26 @@
     return {homeRating: adjH + hFD + homeAdv, awayRating: adjA + aFD, isDerby: derb, hFR: hFR, aFR: aFR};
   }
   function poisson(lambda){ const L = Math.exp(-lambda); let k = 0, p = 1; do { k++; p *= Math.random(); } while(p > L); return k - 1; }
+  function favTeamIdx(){
+    if(!state || !state.favTeam) return null;
+    const i = state.teams.findIndex(function(t){ return t.name === state.favTeam; });
+    return i === -1 ? null : i;
+  }
   function simScore(homeIdx, awayIdx, weekIdx){
     const wi = weekIdx === undefined ? state.viewWeek : weekIdx;
     const r = computeMatchRatings(homeIdx, awayIdx, wi);
-    const homeExp = Math.max(0.3, (r.homeRating / 60) * 1.35);
-    const awayExp = Math.max(0.3, (r.awayRating / 60) * 1.05);
+    let homeExp = Math.max(0.3, (r.homeRating / 60) * 1.35);
+    let awayExp = Math.max(0.3, (r.awayRating / 60) * 1.05);
+    // Favori takımın taktiği maç beklentilerini etkiler
+    const fi = favTeamIdx();
+    if(fi !== null && (fi === homeIdx || fi === awayIdx)){
+      const tac = state.favTactic || 'balanced';
+      if(tac === 'attack'){
+        if(fi === homeIdx){ homeExp *= 1.18; awayExp *= 1.12; } else { awayExp *= 1.18; homeExp *= 1.12; }
+      } else if(tac === 'defense'){
+        if(fi === homeIdx){ homeExp *= 0.85; awayExp *= 0.86; } else { awayExp *= 0.85; homeExp *= 0.86; }
+      }
+    }
     return [Math.min(poisson(homeExp), 7), Math.min(poisson(awayExp), 7)];
   }
   function computeProbabilities(homeIdx, awayIdx, weekIdx){
@@ -1311,8 +1355,88 @@
     return e;
   }
 
+  /* ============ FAVORİ TAKIM & TAKTİK ============ */
+  function renderFavSelect(){
+    const sel = document.getElementById('fav-select'); if(!sel) return;
+    sel.innerHTML = '';
+    const none = document.createElement('option'); none.value = ''; none.textContent = '⭐ Favori yok';
+    sel.appendChild(none);
+    state.teams.slice().sort(function(a, b){ return a.name.localeCompare(b.name, 'tr'); }).forEach(function(t){
+      const o = document.createElement('option'); o.value = t.name; o.textContent = '⭐ ' + t.name;
+      sel.appendChild(o);
+    });
+    sel.value = favTeamIdx() !== null ? state.favTeam : '';
+  }
+  function renderTactics(){
+    const row = document.getElementById('tactic-row'); if(!row) return;
+    row.innerHTML = '';
+    const fi = favTeamIdx();
+    if(fi === null) return;
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:10px;';
+    const lbl = document.createElement('span');
+    lbl.style.cssText = 'font-size:11px; color:var(--text-tertiary); display:inline-flex; align-items:center; gap:5px;';
+    lbl.appendChild(makeBadge(state.favTeam));
+    lbl.appendChild(document.createTextNode(state.favTeam + ' taktiği:'));
+    wrap.appendChild(lbl);
+    [['attack','⚔ Hücum'],['balanced','⚖ Denge'],['defense','🛡 Savunma']].forEach(function(opt){
+      const chip = document.createElement('span');
+      chip.className = 'sl-chip' + ((state.favTactic || 'balanced') === opt[0] ? ' active' : '');
+      chip.textContent = opt[1];
+      chip.addEventListener('click', function(){ state.favTactic = opt[0]; scheduleSave(); renderTactics(); });
+      wrap.appendChild(chip);
+    });
+    const hint = document.createElement('span');
+    hint.style.cssText = 'font-size:10px; color:var(--text-tertiary);';
+    hint.textContent = 'Hücum: daha çok gol, daha çok risk · Savunma: az gol, sağlam denge';
+    wrap.appendChild(hint);
+    row.appendChild(wrap);
+  }
+
+  /* ============ TEMA & YEDEKLEME ============ */
+  const THEME_KEY = 'serie_a_theme_v1';
+  function applyTheme(t){
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem(THEME_KEY, t); } catch(e){}
+    const b = document.getElementById('theme-toggle'); if(b) b.textContent = t === 'light' ? '☀️' : '🌙';
+    const mt = document.querySelector('meta[name="theme-color"]'); if(mt) mt.setAttribute('content', t === 'light' ? '#eef1f6' : '#080a0e');
+  }
+  function exportSave(){
+    const data = {app: 'seriea-sim', version: 2, exportedAt: new Date().toISOString(), state: state, history: history, titles: titles};
+    const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'seriea-kayit-' + (state.season || 'sezon') + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+  }
+  function importSaveFile(file){
+    const reader = new FileReader();
+    reader.onload = function(){
+      let data = null;
+      try { data = JSON.parse(reader.result); } catch(e){}
+      if(!data || !data.state || !data.state.teams || !data.state.fixtures){ alert('Geçerli bir kayıt dosyası değil.'); return; }
+      if(!confirm('Mevcut kayıt, içe aktarılan dosyayla değiştirilecek. Devam edilsin mi?')) return;
+      state = data.state;
+      history = Array.isArray(data.history) ? data.history : [];
+      titles = data.titles && typeof data.titles === 'object' ? data.titles : baselineTitles();
+      if(!state.seasonSeed) state.seasonSeed = (Math.random() * 1e9) | 0;
+      syncPidCounter(); ensureSquads(state.teams); ensureScorersShape();
+      if(!state.cup) state.cup = initCup(state.teams);
+      invalidateStandings(); invalidatePlayers();
+      saveNow(); saveHistory(); saveTitles();
+      closeTeamDetail(); closeHistoryDetail();
+      document.getElementById('champion-banner').style.display = 'none';
+      document.getElementById('leader-banner-container').innerHTML = '';
+      chartSelectedTeams = null;
+      renderFavSelect(); buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderTrophies();
+    };
+    reader.readAsText(file);
+  }
+
   /* ============ FİKSTÜR RENDER ============ */
   function buildFixtures(){
+    renderTactics();
     const list = document.getElementById('fixtures-list');
     const wk = state.viewWeek;
     list.innerHTML = '';
@@ -1451,7 +1575,7 @@
       tdR.className = rankClassFor(i); tdR.textContent = i+1;
       const tdN = document.createElement('td'); tdN.style.cssText='padding:7px 2px 7px 6px; overflow:hidden; white-space:nowrap;';
       const nw = document.createElement('span'); nw.style.cssText='display:inline-flex; align-items:center; gap:6px; min-width:0; max-width:100%;';
-      const nt = document.createElement('span'); nt.textContent = row.name; nt.style.cssText='overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
+      const nt = document.createElement('span'); nt.textContent = (state.favTeam === row.name ? '⭐ ' : '') + row.name; nt.style.cssText='overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
       nw.appendChild(nt); nw.appendChild(makeBadge(row.name, 'sl-team-badge-lg')); tdN.appendChild(nw);
       const ms = function(v){ const td = document.createElement('td'); td.style.cssText='padding:7px 2px; text-align:center; color:var(--text-secondary); font-variant-numeric:tabular-nums;'; td.textContent = v; return td; };
       const tdP = document.createElement('td'); tdP.style.cssText='padding:7px 2px; text-align:right; font-weight:700; font-size:13px; font-variant-numeric:tabular-nums;'; tdP.textContent = row.Pts;
@@ -2397,12 +2521,14 @@
     const nsLabel = nextSeasonLabel(state.season);
     const offEvents = runOffseason(newTeams, relegatedObjs);
     const npH = (state.promotedTeams || []).concat(pN);
+    const keepFav = state.favTeam, keepTactic = state.favTactic;
     state = initState(newTeams, nsLabel, npH);
     state.seasonsCompleted = history.length;
     state.news = offseasonNews(offEvents, nsLabel);
+    state.favTeam = keepFav; state.favTactic = keepTactic;
     invalidateStandings(); invalidatePlayers();
     saveNow();
-    buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderTrophies();
+    renderFavSelect(); buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderTrophies();
     document.getElementById('leader-banner-container').innerHTML = '';
     showChampionBanner(champion.name, rel.map(function(s){ return s.name; }), pN, history[0].season, history[0].coppaWinner);
   }
@@ -2703,7 +2829,7 @@
     chartSelectedTeams = null;
     saveNow();
     closeTeamDetail(); closeHistoryDetail();
-    buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderTrophies();
+    renderFavSelect(); buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderTrophies();
   }
   function switchTab(tab){
     const tabs = document.querySelectorAll('.sl-tab');
@@ -2746,6 +2872,20 @@
   document.getElementById('reset-btn').addEventListener('click', fullReset);
   document.getElementById('prev-week-btn').addEventListener('click', function(){ gotoWeek(-1); });
   document.getElementById('next-week-btn').addEventListener('click', function(){ gotoWeek(1); });
+  document.getElementById('theme-toggle').addEventListener('click', function(){
+    applyTheme(document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+  });
+  document.getElementById('export-btn').addEventListener('click', exportSave);
+  document.getElementById('import-btn').addEventListener('click', function(){ document.getElementById('import-file').click(); });
+  document.getElementById('import-file').addEventListener('change', function(e){
+    if(e.target.files && e.target.files[0]) importSaveFile(e.target.files[0]);
+    e.target.value = '';
+  });
+  document.getElementById('fav-select').addEventListener('change', function(){
+    state.favTeam = this.value || null;
+    if(state.favTeam && !state.favTactic) state.favTactic = 'balanced';
+    scheduleSave(); renderTactics(); renderStandings();
+  });
   document.getElementById('fixtures-list').addEventListener('input', function(e){
     if(e.target.tagName !== 'INPUT') return;
     const wk = state.viewWeek;
@@ -2798,7 +2938,12 @@
     const lt = document.getElementById('live-toggle'); if(lt){ lt.textContent = '⚡ Canlı: ' + (state.liveSim ? 'Açık' : 'Kapalı'); lt.classList.toggle('sl-btn-primary', !!state.liveSim); }
     const sp = document.getElementById('speed-toggle'); if(sp){ sp.textContent = '⏱ Hız: ' + (LIVE_SPEED_LABEL[state.liveSpeed] || 'Normal'); }
   })();
+  applyTheme((function(){ try { return localStorage.getItem(THEME_KEY) || 'dark'; } catch(e){ return 'dark'; } })());
+  renderFavSelect();
   buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary();
+  if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  }
 })();
 
 </script>
