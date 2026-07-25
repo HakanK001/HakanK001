@@ -173,6 +173,13 @@
   .sl-team-chip.off { opacity: 0.4; }
 
   .sl-pos-badge { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 16px; border-radius: 4px; font-size: 9px; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .sl-pick-btn { width: 32px; height: 26px; font-size: 11px; font-weight: 600; border-radius: 6px; border: 1px solid var(--border-secondary); background: var(--bg-primary); color: var(--text-secondary); cursor: pointer; font-family: inherit; transition: background 0.12s, border-color 0.12s, color 0.12s; }
+  .sl-pick-btn:hover:not(:disabled) { border-color: var(--text-tertiary); color: var(--text-primary); }
+  .sl-pick-btn.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .sl-pick-btn.hit { background: #1D9E75; border-color: #1D9E75; color: #fff; }
+  .sl-pick-btn.miss { background: rgba(224,100,100,0.22); border-color: #e06464; color: #e06464; }
+  .sl-pick-btn:disabled { cursor: default; opacity: 0.9; }
+  .sl-pred-game-row { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: center; gap: 8px; padding: 4px 2px; font-size: 12px; }
   .sl-scorer-row { display: grid; grid-template-columns: 22px minmax(0,1fr) 34px 34px; align-items: center; gap: 6px; font-size: 12px; padding: 5px 8px; border-radius: var(--radius-md); }
   .sl-scorer-row:nth-child(odd) { background: var(--bg-secondary); }
   .sl-empty-hint { font-size: 12px; color: var(--text-secondary); text-align: center; padding: 24px 16px; line-height: 1.5; }
@@ -275,6 +282,7 @@
   </div>
 
   <div id="tab-tahminler" class="sl-tab-content" style="display:none;">
+    <div class="sl-card sl-mb12" id="prediction-card"></div>
     <div class="sl-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
         <p style="font-size:14px; font-weight:500; margin:0;"><span id="pundits-week-label">1. Hafta</span> tahminleri</p>
@@ -755,7 +763,7 @@
   }
 
   let standingsCache = null;
-  function invalidateStandings(){ standingsCache = null; }
+  function invalidateStandings(){ standingsCache = null; predCache = null; }
   function computeStandings(){
     if(standingsCache) return standingsCache;
     const table = {};
@@ -1066,10 +1074,13 @@
     return parts.join(' ');
   }
 
-  function generatePunditsForWeek(weekIdx){
+  function ensurePunditSeed(weekIdx){
     if(!state.punditSeeds) state.punditSeeds = {};
     if(state.punditSeeds[weekIdx] === undefined){ state.punditSeeds[weekIdx] = (Math.random() * 1e9) | 0; scheduleSave(); }
-    const salt = state.punditSeeds[weekIdx];
+    return state.punditSeeds[weekIdx];
+  }
+  function generatePunditsForWeek(weekIdx){
+    const salt = ensurePunditSeed(weekIdx);
     const used = new Set();
     const result = [];
     state.fixtures[weekIdx].forEach(function(pair, mi){
@@ -1573,6 +1584,112 @@
       group.appendChild(cardsWrap);
       container.appendChild(group);
     });
+  }
+
+  /* ============ TAHMİN OYUNU (kullanıcı vs yorumcular) ============ */
+  let predCache = null;
+  function outcomeOf(res){ return res[0] > res[1] ? 0 : (res[0] < res[1] ? 2 : 1); }
+  function punditPick(pIdx, wk, mi, probs){
+    const pundit = PUNDITS[pIdx];
+    if(!probs){ const pair = state.fixtures[wk][mi]; probs = computeProbabilities(pair[0], pair[1], wk); }
+    const salt = ensurePunditSeed(wk);
+    const rng = mulberry32((salt ^ (mi * 7349) ^ ((pIdx + 1) * 911911)) | 0);
+    const fav = probs.home >= probs.away ? 0 : 2;
+    const und = fav === 0 ? 2 : 0;
+    if(pundit.style === 'analytical'){
+      const mx = Math.max(probs.home, probs.draw, probs.away);
+      if(mx === probs.draw) return 1;
+      if(probs.draw >= mx - 4 && rng() < 0.3) return 1;
+      return probs.home === mx ? 0 : 2;
+    }
+    if(pundit.style === 'bold') return rng() < 0.15 ? und : fav;
+    if(probs.draw >= 24 && rng() < 0.6) return 1;
+    if(rng() < 0.12) return und;
+    return fav;
+  }
+  function computePredictionStats(){
+    if(predCache) return predCache;
+    const res = {user: {ok: 0, n: 0}, pundits: PUNDITS.map(function(){ return {ok: 0, n: 0}; })};
+    state.results.forEach(function(week, wi){
+      week.forEach(function(r, mi){
+        if(!r || r[0] === null || r[1] === null) return;
+        const out = outcomeOf(r);
+        const wp = state.userPicks ? state.userPicks[wi] : null;
+        const up = wp ? wp[mi] : undefined;
+        if(up !== undefined && up !== null){ res.user.n++; if(up === out) res.user.ok++; }
+        const pair = state.fixtures[wi][mi];
+        const probs = computeProbabilities(pair[0], pair[1], wi);
+        PUNDITS.forEach(function(_, pi){ res.pundits[pi].n++; if(punditPick(pi, wi, mi, probs) === out) res.pundits[pi].ok++; });
+      });
+    });
+    predCache = res; return res;
+  }
+  function renderPredictionGame(){
+    const card = document.getElementById('prediction-card'); if(!card) return;
+    if(!state.userPicks) state.userPicks = {};
+    const wk = state.viewWeek;
+    card.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">' +
+      '<p style="font-size:14px; font-weight:500; margin:0;">🎯 Tahmin Oyunu <span style="font-size:10px; color:var(--text-tertiary); font-weight:400; margin-left:4px;">— ' + (wk + 1) + '. hafta, maç oynanmadan 1 / X / 2 seç</span></p></div>';
+    // Skor tablosu
+    const stats = computePredictionStats();
+    const board = [{name: 'Sen', ok: stats.user.ok, n: stats.user.n, me: true}];
+    PUNDITS.forEach(function(p, pi){ board.push({name: p.name, ok: stats.pundits[pi].ok, n: stats.pundits[pi].n}); });
+    board.sort(function(a, b){ return b.ok - a.ok || a.n - b.n; });
+    const lb = document.createElement('div');
+    lb.style.cssText = 'display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;';
+    board.forEach(function(e, i){
+      const chip = document.createElement('span');
+      chip.className = 'sl-chip' + (e.me ? ' active' : '');
+      chip.style.cursor = 'default';
+      const pct = e.n > 0 ? Math.round(e.ok / e.n * 100) : 0;
+      chip.textContent = (i + 1) + '. ' + e.name + ': ' + e.ok + ' isabet' + (e.n > 0 ? ' (%' + pct + ')' : '');
+      lb.appendChild(chip);
+    });
+    card.appendChild(lb);
+    // Haftanın maçları
+    const list = document.createElement('div');
+    const wkPicks = state.userPicks[wk] || {};
+    state.fixtures[wk].forEach(function(pair, mi){
+      const hN = state.teams[pair[0]].name, aN = state.teams[pair[1]].name;
+      const res = state.results[wk][mi];
+      const played = res && res[0] !== null && res[1] !== null;
+      const out = played ? outcomeOf(res) : null;
+      const pick = wkPicks[mi];
+      const row = document.createElement('div'); row.className = 'sl-pred-game-row';
+      const l = document.createElement('span'); l.style.cssText = 'display:flex; align-items:center; gap:6px; justify-content:flex-end; min-width:0;';
+      const lt = document.createElement('span'); lt.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'; lt.textContent = hN;
+      l.appendChild(lt); l.appendChild(makeBadge(hN));
+      const mid = document.createElement('span'); mid.style.cssText = 'display:flex; gap:4px; align-items:center;';
+      [['1', 0], ['X', 1], ['2', 2]].forEach(function(opt){
+        const b = document.createElement('button');
+        b.className = 'sl-pick-btn';
+        b.textContent = opt[0];
+        if(pick === opt[1]){
+          if(played) b.classList.add(pick === out ? 'hit' : 'miss');
+          else b.classList.add('sel');
+        }
+        if(played){
+          b.disabled = true;
+          if(pick === undefined && out === opt[1]) b.style.borderColor = 'var(--text-tertiary)';
+        } else {
+          b.addEventListener('click', function(){
+            if(!state.userPicks[wk]) state.userPicks[wk] = {};
+            if(state.userPicks[wk][mi] === opt[1]) delete state.userPicks[wk][mi];
+            else state.userPicks[wk][mi] = opt[1];
+            predCache = null; scheduleSave(); renderPredictionGame();
+          });
+        }
+        mid.appendChild(b);
+      });
+      const r2 = document.createElement('span'); r2.style.cssText = 'display:flex; align-items:center; gap:6px; min-width:0;';
+      r2.appendChild(makeBadge(aN));
+      const rt = document.createElement('span'); rt.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
+      rt.textContent = aN + (played ? ' · ' + res[0] + '-' + res[1] : '');
+      r2.appendChild(rt);
+      row.appendChild(l); row.appendChild(mid); row.appendChild(r2);
+      list.appendChild(row);
+    });
+    card.appendChild(list);
   }
 
   /* ============ HABERLER ============ */
@@ -2502,7 +2619,7 @@
     for(let i=0;i<tabs.length;i++){ tabs[i].classList.toggle('active', tabs[i].dataset.tab === tab); }
     const contents = document.querySelectorAll('.sl-tab-content');
     for(let i=0;i<contents.length;i++){ contents[i].style.display = contents[i].id === 'tab-' + tab ? 'block' : 'none'; }
-    if(tab === 'tahminler') renderPundits();
+    if(tab === 'tahminler'){ renderPredictionGame(); renderPundits(); }
     else if(tab === 'manset') renderNewsFeed();
     else if(tab === 'grafik') renderChart();
     else if(tab === 'istatistik'){ renderProjection(); renderScorerLeaders(); renderSeasonStats(); }
