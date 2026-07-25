@@ -1579,7 +1579,7 @@
       art.appendChild(body);
       const meta = document.createElement('div'); meta.className = 'sl-news-meta';
       if(n.teamName && TEAM_COLORS[n.teamName]) meta.appendChild(makeBadge(n.teamName));
-      const wkSpan = document.createElement('span'); wkSpan.textContent = n.week + '. Hafta'; meta.appendChild(wkSpan);
+      const wkSpan = document.createElement('span'); wkSpan.textContent = n.tag ? n.tag : (n.week + '. Hafta'); meta.appendChild(wkSpan);
       art.appendChild(meta);
       container.appendChild(art);
     });
@@ -1891,6 +1891,113 @@
   }
 
   /* ============ SEZON GEÇİŞİ ============ */
+  // --- sezon arası: gelişim, emeklilik, transfer piyasası ---
+  function developPlayer(p){
+    p.age++;
+    p.seasons = (p.seasons || 0) + 1;
+    let d;
+    if(p.age <= 23) d = randInt(0, 3);
+    else if(p.age <= 28) d = randInt(-1, 2);
+    else if(p.age <= 31) d = randInt(-2, 1);
+    else d = randInt(-4, -1);
+    p.rating = clamp(40, 94, p.rating + d);
+  }
+  function shouldRetire(p){
+    if(p.age >= 38) return true;
+    if(p.age === 37) return Math.random() < 0.9;
+    if(p.age === 36) return Math.random() < 0.6;
+    if(p.age === 35) return Math.random() < 0.25;
+    return false;
+  }
+  function playerMarketValue(p){
+    let v = Math.max(1, p.rating - 52) * 1.3;
+    if(p.age <= 23) v *= 1.7; else if(p.age <= 27) v *= 1.35; else if(p.age <= 30) v *= 1.0; else v *= 0.45;
+    return Math.max(0.5, Math.round(v * 10) / 10);
+  }
+  function runOffseason(newTeams, relegatedTeams){
+    const events = {transfers: [], retirements: []};
+    // 1) Gelişim + emeklilik (kadrosu olan lig takımları; yeni çıkanlar sonra taze kadro alır)
+    newTeams.forEach(function(t){
+      if(!t.players || t.players.length === 0) return;
+      const keep = [];
+      t.players.forEach(function(p){
+        developPlayer(p);
+        if(shouldRetire(p)) events.retirements.push({name: p.name, team: t.name, age: p.age, rating: p.rating, seasons: p.seasons});
+        else keep.push(p);
+      });
+      t.players = keep;
+    });
+    // 2) Küme düşen takımların yıldızları büyük kulüplere gider
+    relegatedTeams.forEach(function(rt){
+      if(!rt.players) return;
+      const stars = rt.players.filter(function(p){ return p.pos !== 'K' && p.rating >= 66 && p.age <= 31; })
+        .sort(function(a, b){ return b.rating - a.rating; }).slice(0, 2);
+      stars.forEach(function(p){
+        const buyers = newTeams.filter(function(t){ return t.players && t.players.length > 0 && t.players.length < 22; })
+          .sort(function(a, b){ return b.strength - a.strength; }).slice(0, 8);
+        if(buyers.length === 0) return;
+        const buyer = buyers[randInt(0, buyers.length - 1)];
+        buyer.players.push(p);
+        events.transfers.push({player: p.name, pos: p.pos, from: rt.name, to: buyer.name, fee: playerMarketValue(p), rating: p.rating, age: p.age});
+      });
+    });
+    // 3) Lig içi transfer piyasası
+    const nT = randInt(7, 11);
+    for(let k = 0; k < nT; k++){
+      const sellers = newTeams.filter(function(t){ return t.players && t.players.length > 15; });
+      if(sellers.length === 0) break;
+      sellers.sort(function(a, b){ return a.strength - b.strength; });
+      const seller = sellers[Math.floor(Math.pow(Math.random(), 1.6) * sellers.length)];
+      const sellable = seller.players.filter(function(p){ return p.pos !== 'K' && p.age <= 31; })
+        .sort(function(a, b){ return b.rating - a.rating; }).slice(0, 3);
+      if(sellable.length === 0) continue;
+      const p = sellable[randInt(0, sellable.length - 1)];
+      const buyers = newTeams.filter(function(t){ return t !== seller && t.players && t.players.length > 0 && t.players.length < 22 && t.strength >= seller.strength - 2; });
+      if(buyers.length === 0) continue;
+      buyers.sort(function(a, b){ return b.strength - a.strength; });
+      const buyer = buyers[Math.floor(Math.pow(Math.random(), 2) * buyers.length)];
+      seller.players.splice(seller.players.indexOf(p), 1);
+      buyer.players.push(p);
+      events.transfers.push({player: p.name, pos: p.pos, from: seller.name, to: buyer.name, fee: playerMarketValue(p), rating: p.rating, age: p.age});
+    }
+    // 4) Eksik mevkileri altyapıdan gençlerle tamamla
+    const used = allUsedNames(newTeams);
+    newTeams.forEach(function(t){
+      if(!t.players || t.players.length === 0) return;
+      SQUAD_PLAN.forEach(function(pp){
+        const cur = t.players.filter(function(p){ return p.pos === pp[0]; }).length;
+        for(let i = cur; i < pp[1]; i++) t.players.push(makePlayer(pp[0], Math.max(45, t.strength - 9), used, randInt(17, 20)));
+      });
+    });
+    // 5) Takım gücü artık kadrodan hesaplanır
+    newTeams.forEach(function(t){ if(t.players && t.players.length > 0) t.strength = clamp(45, 92, squadStrength(t.players)); });
+    return events;
+  }
+  function offseasonNews(events, seasonLabel){
+    const items = [];
+    if(events.transfers.length > 0){
+      const top = events.transfers.slice().sort(function(a, b){ return b.fee - a.fee; });
+      const big = top[0];
+      const lines = top.slice(0, 6).map(function(t){ return t.player + ' (' + (POS_LABEL[t.pos] || t.pos) + ', ' + t.age + '): ' + t.from + ' → ' + t.to + ', ' + t.fee + ' M€'; });
+      items.push({
+        week: 0, tag: 'Transfer',
+        headline: 'Transferin yıldızı: ' + big.player + ', ' + big.to + ' formasında',
+        body: seasonLabel + ' sezonu öncesi transfer piyasası hareketliydi; ' + events.transfers.length + ' önemli imza atıldı. Rekor bonservis ' + big.fee + ' M€ ile ' + big.to + ' kulübüne katılan ' + big.player + ' için ödendi.\n\nÖne çıkan transferler: ' + lines.join(' · ') + '.',
+        teamName: big.to
+      });
+    }
+    if(events.retirements.length > 0){
+      const notable = events.retirements.slice().sort(function(a, b){ return b.rating - a.rating; });
+      const names = notable.slice(0, 6).map(function(r){ return r.name + ' (' + r.team + ', ' + r.age + ' yaş)'; });
+      items.push({
+        week: 0, tag: 'Veda',
+        headline: notable[0].name + ' futbola veda etti',
+        body: 'Sezon sonunda ' + events.retirements.length + ' oyuncu kariyerini noktaladı: ' + names.join(', ') + '.\n\nKulüpler boşalan kadro yerlerini altyapıdan yükselen genç isimlerle doldurdu.',
+        teamName: notable[0].team
+      });
+    }
+    return items;
+  }
   function archiveTeamMatches(){ const a = {}; state.teams.forEach(function(t, i){ a[t.name] = getTeamMatches(i); }); return a; }
   function getNextPromotedTeams(count){
     const used = {}; (state.promotedTeams || []).forEach(function(n){ used[n] = true; });
@@ -1918,15 +2025,16 @@
     addTitle(champion.name, 'scudetto');
     const relNames = {}; rel.forEach(function(s){ relNames[s.name] = true; });
     const remaining = state.teams.filter(function(t){ return !relNames[t.name]; });
+    const relegatedObjs = state.teams.filter(function(t){ return relNames[t.name]; });
     const pN = getNextPromotedTeams(3);
     const promoted = pN.map(function(name){ return {name:name, strength: 45 + Math.floor(Math.random()*12)}; });
     const newTeams = remaining.concat(promoted);
-    const newSt = st.filter(function(s){ return !relNames[s.name]; });
-    newSt.forEach(function(s, rank){ const tm = newTeams.find(function(t){ return t.name === s.name; }); if(!tm) return; if(rank < 4) tm.strength = Math.min(95, tm.strength + 1); else if(rank >= newSt.length - 4) tm.strength = Math.max(45, tm.strength - 1); });
     const nsLabel = nextSeasonLabel(state.season);
+    const offEvents = runOffseason(newTeams, relegatedObjs);
     const npH = (state.promotedTeams || []).concat(pN);
     state = initState(newTeams, nsLabel, npH);
     state.seasonsCompleted = history.length;
+    state.news = offseasonNews(offEvents, nsLabel);
     invalidateStandings(); invalidatePlayers();
     saveNow();
     buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderTrophies();
