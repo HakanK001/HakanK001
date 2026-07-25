@@ -374,6 +374,7 @@
       </div>
       <div id="trophies-container"></div>
     </div>
+    <div class="sl-card" style="margin-top:12px;" id="alltime-card"></div>
   </div>
 </div>
 
@@ -2696,6 +2697,72 @@
     c.appendChild(buildList('coppa', 'Coppa Italia', '🏆'));
   }
 
+  /* ============ TÜM ZAMANLAR (oynanan sezonlardan) ============ */
+  function renderAllTime(){
+    const card = document.getElementById('alltime-card'); if(!card) return;
+    card.innerHTML = '<p style="font-size:14px; font-weight:500; margin:0 0 12px;">📚 Tüm zamanlar <span style="font-size:10px; color:var(--text-tertiary); font-weight:400; margin-left:4px;">— tamamlanan ' + history.length + ' sezon</span></p>';
+    if(!history || history.length === 0){
+      card.innerHTML += '<div class="sl-empty-hint">Henüz tamamlanmış sezon yok. İlk sezonu bitirdiğinde tüm zamanlar tablosu burada birikecek.</div>';
+      return;
+    }
+    const acc = {};
+    let bestChamp = null;
+    history.forEach(function(h){
+      (h.fullTable || []).forEach(function(row, i){
+        if(!acc[row.name]) acc[row.name] = {name: row.name, seasons: 0, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, Pts: 0, titles: 0, coppe: 0, best: 99};
+        const a = acc[row.name];
+        a.seasons++; a.P += row.P; a.W += row.W; a.D += row.D; a.L += row.L; a.GF += row.GF; a.GA += row.GA; a.Pts += row.Pts;
+        if(i + 1 < a.best) a.best = i + 1;
+      });
+      if(acc[h.champion]) acc[h.champion].titles++;
+      if(h.coppaWinner && acc[h.coppaWinner]) acc[h.coppaWinner].coppe++;
+      const cRow = (h.fullTable || [])[0];
+      if(cRow && (!bestChamp || cRow.Pts > bestChamp.pts)) bestChamp = {name: cRow.name, pts: cRow.Pts, season: h.season};
+    });
+    const rows = Object.values(acc).sort(function(a, b){ return b.Pts - a.Pts || (b.GF-b.GA) - (a.GF-a.GA); });
+    if(bestChamp){
+      const rec = document.createElement('div');
+      rec.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:8px; margin-bottom:12px;';
+      const sc = function(l, v, s){ const x = document.createElement('div'); x.className = 'sl-stat-card'; x.innerHTML = '<div class="sl-stat-label">' + l + '</div><div class="sl-stat-value">' + v + '</div>' + (s ? '<div class="sl-stat-sub">' + s + '</div>' : ''); return x; };
+      rec.appendChild(sc('Rekor şampiyonluk puanı', bestChamp.pts, bestChamp.name + ' · ' + bestChamp.season));
+      const mostTitles = rows.slice().sort(function(a, b){ return b.titles - a.titles; })[0];
+      if(mostTitles && mostTitles.titles > 0) rec.appendChild(sc('En çok şampiyonluk', mostTitles.titles, mostTitles.name + ' (oynanan sezonlarda)'));
+      const bestAtt = rows.slice().sort(function(a, b){ return (b.GF / Math.max(1, b.P)) - (a.GF / Math.max(1, a.P)); })[0];
+      if(bestAtt) rec.appendChild(sc('Maç başı en çok gol', (bestAtt.GF / Math.max(1, bestAtt.P)).toFixed(2), bestAtt.name));
+      card.appendChild(rec);
+    }
+    const tbl = document.createElement('table'); tbl.style.cssText = 'width:100%; font-size:12px; table-layout:fixed;';
+    tbl.innerHTML = '<thead><tr style="color:var(--text-secondary); text-align:left;">' +
+      '<th style="width:30px; padding:6px 2px 6px 8px; font-weight:400; font-size:11px;">#</th>' +
+      '<th style="padding:6px 2px; font-weight:400; font-size:11px;">Takım</th>' +
+      '<th style="width:40px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">Sezon</th>' +
+      '<th style="width:34px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">O</th>' +
+      '<th style="width:44px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">G-B-M</th>' +
+      '<th style="width:40px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">AV</th>' +
+      '<th style="width:36px; padding:6px 2px; font-weight:400; text-align:right; font-size:11px;">P</th>' +
+      '<th style="width:34px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">🏆</th></tr></thead>';
+    const tb = document.createElement('tbody');
+    rows.forEach(function(r, i){
+      const gd = r.GF - r.GA;
+      const tr = document.createElement('tr');
+      tr.style.borderTop = i === 0 ? 'none' : '1px solid var(--border-tertiary)';
+      const td = function(v, css){ const x = document.createElement('td'); x.style.cssText = 'padding:6px 2px; font-variant-numeric:tabular-nums;' + (css || ''); if(typeof v === 'string' || typeof v === 'number') x.textContent = v; else x.appendChild(v); return x; };
+      const nw = document.createElement('span'); nw.style.cssText = 'display:inline-flex; align-items:center; gap:6px; min-width:0; max-width:100%;';
+      const nt = document.createElement('span'); nt.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'; nt.textContent = r.name;
+      nw.appendChild(nt); nw.appendChild(makeBadge(r.name, 'sl-team-badge-lg'));
+      tr.appendChild(td(i + 1, ' padding-left:8px; color:var(--text-tertiary);'));
+      tr.appendChild(td(nw, ' overflow:hidden; white-space:nowrap;'));
+      tr.appendChild(td(r.seasons, ' text-align:center; color:var(--text-secondary);'));
+      tr.appendChild(td(r.P, ' text-align:center; color:var(--text-secondary);'));
+      tr.appendChild(td(r.W + '-' + r.D + '-' + r.L, ' text-align:center; color:var(--text-secondary); font-size:11px;'));
+      tr.appendChild(td((gd > 0 ? '+' : '') + gd, ' text-align:center; color:var(--text-secondary);'));
+      tr.appendChild(td(r.Pts, ' text-align:right; font-weight:700; font-size:13px;'));
+      tr.appendChild(td(r.titles > 0 ? String(r.titles) : '–', ' text-align:center; color:' + (r.titles > 0 ? '#F0C04A' : 'var(--text-tertiary)') + ';'));
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb); card.appendChild(tbl);
+  }
+
   /* ============ SEZON SONU TAHMİNİ (Monte Carlo) ============ */
   function computeSeasonProjection(iters){
     iters = iters || 1000;
@@ -2841,7 +2908,7 @@
     else if(tab === 'grafik') renderChart();
     else if(tab === 'istatistik'){ renderProjection(); renderScorerLeaders(); renderSeasonStats(); }
     else if(tab === 'gecmis'){ closeHistoryDetail(); renderHistoryTab(); }
-    else if(tab === 'kupalar'){ renderCup(); renderTrophies(); }
+    else if(tab === 'kupalar'){ renderCup(); renderTrophies(); renderAllTime(); }
   }
 
   /* ============ OLAY DİNLEYİCİLERİ ============ */
