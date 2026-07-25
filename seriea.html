@@ -172,6 +172,9 @@
   .sl-team-chip:hover { background: var(--bg-tertiary); }
   .sl-team-chip.off { opacity: 0.4; }
 
+  .sl-pos-badge { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 16px; border-radius: 4px; font-size: 9px; font-weight: 700; color: #fff; flex-shrink: 0; }
+  .sl-scorer-row { display: grid; grid-template-columns: 22px minmax(0,1fr) 34px 34px; align-items: center; gap: 6px; font-size: 12px; padding: 5px 8px; border-radius: var(--radius-md); }
+  .sl-scorer-row:nth-child(odd) { background: var(--bg-secondary); }
   .sl-empty-hint { font-size: 12px; color: var(--text-secondary); text-align: center; padding: 24px 16px; line-height: 1.5; }
   .sl-mb12 { margin-bottom: 12px; }
   table { border-collapse: collapse; font-variant-numeric: tabular-nums; }
@@ -307,6 +310,7 @@
 
   <div id="tab-istatistik" class="sl-tab-content" style="display:none;">
     <div class="sl-card sl-mb12" id="projection-card"></div>
+    <div class="sl-card sl-mb12" id="scorer-leaders-card"></div>
     <div class="sl-card">
       <p style="font-size:14px; font-weight:500; margin:0 0 12px;">Sezon istatistikleri</p>
       <div id="season-stats-container"></div>
@@ -413,6 +417,141 @@
   ];
   const PROMOTION_POOL = ['Palermo','Bari','Sampdoria','Spezia','Venezia','Monza','Empoli','Reggiana','Modena','Salernitana','Frosinone'];
 
+  /* ============ OYUNCU SİSTEMİ ============ */
+  // İsimler kurgusal kombinasyonlardır; gerçek futbolculardan bağımsızdır.
+  const FIRST_NAMES = ['Alessandro','Andrea','Antonio','Bruno','Carlo','Claudio','Cristian','Dario','Davide','Diego','Edoardo','Elia','Emanuele','Enrico','Fabio','Federico','Filippo','Flavio','Francesco','Gabriele','Giacomo','Gianluca','Giorgio','Giovanni','Giulio','Jacopo','Leonardo','Lorenzo','Luca','Manuel','Marco','Matteo','Mattia','Michele','Nicola','Nicolò','Paolo','Pietro','Riccardo','Roberto','Salvatore','Samuele','Sandro','Simone','Stefano','Tommaso','Umberto','Valerio','Vittorio'];
+  const LAST_NAMES = ['Abbate','Aldini','Amoretti','Baldacci','Balestra','Baraldi','Bellandi','Bertolucci','Bevilacqua','Bonetti','Borghese','Brambilla','Buscemi','Calvani','Campisi','Capriati','Carletti','Castellani','Cavallaro','Cerutti','Contarini','Corradi','Crippa','D\'Alessio','Donati','Fabbri','Falchi','Farina','Ferraro','Fiorucci','Fontana','Fornari','Franzoni','Furlan','Galimberti','Gentileschi','Ghirardelli','Giordano','Grassi','Guarnieri','Iacovelli','Lombardi','Lucarelli','Maggio','Manfredi','Marangoni','Marchetti','Martelli','Mazzanti','Merlo','Milani','Montanari','Moretti','Nardi','Olivetti','Pagano','Palumbo','Petrucci','Piccolo','Pozzi','Quaranta','Rastelli','Ricciardi','Rinaldi','Rosselli','Ruggeri','Sabatini','Salvemini','Santoro','Sartori','Scalise','Serafini','Sorrentino','Tamburini','Tedesco','Toscani','Trevisan','Valentini','Vanoli','Ventura','Vitale','Zanella','Zorzi'];
+  const POS_ORDER = {K:0, D:1, O:2, F:3};
+  const POS_LABEL = {K:'KL', D:'DF', O:'OS', F:'FV'};
+  const POS_COLOR = {K:'#d99738', D:'#4f9eea', O:'#3fc99a', F:'#e06464'};
+
+  function clamp(lo, hi, v){ return Math.max(lo, Math.min(hi, v)); }
+  function randInt(a, b){ return a + Math.floor(Math.random() * (b - a + 1)); }
+  let nextPid = 1;
+  function newPid(){ return nextPid++; }
+  function syncPidCounter(){
+    let mx = 0;
+    state.teams.forEach(function(t){ (t.players || []).forEach(function(p){ if(p.id > mx) mx = p.id; }); });
+    if(mx >= nextPid) nextPid = mx + 1;
+  }
+  function genPlayerName(used){
+    for(let i = 0; i < 60; i++){
+      const n = FIRST_NAMES[randInt(0, FIRST_NAMES.length-1)] + ' ' + LAST_NAMES[randInt(0, LAST_NAMES.length-1)];
+      if(!used.has(n)){ used.add(n); return n; }
+    }
+    const fb = FIRST_NAMES[randInt(0, FIRST_NAMES.length-1)] + ' ' + LAST_NAMES[randInt(0, LAST_NAMES.length-1)] + ' Jr.';
+    used.add(fb); return fb;
+  }
+  function makePlayer(pos, targetRating, used, ageOverride){
+    return {
+      id: newPid(), name: genPlayerName(used), pos: pos,
+      age: ageOverride !== undefined ? ageOverride : clamp(17, 35, Math.round(25 + (Math.random() + Math.random() - 1) * 7)),
+      rating: clamp(40, 94, Math.round(targetRating + randInt(-6, 6))),
+      seasons: 0
+    };
+  }
+  function squadStrength(players){
+    const r = players.map(function(p){ return p.rating; }).sort(function(a,b){ return b - a; }).slice(0, 14);
+    if(r.length === 0) return 50;
+    return Math.round(r.reduce(function(s, v){ return s + v; }, 0) / r.length);
+  }
+  const SQUAD_PLAN = [['K',2],['D',6],['O',6],['F',4]];
+  function makeSquad(targetStrength, used){
+    const players = [];
+    SQUAD_PLAN.forEach(function(pp){ for(let i = 0; i < pp[1]; i++) players.push(makePlayer(pp[0], targetStrength, used)); });
+    const shift = targetStrength - squadStrength(players);
+    players.forEach(function(p){ p.rating = clamp(40, 94, Math.round(p.rating + shift)); });
+    return players;
+  }
+  function allUsedNames(teams){
+    const used = new Set();
+    (teams || []).forEach(function(t){ (t.players || []).forEach(function(p){ used.add(p.name); }); });
+    return used;
+  }
+  function ensureSquads(teams){
+    const used = allUsedNames(teams);
+    teams.forEach(function(t){ if(!t.players || t.players.length === 0) t.players = makeSquad(t.strength, used); });
+  }
+
+  // --- gol/asist ataması (skora göre deterministik; skor değişirse yeniden üretilir) ---
+  let playerStatsCache = null, playerIndexCache = null;
+  function invalidatePlayers(){ playerStatsCache = null; playerIndexCache = null; }
+  function playerIndex(){
+    if(playerIndexCache) return playerIndexCache;
+    const m = {};
+    state.teams.forEach(function(t, ti){ (t.players || []).forEach(function(p){ m[p.id] = {p: p, teamIdx: ti}; }); });
+    playerIndexCache = m; return m;
+  }
+  function playerNameById(pid){ const e = playerIndex()[pid]; return e ? e.p.name : '?'; }
+  function scorerWeight(p, kind){
+    const posW = kind === 'goal' ? {F:1.0, O:0.42, D:0.12, K:0.01} : {O:1.0, F:0.65, D:0.28, K:0.02};
+    return (posW[p.pos] || 0.1) * Math.pow(Math.max(1, p.rating - 40), 1.4);
+  }
+  function pickWeighted(rng, players, kind){
+    let tot = 0;
+    const w = players.map(function(p){ const x = scorerWeight(p, kind); tot += x; return x; });
+    let r = rng() * tot;
+    for(let i = 0; i < players.length; i++){ r -= w[i]; if(r <= 0) return players[i]; }
+    return players[players.length - 1];
+  }
+  function attributeSide(rng, teamIdx, goals){
+    const players = state.teams[teamIdx].players || [];
+    const out = [];
+    for(let g = 0; g < goals; g++){
+      if(players.length === 0){ out.push({s: null, a: null}); continue; }
+      const scorer = pickWeighted(rng, players, 'goal');
+      let assist = null;
+      if(rng() > 0.28){
+        for(let tr = 0; tr < 6; tr++){ const c = pickWeighted(rng, players, 'assist'); if(c.id !== scorer.id){ assist = c.id; break; } }
+      }
+      out.push({s: scorer.id, a: assist});
+    }
+    return out;
+  }
+  function computeAttribution(wk, mi, hg, ag){
+    const pair = state.fixtures[wk][mi];
+    const seed = ((state.seasonSeed || 0) ^ (wk * 2654435761) ^ (mi * 97531) ^ (hg * 7919) ^ (ag * 104729)) | 0;
+    const rng = mulberry32(seed);
+    return {h: attributeSide(rng, pair[0], hg), a: attributeSide(rng, pair[1], ag)};
+  }
+  function ensureScorersShape(){
+    if(!state.scorers || state.scorers.length !== state.results.length){
+      state.scorers = state.results.map(function(week){ return week.map(function(){ return null; }); });
+    }
+  }
+  function attributeMatch(wk, mi){
+    ensureScorersShape();
+    const res = state.results[wk][mi];
+    if(!res || res[0] === null || res[1] === null){ state.scorers[wk][mi] = null; playerStatsCache = null; return; }
+    state.scorers[wk][mi] = computeAttribution(wk, mi, res[0], res[1]);
+    playerStatsCache = null;
+  }
+  function computePlayerStats(){
+    if(playerStatsCache) return playerStatsCache;
+    ensureScorersShape();
+    const stats = {};
+    const bump = function(pid, key){ if(pid === null || pid === undefined) return; if(!stats[pid]) stats[pid] = {goals: 0, assists: 0}; stats[pid][key]++; };
+    state.scorers.forEach(function(week){
+      week.forEach(function(sc){
+        if(!sc) return;
+        ['h','a'].forEach(function(side){ (sc[side] || []).forEach(function(ev){ bump(ev.s, 'goals'); bump(ev.a, 'assists'); }); });
+      });
+    });
+    playerStatsCache = stats; return stats;
+  }
+  function playerLeaders(sortKey, limit){
+    const idx = playerIndex(); const stats = computePlayerStats();
+    const rows = Object.keys(stats).map(function(pid){
+      const info = idx[pid]; if(!info) return null;
+      return {name: info.p.name, pos: info.p.pos, team: state.teams[info.teamIdx].name, goals: stats[pid].goals, assists: stats[pid].assists};
+    }).filter(function(x){ return x; });
+    rows.sort(function(a, b){
+      if(sortKey === 'assists') return b.assists - a.assists || b.goals - a.goals || a.name.localeCompare(b.name, 'tr');
+      return b.goals - a.goals || b.assists - a.assists || a.name.localeCompare(b.name, 'tr');
+    });
+    return rows.slice(0, limit || 10);
+  }
+
   let state = null;
   let history = [];
   let titles = {};
@@ -475,15 +614,19 @@
     return firstHalf.concat(secondHalf);
   }
   function initState(teams, seasonLabel, promotedNamesFromHistory){
+    ensureSquads(teams);
     const fixtures = genFixtures(teams.length);
     return {
       teams: teams, season: seasonLabel || '2026-27',
       seasonsCompleted: 0, promotedTeams: promotedNamesFromHistory || [],
       fixtures: fixtures, results: fixtures.map(function(week){ return week.map(function(){ return null; }); }),
+      scorers: fixtures.map(function(week){ return week.map(function(){ return null; }); }),
+      seasonSeed: (Math.random() * 1e9) | 0,
       viewWeek: 0, seasonEnded: false,
       news: [], punditsByWeek: {}, newsGeneratedWeeks: [], punditSeeds: {}, liveSim: true, liveSpeed: 'normal'
     };
   }
+  function freshInitialTeams(){ return INITIAL_TEAMS.map(function(t){ return {name: t.name, strength: t.strength}; }); }
   function nextSeasonLabel(current){
     const m = current.match(/^(\d{4})-(\d{2})$/);
     if(!m) return current;
@@ -1233,7 +1376,75 @@
     v.innerHTML = '';
     v.appendChild(makeTeamDetailHeader(t.name, rank, sr ? sr.Pts : 0, t.strength, closeTeamDetail, '← Lig'));
     v.appendChild(makeStatsCard(stats));
+    v.appendChild(makeSquadCard(i));
     v.appendChild(makeFixturesCard(t.name, all, 'Sezon fikstürü'));
+  }
+  function posBadgeEl(pos){
+    const b = document.createElement('span'); b.className = 'sl-pos-badge';
+    b.style.background = POS_COLOR[pos] || '#666'; b.textContent = POS_LABEL[pos] || pos;
+    return b;
+  }
+  function makeSquadCard(teamIdx){
+    const t = state.teams[teamIdx];
+    const c = document.createElement('div'); c.className = 'sl-card sl-mb12';
+    const players = (t.players || []).slice().sort(function(a, b){ return POS_ORDER[a.pos] - POS_ORDER[b.pos] || b.rating - a.rating; });
+    c.innerHTML = '<p style="font-size:14px; font-weight:500; margin:0 0 12px;">Kadro <span style="font-size:10px; color:var(--text-tertiary); font-weight:400; margin-left:4px;">' + players.length + ' oyuncu · Takım gücü ' + t.strength + '</span></p>';
+    const stats = computePlayerStats();
+    const tbl = document.createElement('table'); tbl.style.cssText = 'width:100%; font-size:12px; table-layout:fixed;';
+    tbl.innerHTML = '<thead><tr style="color:var(--text-secondary); text-align:left;">' +
+      '<th style="width:34px; padding:5px 2px 5px 8px; font-weight:400; font-size:11px;">Poz</th>' +
+      '<th style="padding:5px 2px; font-weight:400; font-size:11px;">Oyuncu</th>' +
+      '<th style="width:36px; padding:5px 2px; font-weight:400; text-align:center; font-size:11px;">Yaş</th>' +
+      '<th style="width:36px; padding:5px 2px; font-weight:400; text-align:center; font-size:11px;">Güç</th>' +
+      '<th style="width:36px; padding:5px 2px; font-weight:400; text-align:center; font-size:11px;">Gol</th>' +
+      '<th style="width:40px; padding:5px 2px; font-weight:400; text-align:center; font-size:11px;">Asist</th></tr></thead>';
+    const tb = document.createElement('tbody');
+    players.forEach(function(p){
+      const ps = stats[p.id] || {goals: 0, assists: 0};
+      const tr = document.createElement('tr');
+      tr.style.borderTop = '1px solid var(--border-tertiary)';
+      const tdPos = document.createElement('td'); tdPos.style.padding = '5px 2px 5px 8px'; tdPos.appendChild(posBadgeEl(p.pos));
+      const tdN = document.createElement('td'); tdN.style.cssText = 'padding:5px 2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'; tdN.textContent = p.name;
+      const cell = function(v, bold){ const td = document.createElement('td'); td.style.cssText = 'padding:5px 2px; text-align:center; font-variant-numeric:tabular-nums;' + (bold ? ' font-weight:600;' : ' color:var(--text-secondary);'); td.textContent = v; return td; };
+      tr.appendChild(tdPos); tr.appendChild(tdN);
+      tr.appendChild(cell(p.age)); tr.appendChild(cell(p.rating, true));
+      tr.appendChild(cell(ps.goals || '–')); tr.appendChild(cell(ps.assists || '–'));
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb); c.appendChild(tbl);
+    return c;
+  }
+  function renderScorerLeaders(){
+    const card = document.getElementById('scorer-leaders-card'); if(!card) return;
+    card.innerHTML = '<p style="font-size:14px; font-weight:500; margin:0 0 12px;">⚽ Gol krallığı <span style="font-size:10px; color:var(--text-tertiary); font-weight:400; margin-left:4px;">— bu sezon</span></p>';
+    const goals = playerLeaders('goals', 10);
+    const assists = playerLeaders('assists', 10).filter(function(r){ return r.assists > 0; });
+    if(goals.length === 0 || goals[0].goals === 0){
+      card.innerHTML += '<div class="sl-empty-hint">Henüz gol atılmadı. Birkaç hafta oyna; gol kralları burada sıralanacak.</div>';
+      return;
+    }
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px;';
+    const buildList = function(title, rows, key){
+      const col = document.createElement('div');
+      col.innerHTML = '<div class="sl-stat-label" style="margin-bottom:6px;">' + title + '</div>';
+      rows.forEach(function(r, i){
+        const row = document.createElement('div'); row.className = 'sl-scorer-row';
+        const rk = document.createElement('span'); rk.style.cssText = 'color:var(--text-tertiary); font-size:11px; font-variant-numeric:tabular-nums;'; rk.textContent = (i + 1) + '.';
+        const nm = document.createElement('span'); nm.style.cssText = 'display:flex; align-items:center; gap:6px; min-width:0;';
+        nm.appendChild(makeBadge(r.team));
+        const nt = document.createElement('span'); nt.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;' + (i === 0 ? ' font-weight:600;' : '');
+        nt.textContent = r.name; nm.appendChild(nt);
+        const v1 = document.createElement('span'); v1.style.cssText = 'text-align:right; font-weight:600; font-variant-numeric:tabular-nums;'; v1.textContent = key === 'goals' ? r.goals : r.assists;
+        const v2 = document.createElement('span'); v2.style.cssText = 'text-align:right; font-size:10px; color:var(--text-tertiary); font-variant-numeric:tabular-nums;'; v2.textContent = key === 'goals' ? (r.assists + 'a') : (r.goals + 'g');
+        row.appendChild(rk); row.appendChild(nm); row.appendChild(v1); row.appendChild(v2);
+        col.appendChild(row);
+      });
+      return col;
+    };
+    wrap.appendChild(buildList('Gol', goals, 'goals'));
+    if(assists.length > 0) wrap.appendChild(buildList('Asist', assists, 'assists'));
+    card.appendChild(wrap);
   }
   function getAllFixturesForTeam(teamIdx){
     const out = [];
@@ -1571,7 +1782,7 @@
     grid.appendChild(sc('Oynanan maç', ss.totalMatches));
     grid.appendChild(sc('Toplam gol', ss.totalGoals, 'Maç başı ortalama ' + ss.avgGoals));
     grid.appendChild(sc('Sonuçlar', ss.homeWins+'-'+ss.draws+'-'+ss.awayWins, 'Ev / Beraberlik / Deplasman'));
-    if(ss.topScorer) grid.appendChild(sc('En çok gol atan', ss.topScorer.name, ss.topScorer.goals + ' gol'));
+    if(ss.topScorer) grid.appendChild(sc('En golcü takım', ss.topScorer.name, ss.topScorer.goals + ' gol'));
     if(ss.mostGoalsMatch) grid.appendChild(sc('En gollü maç', ss.mostGoalsMatch.hg+' - '+ss.mostGoalsMatch.ag, ss.mostGoalsMatch.week+'.H '+ss.mostGoalsMatch.h+' - '+ss.mostGoalsMatch.a+' ('+ss.mostGoalsMatch.total+' gol)'));
     if(ss.biggestDiff) grid.appendChild(sc('En farklı maç', ss.biggestDiff.hg+' - '+ss.biggestDiff.ag, ss.biggestDiff.week+'.H '+ss.biggestDiff.h+' - '+ss.biggestDiff.a));
     if(ss.bestWinStreak.n > 0) grid.appendChild(sc('En uzun galibiyet serisi', ss.bestWinStreak.n + ' maç', ss.bestWinStreak.team));
@@ -1693,13 +1904,13 @@
     const st = computeStandings();
     const champion = st[0];
     const rel = st.slice(-3);
-    const ss = seasonStats();
+    const goldenBoot = playerLeaders('goals', 3);
     history.unshift({
       season: state.season, champion: champion.name,
       top4: st.slice(0, 4).map(function(s){ return s.name; }), relegated: rel.map(function(s){ return s.name; }),
       fullTable: st.map(function(s){ return {name:s.name, P:s.P, W:s.W, D:s.D, L:s.L, GF:s.GF, GA:s.GA, Pts:s.Pts}; }),
       teamMatches: archiveTeamMatches(), teamCount: state.teams.length,
-      topScorer: ss.topScorer ? ss.topScorer.name + ' (' + ss.topScorer.goals + ' gol)' : null
+      topScorer: goldenBoot[0] && goldenBoot[0].goals > 0 ? goldenBoot[0].name + ' — ' + goldenBoot[0].team + ' (' + goldenBoot[0].goals + ' gol)' : null
     });
     if(history.length > 40) history.length = 40;
     saveHistory();
@@ -1716,7 +1927,7 @@
     const npH = (state.promotedTeams || []).concat(pN);
     state = initState(newTeams, nsLabel, npH);
     state.seasonsCompleted = history.length;
-    invalidateStandings();
+    invalidateStandings(); invalidatePlayers();
     saveNow();
     buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderTrophies();
     document.getElementById('leader-banner-container').innerHTML = '';
@@ -1740,6 +1951,7 @@
     state.fixtures[wk].forEach(function(pair, mi){
       if(!state.results[wk][mi] || state.results[wk][mi][0] === null || state.results[wk][mi][1] === null){
         state.results[wk][mi] = simScore(pair[0], pair[1], wk);
+        attributeMatch(wk, mi);
       }
     });
     invalidateStandings();
@@ -1781,9 +1993,11 @@
   }
   function liveBlock(mi){ const list = document.getElementById('fixtures-list'); return list ? list.children[mi] : null; }
   function liveSetScore(mi, sc){ const b = liveBlock(mi); if(!b) return; const ins = b.querySelectorAll('input'); if(ins[0]) ins[0].value = sc[0]; if(ins[1]) ins[1].value = sc[1]; }
-  function liveFlashGoal(mi, side){
+  function liveFlashGoal(mi, side, scorerName){
     const b = liveBlock(mi); if(!b) return;
-    const g = document.createElement('div'); g.className = 'sl-goal-flash'; g.textContent = 'GOL!'; b.appendChild(g);
+    const g = document.createElement('div'); g.className = 'sl-goal-flash';
+    g.textContent = scorerName ? ('GOL! ' + scorerName.split(' ').slice(-1)[0]) : 'GOL!';
+    b.appendChild(g);
     setTimeout(function(){ if(g.parentNode) g.parentNode.removeChild(g); }, 1100);
     const inp = b.querySelectorAll('input')[side];
     if(inp){ inp.classList.add('sl-score-pulse'); setTimeout(function(){ inp.classList.remove('sl-score-pulse'); }, 700); }
@@ -1794,7 +2008,10 @@
     const toPlay = [];
     state.fixtures[wk].forEach(function(pair, mi){
       const r = state.results[wk][mi];
-      if(!r || r[0] === null || r[1] === null){ toPlay.push({mi: mi, final: simScore(pair[0], pair[1], wk), live: [0,0]}); }
+      if(!r || r[0] === null || r[1] === null){
+        const fin = simScore(pair[0], pair[1], wk);
+        toPlay.push({mi: mi, final: fin, live: [0,0], att: computeAttribution(wk, mi, fin[0], fin[1])});
+      }
     });
     if(toPlay.length === 0){ simulateWeek(); return; }
     liveSimRunning = true;
@@ -1818,14 +2035,17 @@
       const mNow = Math.min(90, Math.round(minute));
       while(ei < events.length && events[ei].minute <= minute){
         const ev = events[ei]; ev.m.live[ev.side]++;
-        liveSetScore(ev.mi, ev.m.live); liveFlashGoal(ev.mi, ev.side); ei++;
+        const attSide = ev.m.att ? ev.m.att[ev.side === 0 ? 'h' : 'a'] : null;
+        const entry = attSide ? attSide[ev.m.live[ev.side] - 1] : null;
+        liveSetScore(ev.mi, ev.m.live); liveFlashGoal(ev.mi, ev.side, entry && entry.s !== null ? playerNameById(entry.s) : null); ei++;
       }
       toPlay.forEach(function(m){ const b = liveBlock(m.mi); if(b){ const mb = b.querySelector('.sl-min-badge'); if(mb) mb.textContent = mNow + "'"; } });
       if(statusEl) statusEl.innerHTML = '<span class="sl-live-badge"><span class="sl-live-dot"></span>CANLI ' + mNow + "'</span>";
       if(minute >= 90){
         clearInterval(timer);
-        toPlay.forEach(function(m){ state.results[wk][m.mi] = m.final; });
-        invalidateStandings();
+        ensureScorersShape();
+        toPlay.forEach(function(m){ state.results[wk][m.mi] = m.final; state.scorers[wk][m.mi] = m.att; });
+        invalidateStandings(); playerStatsCache = null;
         liveSimRunning = false;
         setSimControls(false);
         renderStandings(); renderWeekSummary(); checkLeaderChange();
@@ -1954,7 +2174,7 @@
     if(all){ advanceToNextSeason(); return; }
     state.results.forEach(function(week, wi){
       state.fixtures[wi].forEach(function(pair, mi){
-        if(!week[mi] || week[mi][0] === null || week[mi][1] === null){ state.results[wi][mi] = simScore(pair[0], pair[1], wi); }
+        if(!week[mi] || week[mi][0] === null || week[mi][1] === null){ state.results[wi][mi] = simScore(pair[0], pair[1], wi); attributeMatch(wi, mi); }
       });
       invalidateStandings();
       maybeGenerateNews(wi);
@@ -1966,7 +2186,9 @@
   function clearWeek(){
     const wk = state.viewWeek;
     state.results[wk] = state.fixtures[wk].map(function(){ return null; });
-    invalidateStandings();
+    ensureScorersShape();
+    state.scorers[wk] = state.fixtures[wk].map(function(){ return null; });
+    invalidateStandings(); playerStatsCache = null;
     state.news = (state.news || []).filter(function(n){ return n.week !== wk + 1; });
     state.newsGeneratedWeeks = (state.newsGeneratedWeeks || []).filter(function(w){ return w !== wk; });
     updateFixtureValues(); renderStandings(); renderWeekSummary();
@@ -1986,8 +2208,8 @@
     try { localStorage.removeItem(TITLES_KEY); } catch(e){}
     history = [];
     titles = baselineTitles(); saveTitles();
-    state = initState(INITIAL_TEAMS.slice(), '2026-27', []);
-    invalidateStandings();
+    state = initState(freshInitialTeams(), '2026-27', []);
+    invalidateStandings(); invalidatePlayers();
     document.getElementById('champion-banner').style.display = 'none';
     document.getElementById('leader-banner-container').innerHTML = '';
     chartSelectedTeams = null;
@@ -2003,7 +2225,7 @@
     if(tab === 'tahminler') renderPundits();
     else if(tab === 'manset') renderNewsFeed();
     else if(tab === 'grafik') renderChart();
-    else if(tab === 'istatistik'){ renderProjection(); renderSeasonStats(); }
+    else if(tab === 'istatistik'){ renderProjection(); renderScorerLeaders(); renderSeasonStats(); }
     else if(tab === 'gecmis'){ closeHistoryDetail(); renderHistoryTab(); }
     else if(tab === 'kupalar') renderTrophies();
   }
@@ -2047,6 +2269,7 @@
     else current[side] = Math.max(0, Math.min(15, parseInt(val)));
     state.results[wk][mi] = current;
     invalidateStandings();
+    attributeMatch(wk, mi);
     renderStandings(); updateFixtureValues(); renderWeekSummary(); checkLeaderChange();
     refreshNewsForWeek(wk);
     if(teamDetailIdx !== null) renderTeamDetail();
@@ -2065,8 +2288,19 @@
     if(!state.punditSeeds) state.punditSeeds = {};
     if(state.liveSim === undefined) state.liveSim = true;
     if(!state.liveSpeed) state.liveSpeed = 'normal';
+    // Eski kayıtları oyuncu sistemine taşı
+    if(!state.seasonSeed) state.seasonSeed = (Math.random() * 1e9) | 0;
+    syncPidCounter();
+    ensureSquads(state.teams);
+    ensureScorersShape();
+    state.results.forEach(function(week, wi){
+      week.forEach(function(r, mi){
+        if(r && r[0] !== null && r[1] !== null && !state.scorers[wi][mi]) state.scorers[wi][mi] = computeAttribution(wi, mi, r[0], r[1]);
+      });
+    });
+    invalidatePlayers();
   } else {
-    state = initState(INITIAL_TEAMS.slice(), '2026-27', []);
+    state = initState(freshInitialTeams(), '2026-27', []);
     saveNow();
   }
   (function(){
