@@ -1188,7 +1188,97 @@
       }
     }
 
+    // 6. Hat-trick haberi
+    if(state.scorers && state.scorers[weekIdx]){
+      let hatTrick = null;
+      state.scorers[weekIdx].forEach(function(sc, mi){
+        if(!sc) return;
+        ['h','a'].forEach(function(side){
+          const cnt = {};
+          (sc[side] || []).forEach(function(ev){ if(ev.s !== null){ cnt[ev.s] = (cnt[ev.s] || 0) + 1; } });
+          Object.keys(cnt).forEach(function(pid){
+            if(cnt[pid] >= 3 && (!hatTrick || cnt[pid] > hatTrick.n)) hatTrick = {pid: parseInt(pid), n: cnt[pid], mi: mi, side: side};
+          });
+        });
+      });
+      if(hatTrick && news.length < 4){
+        const info = playerIndex()[hatTrick.pid];
+        if(info){
+          const teamName = state.teams[info.teamIdx].name;
+          const label = hatTrick.n >= 4 ? hatTrick.n + ' gol birden' : 'hat-trick';
+          news.push({
+            week: weekIdx+1,
+            headline: info.p.name + '\'den ' + label + '!',
+            body: (weekIdx+1) + '. haftada sahneyi ' + teamName + ' forması giyen ' + info.p.name + ' çaldı. ' + (POS_LABEL[info.p.pos] || '') + ' mevkiindeki ' + info.p.age + ' yaşındaki oyuncu, rakip fileleri ' + hatTrick.n + ' kez havalandırarak maçın yıldızı oldu.\n\nBu performans gol krallığı yarışında da dengeleri değiştirebilir; taraftarlar şimdiden bir sonraki maçı iple çekiyor.',
+            teamName: teamName
+          });
+        }
+      }
+    }
+
     return news;
+  }
+
+  /* ============ KİLOMETRE TAŞI HABERLERİ ============ */
+  function pushTaggedNews(tag, headline, body, teamName){
+    state.news = (state.news || []).concat([{week: 0, tag: tag, headline: headline, body: body, teamName: teamName}]);
+  }
+  function checkMilestones(wk){
+    if(!state.milestones) state.milestones = {clinched: false, relConfirmed: [], streaks: {}, races: {}};
+    const ms = state.milestones;
+    const st = computeStandings();
+    const totalWeeks = state.fixtures.length;
+    if(st.length < 4 || st[0].P === 0) return;
+    // Matematiksel şampiyonluk
+    if(!ms.clinched){
+      const lead = st[0], second = st[1];
+      const secondMax = second.Pts + 3 * (totalWeeks - second.P);
+      if(lead.Pts > secondMax){
+        ms.clinched = true;
+        pushTaggedNews('Şampiyonluk', '👑 ' + lead.name + ' matematiksel olarak şampiyon!',
+          (wk + 1) + '. hafta itibarıyla ' + lead.name + ', en yakın takipçisi ' + second.name + '\'in ulaşabileceği en yüksek puanı geride bıraktı ve sezonun bitimine haftalar kala şampiyonluğunu ilan etti.\n\nTaraftarlar sokaklara döküldü; kupa töreni sezonun son haftasında yapılacak. Teknik ekip ise "İş bitmedi, rekorlar için oynayacağız" mesajı verdi.',
+          lead.name);
+      }
+    }
+    // Kesinleşen küme düşüşleri
+    const safe = st[st.length - 4];
+    st.slice(-3).forEach(function(s){
+      if(ms.relConfirmed.indexOf(s.name) !== -1) return;
+      const sMax = s.Pts + 3 * (totalWeeks - s.P);
+      if(sMax < safe.Pts){
+        ms.relConfirmed.push(s.name);
+        pushTaggedNews('Küme', s.name + '\'in küme düşüşü kesinleşti',
+          'Matematik acımasız: ' + s.name + ', kalan tüm maçlarını kazansa bile kümede kalma hattına ulaşamıyor. ' + (wk + 1) + '. hafta itibarıyla alt lige veda kesinleşti.\n\nKulüpte yönetimden altyapıya kadar her kademede yeniden yapılanma konuşuluyor; hedef, ilk sezonda yeniden Serie A\'ya dönmek.',
+          s.name);
+      }
+    });
+    // Uzun seriler (takım başına sezonda bir kez)
+    state.teams.forEach(function(t, i){
+      const si = streakInfo(getTeamMatches(i));
+      if(si.win >= 8 && !ms.streaks['w' + t.name]){
+        ms.streaks['w' + t.name] = true;
+        pushTaggedNews('Seri', t.name + ' durdurulamıyor: üst üste ' + si.win + ' galibiyet',
+          t.name + ' art arda ' + si.win + '. galibiyetini alarak sezonun en dikkat çekici serilerinden birine imza attı. Rakipler bu fırtınayı dindirecek formülü arıyor.\n\nSeri devam ederse tarihi rekorlar da gündeme gelecek.',
+          t.name);
+      }
+      if(si.unbeaten >= 14 && !ms.streaks['u' + t.name]){
+        ms.streaks['u' + t.name] = true;
+        pushTaggedNews('Seri', t.name + ' ' + si.unbeaten + ' maçtır yenilmiyor',
+          t.name + ', yenilmezlik serisini ' + si.unbeaten + ' maça çıkardı. Bu istikrar, sezon hedefleri için en büyük güvence.\n\nTeknik ekip ayakların yere basması gerektiğini söylese de tribünlerde "namağlup sezon" sesleri yükselmeye başladı.',
+          t.name);
+      }
+    });
+    // Gol krallığı yarışı ara raporu
+    if((wk === 12 || wk === 25) && !ms.races[wk]){
+      const top = playerLeaders('goals', 3);
+      if(top.length > 0 && top[0].goals >= 5){
+        ms.races[wk] = true;
+        const lines = top.map(function(r, i){ return (i + 1) + '. ' + r.name + ' (' + r.team + ') ' + r.goals + ' gol'; });
+        pushTaggedNews('Gol Krallığı', 'Gol krallığında zirve: ' + top[0].name,
+          (wk + 1) + '. hafta itibarıyla gol krallığı yarışında ipi ' + top[0].name + ' göğüslüyor. Sıralama: ' + lines.join(' · ') + '.\n\nSezonun kalan bölümünde bu yarışın kızışması bekleniyor.',
+          top[0].team);
+      }
+    }
   }
 
   /* ============ TOOLTIP / FORM KUTULARI ============ */
@@ -2340,7 +2430,7 @@
     invalidateStandings();
     const allDone = state.results[wk].every(function(r){ return r && r[0] !== null && r[1] !== null; });
     renderStandings(); renderWeekSummary(); checkLeaderChange();
-    if(allDone){ maybeGenerateNews(wk); playDueCupRounds(); }
+    if(allDone){ maybeGenerateNews(wk); playDueCupRounds(); checkMilestones(wk); }
     if(state.viewWeek < state.fixtures.length - 1){ state.viewWeek++; buildFixtures(); }
     else updateFixtureValues();
     scheduleSave();
@@ -2433,7 +2523,7 @@
         setSimControls(false);
         renderStandings(); renderWeekSummary(); checkLeaderChange();
         const allDone = state.results[wk].every(function(r){ return r && r[0] !== null && r[1] !== null; });
-        if(allDone){ refreshNewsForWeek(wk); playDueCupRounds(); }
+        if(allDone){ refreshNewsForWeek(wk); playDueCupRounds(); checkMilestones(wk); }
         if(state.viewWeek < state.fixtures.length - 1) state.viewWeek++;
         buildFixtures();
         scheduleSave();
@@ -2576,6 +2666,7 @@
       maybeGenerateNews(wi);
     });
     playDueCupRounds();
+    checkMilestones(state.fixtures.length - 1);
     state.viewWeek = state.fixtures.length - 1;
     buildFixtures(); renderStandings(); renderWeekSummary(); checkLeaderChange();
     scheduleSave();
@@ -2670,6 +2761,7 @@
     renderStandings(); updateFixtureValues(); renderWeekSummary(); checkLeaderChange();
     refreshNewsForWeek(wk);
     playDueCupRounds();
+    if(state.results[wk].every(function(r){ return r && r[0] !== null && r[1] !== null; })) checkMilestones(wk);
     if(teamDetailIdx !== null) renderTeamDetail();
     scheduleSave();
   });
