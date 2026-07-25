@@ -329,9 +329,10 @@
   </div>
 
   <div id="tab-kupalar" class="sl-tab-content" style="display:none;">
+    <div class="sl-card sl-mb12" id="cup-card"></div>
     <div class="sl-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
-        <p style="font-size:14px; font-weight:500; margin:0;">🏆 Serie A şampiyonlukları (Scudetto)</p>
+        <p style="font-size:14px; font-weight:500; margin:0;">🏆 Kupa arşivi</p>
         <span style="font-size:11px; color:var(--text-tertiary);">Tüm zamanların kupa sıralaması</span>
       </div>
       <div id="trophies-container"></div>
@@ -350,13 +351,22 @@
   // Kalıcı kupa kayıtları — takım başına birden çok kupa türü tutabilir (ileride Coppa Italia, Avrupa vb.)
   // Değerler 2026-27 sezonu başlangıcındaki gerçek Serie A (Scudetto) şampiyonluk sayılarıdır.
   const INITIAL_TITLES = {
-    'Juventus': { scudetto: 36 },
-    'Inter': { scudetto: 20 },
-    'Milan': { scudetto: 19 },
-    'Genoa': { scudetto: 9 },
-    'Torino': { scudetto: 7 },
-    'Bologna': { scudetto: 7 },
-    'Napoli': { scudetto: 4 }
+    'Juventus': { scudetto: 36, coppa: 15 },
+    'Inter': { scudetto: 20, coppa: 9 },
+    'Milan': { scudetto: 19, coppa: 5 },
+    'Genoa': { scudetto: 9, coppa: 1 },
+    'Torino': { scudetto: 7, coppa: 5 },
+    'Bologna': { scudetto: 7, coppa: 2 },
+    'Napoli': { scudetto: 4, coppa: 6 },
+    'Roma': { scudetto: 3, coppa: 9 },
+    'Lazio': { scudetto: 2, coppa: 7 },
+    'Fiorentina': { scudetto: 2, coppa: 6 },
+    'Cagliari': { scudetto: 1 },
+    'Hellas Verona': { scudetto: 1 },
+    'Sampdoria': { scudetto: 1, coppa: 4 },
+    'Parma': { coppa: 3 },
+    'Atalanta': { coppa: 1 },
+    'Venezia': { coppa: 1 }
   };
 
   const TEAM_COLORS = {
@@ -575,8 +585,11 @@
     let stored = null;
     try { const r = localStorage.getItem(TITLES_KEY); stored = r ? JSON.parse(r) : null; } catch(e){}
     if(!stored || typeof stored !== 'object') return baselineTitles();
-    // Taban listedeki takımlar her zaman bulunsun (mevcut sayıları ezmeden)
-    Object.keys(INITIAL_TITLES).forEach(function(n){ if(!stored[n]) stored[n] = Object.assign({}, INITIAL_TITLES[n]); });
+    // Taban listedeki takım ve kupa türleri her zaman bulunsun (mevcut sayıları ezmeden)
+    Object.keys(INITIAL_TITLES).forEach(function(n){
+      if(!stored[n]){ stored[n] = Object.assign({}, INITIAL_TITLES[n]); return; }
+      Object.keys(INITIAL_TITLES[n]).forEach(function(type){ if(stored[n][type] === undefined) stored[n][type] = INITIAL_TITLES[n][type]; });
+    });
     return stored;
   }
   function saveTitles(){ try { localStorage.setItem(TITLES_KEY, JSON.stringify(titles)); } catch(e){} }
@@ -622,6 +635,7 @@
       fixtures: fixtures, results: fixtures.map(function(week){ return week.map(function(){ return null; }); }),
       scorers: fixtures.map(function(week){ return week.map(function(){ return null; }); }),
       seasonSeed: (Math.random() * 1e9) | 0,
+      cup: initCup(teams),
       viewWeek: 0, seasonEnded: false,
       news: [], punditsByWeek: {}, newsGeneratedWeeks: [], punditSeeds: {}, liveSim: true, liveSpeed: 'normal'
     };
@@ -1800,7 +1814,8 @@
       const d = document.createElement('div'); d.className = 'sl-history-card';
       d.addEventListener('click', function(){ openHistoryDetail(idx); });
       const top4 = h.top4.map(function(n, i){ return '<span style="color:var(--text-secondary);">' + (i+1) + '. ' + n + '</span>'; }).join(' · ');
-      const tsL = h.topScorer ? '<div style="font-size:10px; color:var(--text-tertiary); margin-top:4px;">⚽ Gol kralı: ' + h.topScorer + '</div>' : '';
+      const tsL = (h.topScorer ? '<div style="font-size:10px; color:var(--text-tertiary); margin-top:4px;">⚽ Gol kralı: ' + h.topScorer + '</div>' : '') +
+        (h.coppaWinner ? '<div style="font-size:10px; color:var(--text-tertiary); margin-top:2px;">🏆 Coppa Italia: ' + h.coppaWinner + '</div>' : '');
       d.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:4px;"><span style="font-weight:500;">🏆 ' + h.champion + '</span><span style="font-size:10px; color:var(--text-tertiary);">' + h.season + ' ›</span></div><div style="font-size:11px; color:var(--text-tertiary);">' + top4 + '</div><div style="font-size:10px; color:var(--text-tertiary); margin-top:4px;">Düşen: ' + h.relegated.join(', ') + '</div>' + tsL;
       list.appendChild(d);
     });
@@ -1831,6 +1846,7 @@
     t.innerHTML = '<span style="font-size:18px; font-weight:500;">🏆 ' + h.champion + '</span><span class="sl-season-pill">' + h.season + '</span>';
     head.appendChild(t);
     if(h.topScorer){ const ts = document.createElement('div'); ts.style.cssText='font-size:11px; color:var(--text-secondary); margin-top:6px;'; ts.innerHTML = '⚽ Gol kralı: ' + h.topScorer; head.appendChild(ts); }
+    if(h.coppaWinner){ const cw = document.createElement('div'); cw.style.cssText='font-size:11px; color:var(--text-secondary); margin-top:4px;'; cw.innerHTML = '🏆 Coppa Italia şampiyonu: ' + h.coppaWinner; head.appendChild(cw); }
     v.appendChild(head);
     if(h.fullTable){
       const tc = document.createElement('div'); tc.className = 'sl-card';
@@ -1888,6 +1904,146 @@
     v.appendChild(makeStatsCard(computeTeamStatsFromMatches(matches)));
     const fix = matches.map(function(m){ return {week: m.week, isHome: m.isHome, opponentName: m.isHome ? m.away : m.home, played: true, hg: m.hg, ag: m.ag, outcome: m.outcome}; });
     v.appendChild(makeFixturesCard(tn, fix, h.season + ' sezonu maçları'));
+  }
+
+  /* ============ COPPA ITALIA ============ */
+  function pairUp(idxs){
+    const a = shuffleArr(idxs);
+    const m = [];
+    for(let i = 0; i + 1 < a.length; i += 2) m.push({h: a[i], a: a[i+1], hg: null, ag: null, pens: null});
+    return m;
+  }
+  function initCup(teams){
+    const n = teams.length;
+    const bySeed = teams.map(function(t, i){ return {i: i, s: t.strength}; }).sort(function(a, b){ return b.s - a.s; });
+    const preCount = Math.max(0, (n - 16) * 2);
+    const seeds = bySeed.slice(0, n - preCount).map(function(x){ return x.i; });
+    const low = bySeed.slice(n - preCount).map(function(x){ return x.i; });
+    return {champion: null, rounds: [
+      {key: 'pre', name: 'Ön Eleme', week: 3, matches: pairUp(low), done: false},
+      {key: 'r16', name: 'Son 16', week: 7, matches: [], done: false, seeds: seeds},
+      {key: 'qf', name: 'Çeyrek Final', week: 15, matches: [], done: false},
+      {key: 'sf', name: 'Yarı Final', week: 24, matches: [], done: false},
+      {key: 'f', name: 'Final', week: 33, matches: [], done: false}
+    ]};
+  }
+  function cupWinner(m){
+    if(m.hg === null || m.ag === null) return null;
+    if(m.hg !== m.ag) return m.hg > m.ag ? m.h : m.a;
+    return m.pens && m.pens[0] > m.pens[1] ? m.h : m.a;
+  }
+  function playCupRound(r){
+    r.matches.forEach(function(m){
+      const sc = simScore(m.h, m.a, Math.min(state.viewWeek, state.fixtures.length - 1));
+      m.hg = sc[0]; m.ag = sc[1];
+      if(m.hg === m.ag){
+        const homeWins = Math.random() < 0.5;
+        const wp = randInt(3, 5), lp = Math.max(0, wp - randInt(1, 2));
+        m.pens = homeWins ? [wp, lp] : [lp, wp];
+      }
+    });
+    r.done = true;
+  }
+  function drawNextCupRound(ri){
+    const rounds = state.cup.rounds;
+    const cur = rounds[ri], next = rounds[ri + 1];
+    if(!next || next.matches.length > 0 || !cur.done) return;
+    const winners = cur.matches.map(cupWinner).filter(function(w){ return w !== null; });
+    next.matches = pairUp((next.seeds || []).concat(winners));
+  }
+  function fullyPlayedWeekCount(){
+    let c = 0;
+    state.results.forEach(function(w){ if(w.length && w.every(function(r){ return r && r[0] !== null && r[1] !== null; })) c++; });
+    return c;
+  }
+  function cupRoundNews(r){
+    const lines = r.matches.map(function(m){
+      return state.teams[m.h].name + ' ' + m.hg + '-' + m.ag + (m.pens ? ' (pen. ' + m.pens[0] + '-' + m.pens[1] + ')' : '') + ' ' + state.teams[m.a].name;
+    });
+    const firstWinner = cupWinner(r.matches[0]);
+    state.news = (state.news || []).concat([{
+      week: 0, tag: 'Coppa',
+      headline: 'Coppa Italia: ' + r.name + ' turu tamamlandı',
+      body: 'Kupada ' + r.name + ' heyecanı geride kaldı; kazananlar bir üst tura yükseldi.\n\nSonuçlar: ' + lines.join(' · ') + '.',
+      teamName: firstWinner !== null ? state.teams[firstWinner].name : undefined
+    }]);
+  }
+  function cupChampionNews(name, finalMatch){
+    const total = getTitleCount(name, 'coppa');
+    state.news = (state.news || []).concat([{
+      week: 0, tag: 'Coppa',
+      headline: '🏆 ' + name + ' Coppa Italia şampiyonu!',
+      body: 'Sezonun kupa finalinde ' + state.teams[finalMatch.h].name + ' ile ' + state.teams[finalMatch.a].name + ' karşı karşıya geldi; maç ' + finalMatch.hg + '-' + finalMatch.ag + (finalMatch.pens ? ' sona erdi, penaltılarda ' + finalMatch.pens[0] + '-' + finalMatch.pens[1] + ' ile kupa sahibini buldu' : ' sona erdi') + '.\n\nBu zaferle ' + name + ', tarihindeki Coppa Italia sayısını ' + total + '\'e çıkardı.',
+      teamName: name
+    }]);
+  }
+  function playDueCupRounds(){
+    if(!state.cup) return;
+    const done = fullyPlayedWeekCount();
+    const rounds = state.cup.rounds;
+    for(let ri = 0; ri < rounds.length; ri++){
+      const r = rounds[ri];
+      if(r.done){ drawNextCupRound(ri); continue; }
+      if(r.matches.length === 0){
+        if(ri > 0 && rounds[ri - 1].done) drawNextCupRound(ri - 1);
+        if(r.matches.length === 0) break;
+      }
+      if(done < r.week) break;
+      playCupRound(r);
+      drawNextCupRound(ri);
+      cupRoundNews(r);
+      if(ri === rounds.length - 1){
+        const w = cupWinner(r.matches[0]);
+        if(w !== null){
+          state.cup.champion = state.teams[w].name;
+          addTitle(state.teams[w].name, 'coppa');
+          cupChampionNews(state.teams[w].name, r.matches[0]);
+        }
+      }
+    }
+  }
+  function renderCup(){
+    const card = document.getElementById('cup-card'); if(!card) return;
+    card.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">' +
+      '<p style="font-size:14px; font-weight:500; margin:0;">Coppa Italia <span class="sl-season-pill" style="margin-left:6px;">' + state.season + '</span></p>' +
+      (state.cup && state.cup.champion ? '<span style="font-size:12px; color:#F0C04A; font-weight:600;">🏆 Şampiyon: ' + state.cup.champion + '</span>' : '<span style="font-size:11px; color:var(--text-tertiary);">Turlar lig haftalarıyla birlikte oynanır</span>') + '</div>';
+    if(!state.cup){ card.innerHTML += '<div class="sl-empty-hint">Bu sezon için kupa kurası henüz çekilmedi.</div>'; return; }
+    state.cup.rounds.forEach(function(r){
+      const sec = document.createElement('div'); sec.style.marginBottom = '12px';
+      const head = document.createElement('div');
+      head.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:6px;';
+      head.innerHTML = '<span style="font-size:12px; font-weight:600;">' + r.name + '</span>' +
+        '<span style="font-size:10px; color:var(--text-tertiary);">' + (r.done ? '✓ oynandı' : (r.matches.length === 0 ? 'kura bekleniyor' : r.week + '. lig haftası sonrası')) + '</span>';
+      sec.appendChild(head);
+      if(r.matches.length === 0){
+        const e = document.createElement('div'); e.style.cssText = 'font-size:11px; color:var(--text-tertiary); padding:2px 8px;';
+        e.textContent = 'Eşleşmeler önceki tur bitince belli olacak.';
+        sec.appendChild(e);
+      }
+      r.matches.forEach(function(m){
+        const w = cupWinner(m);
+        const row = document.createElement('div');
+        row.style.cssText = 'display:grid; grid-template-columns:minmax(0,1fr) 74px minmax(0,1fr); align-items:center; gap:8px; font-size:12px; padding:5px 8px; border-radius:var(--radius-md); background:var(--bg-secondary); margin-bottom:4px;';
+        const mkSide = function(idx, right){
+          const s = document.createElement('span');
+          s.style.cssText = 'display:flex; align-items:center; gap:6px; min-width:0;' + (right ? '' : ' justify-content:flex-end;');
+          const nm = document.createElement('span');
+          nm.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;' + (w === idx ? ' font-weight:600;' : (w !== null ? ' color:var(--text-tertiary);' : ''));
+          nm.textContent = state.teams[idx].name;
+          if(right){ s.appendChild(makeBadge(state.teams[idx].name)); s.appendChild(nm); }
+          else { s.appendChild(nm); s.appendChild(makeBadge(state.teams[idx].name)); }
+          return s;
+        };
+        const sc = document.createElement('span');
+        sc.style.cssText = 'text-align:center; font-weight:600; font-variant-numeric:tabular-nums;';
+        if(m.hg !== null){
+          sc.innerHTML = m.hg + ' - ' + m.ag + (m.pens ? '<div style="font-size:9px; color:var(--text-tertiary); font-weight:400;">pen. ' + m.pens[0] + '-' + m.pens[1] + '</div>' : '');
+        } else { sc.textContent = '—'; sc.style.color = 'var(--text-tertiary)'; sc.style.fontWeight = '400'; }
+        row.appendChild(mkSide(m.h, false)); row.appendChild(sc); row.appendChild(mkSide(m.a, true));
+        sec.appendChild(row);
+      });
+      card.appendChild(sec);
+    });
   }
 
   /* ============ SEZON GEÇİŞİ ============ */
@@ -2008,6 +2164,7 @@
     return av.slice(0, count);
   }
   function advanceToNextSeason(){
+    playDueCupRounds();
     const st = computeStandings();
     const champion = st[0];
     const rel = st.slice(-3);
@@ -2017,6 +2174,7 @@
       top4: st.slice(0, 4).map(function(s){ return s.name; }), relegated: rel.map(function(s){ return s.name; }),
       fullTable: st.map(function(s){ return {name:s.name, P:s.P, W:s.W, D:s.D, L:s.L, GF:s.GF, GA:s.GA, Pts:s.Pts}; }),
       teamMatches: archiveTeamMatches(), teamCount: state.teams.length,
+      coppaWinner: state.cup ? state.cup.champion : null,
       topScorer: goldenBoot[0] && goldenBoot[0].goals > 0 ? goldenBoot[0].name + ' — ' + goldenBoot[0].team + ' (' + goldenBoot[0].goals + ' gol)' : null
     });
     if(history.length > 40) history.length = 40;
@@ -2039,12 +2197,12 @@
     saveNow();
     buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderTrophies();
     document.getElementById('leader-banner-container').innerHTML = '';
-    showChampionBanner(champion.name, rel.map(function(s){ return s.name; }), pN, history[0].season);
+    showChampionBanner(champion.name, rel.map(function(s){ return s.name; }), pN, history[0].season, history[0].coppaWinner);
   }
-  function showChampionBanner(c, rN, pN, ps){
+  function showChampionBanner(c, rN, pN, ps, cw){
     const b = document.getElementById('champion-banner');
     b.className = 'sl-banner'; b.style.display = 'flex';
-    b.innerHTML = '<div><div class="sl-banner-text">🏆 ' + ps + ' Şampiyonu: ' + c + '</div><div class="sl-banner-sub">Düşen: ' + rN.join(', ') + ' · Çıkan: ' + pN.join(', ') + '</div></div>';
+    b.innerHTML = '<div><div class="sl-banner-text">🏆 ' + ps + ' Şampiyonu: ' + c + '</div><div class="sl-banner-sub">' + (cw ? 'Coppa Italia: ' + cw + ' · ' : '') + 'Düşen: ' + rN.join(', ') + ' · Çıkan: ' + pN.join(', ') + '</div></div>';
     const btn = document.createElement('button');
     btn.className = 'sl-btn';
     btn.style.cssText = 'background:rgba(255,255,255,0.2); color:#fff; border-color:rgba(255,255,255,0.3);';
@@ -2065,7 +2223,7 @@
     invalidateStandings();
     const allDone = state.results[wk].every(function(r){ return r && r[0] !== null && r[1] !== null; });
     renderStandings(); renderWeekSummary(); checkLeaderChange();
-    if(allDone) maybeGenerateNews(wk);
+    if(allDone){ maybeGenerateNews(wk); playDueCupRounds(); }
     if(state.viewWeek < state.fixtures.length - 1){ state.viewWeek++; buildFixtures(); }
     else updateFixtureValues();
     scheduleSave();
@@ -2158,7 +2316,7 @@
         setSimControls(false);
         renderStandings(); renderWeekSummary(); checkLeaderChange();
         const allDone = state.results[wk].every(function(r){ return r && r[0] !== null && r[1] !== null; });
-        if(allDone) refreshNewsForWeek(wk);
+        if(allDone){ refreshNewsForWeek(wk); playDueCupRounds(); }
         if(state.viewWeek < state.fixtures.length - 1) state.viewWeek++;
         buildFixtures();
         scheduleSave();
@@ -2169,27 +2327,40 @@
   /* ============ KUPALAR ============ */
   function renderTrophies(){
     const c = document.getElementById('trophies-container'); if(!c) return;
-    const rows = Object.keys(titles)
-      .map(function(name){ return {name: name, count: getTitleCount(name, 'scudetto')}; })
-      .filter(function(r){ return r.count > 0; })
-      .sort(function(a, b){ return b.count - a.count || a.name.localeCompare(b.name, 'tr'); });
     c.innerHTML = '';
-    if(rows.length === 0){ c.innerHTML = '<div class="sl-empty-hint">Henüz şampiyonluk kaydı yok.</div>'; return; }
-    rows.forEach(function(r, i){
-      const isTop = i === 0;
-      const row = document.createElement('div');
-      row.className = 'sl-trophy-row' + (isTop ? ' sl-trophy-top' : '');
-      const strip = teamPrimaryColor(r.name);
-      row.style.boxShadow = 'inset 4px 0 0 ' + strip + (isTop ? ', 0 0 0 1px rgba(240,192,74,0.45)' : '');
-      if(isTop) row.style.background = 'linear-gradient(90deg, rgba(240,192,74,0.16), var(--bg-secondary) 55%)';
-      const rank = document.createElement('span'); rank.className = 'sl-trophy-rank'; rank.textContent = i + 1;
-      const badge = makeBadge(r.name, 'sl-team-badge-xl');
-      const name = document.createElement('div'); name.className = 'sl-trophy-name'; name.textContent = r.name;
-      const count = document.createElement('div'); count.className = 'sl-trophy-count';
-      count.innerHTML = '<b>' + r.count + '</b><span>kupa</span>';
-      row.appendChild(rank); row.appendChild(badge); row.appendChild(name); row.appendChild(count);
-      c.appendChild(row);
-    });
+    const buildList = function(type, title, emoji){
+      const rows = Object.keys(titles)
+        .map(function(name){ return {name: name, count: getTitleCount(name, type)}; })
+        .filter(function(r){ return r.count > 0; })
+        .sort(function(a, b){ return b.count - a.count || a.name.localeCompare(b.name, 'tr'); });
+      const sec = document.createElement('div'); sec.style.marginBottom = '16px';
+      const head = document.createElement('p');
+      head.style.cssText = 'font-size:13px; font-weight:600; margin:0 0 8px;';
+      head.textContent = emoji + ' ' + title;
+      sec.appendChild(head);
+      if(rows.length === 0){
+        const e = document.createElement('div'); e.className = 'sl-empty-hint'; e.textContent = 'Henüz şampiyonluk kaydı yok.';
+        sec.appendChild(e); return sec;
+      }
+      rows.forEach(function(r, i){
+        const isTop = i === 0;
+        const row = document.createElement('div');
+        row.className = 'sl-trophy-row' + (isTop ? ' sl-trophy-top' : '');
+        const strip = teamPrimaryColor(r.name);
+        row.style.boxShadow = 'inset 4px 0 0 ' + strip + (isTop ? ', 0 0 0 1px rgba(240,192,74,0.45)' : '');
+        if(isTop) row.style.background = 'linear-gradient(90deg, rgba(240,192,74,0.16), var(--bg-secondary) 55%)';
+        const rank = document.createElement('span'); rank.className = 'sl-trophy-rank'; rank.textContent = i + 1;
+        const badge = makeBadge(r.name, 'sl-team-badge-xl');
+        const name = document.createElement('div'); name.className = 'sl-trophy-name'; name.textContent = r.name;
+        const count = document.createElement('div'); count.className = 'sl-trophy-count';
+        count.innerHTML = '<b>' + r.count + '</b><span>kupa</span>';
+        row.appendChild(rank); row.appendChild(badge); row.appendChild(name); row.appendChild(count);
+        sec.appendChild(row);
+      });
+      return sec;
+    };
+    c.appendChild(buildList('scudetto', 'Serie A şampiyonlukları (Scudetto)', '🇮🇹'));
+    c.appendChild(buildList('coppa', 'Coppa Italia', '🏆'));
   }
 
   /* ============ SEZON SONU TAHMİNİ (Monte Carlo) ============ */
@@ -2287,6 +2458,7 @@
       invalidateStandings();
       maybeGenerateNews(wi);
     });
+    playDueCupRounds();
     state.viewWeek = state.fixtures.length - 1;
     buildFixtures(); renderStandings(); renderWeekSummary(); checkLeaderChange();
     scheduleSave();
@@ -2335,7 +2507,7 @@
     else if(tab === 'grafik') renderChart();
     else if(tab === 'istatistik'){ renderProjection(); renderScorerLeaders(); renderSeasonStats(); }
     else if(tab === 'gecmis'){ closeHistoryDetail(); renderHistoryTab(); }
-    else if(tab === 'kupalar') renderTrophies();
+    else if(tab === 'kupalar'){ renderCup(); renderTrophies(); }
   }
 
   /* ============ OLAY DİNLEYİCİLERİ ============ */
@@ -2380,6 +2552,7 @@
     attributeMatch(wk, mi);
     renderStandings(); updateFixtureValues(); renderWeekSummary(); checkLeaderChange();
     refreshNewsForWeek(wk);
+    playDueCupRounds();
     if(teamDetailIdx !== null) renderTeamDetail();
     scheduleSave();
   });
@@ -2406,6 +2579,7 @@
         if(r && r[0] !== null && r[1] !== null && !state.scorers[wi][mi]) state.scorers[wi][mi] = computeAttribution(wi, mi, r[0], r[1]);
       });
     });
+    if(!state.cup){ state.cup = initCup(state.teams); playDueCupRounds(); }
     invalidatePlayers();
   } else {
     state = initState(freshInitialTeams(), '2026-27', []);
