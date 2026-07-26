@@ -123,7 +123,7 @@
   .sl-match-block.live { box-shadow: inset 0 0 0 1px rgba(22,201,138,0.4); }
   .sl-min-badge { position: absolute; top: -7px; left: 10px; background: #16c98a; color: #04130d; font-size: 9px; font-weight: 700; padding: 1px 7px; border-radius: 8px; letter-spacing: 0.3px; }
 
-  .sl-match-block { padding: 8px 10px 6px; border-radius: var(--radius-md); position: relative; }
+  .sl-match-block { padding: 8px 10px 17px; border-radius: var(--radius-md); position: relative; }
   .sl-match-block.played { background: var(--bg-secondary); }
   .sl-match-block.derby { background: linear-gradient(180deg, rgba(186,117,23,0.10), transparent); border: 1px solid rgba(186,117,23,0.3); }
   .sl-match-block.derby.played { background: linear-gradient(180deg, rgba(186,117,23,0.16), var(--bg-secondary)); }
@@ -234,13 +234,18 @@
   .sl-team-chip.off { opacity: 0.4; }
 
   .sl-pos-badge { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 16px; border-radius: 4px; font-size: 9px; font-weight: 700; color: #fff; flex-shrink: 0; }
-  .sl-pick-btn { width: 32px; height: 26px; font-size: 11px; font-weight: 600; border-radius: 6px; border: 1px solid var(--border-secondary); background: var(--bg-primary); color: var(--text-secondary); cursor: pointer; font-family: inherit; transition: background 0.12s, border-color 0.12s, color 0.12s; }
-  .sl-pick-btn:hover:not(:disabled) { border-color: var(--text-tertiary); color: var(--text-primary); }
-  .sl-pick-btn.sel { background: var(--accent); border-color: var(--accent); color: #fff; }
-  .sl-pick-btn.hit { background: #1D9E75; border-color: #1D9E75; color: #fff; }
-  .sl-pick-btn.miss { background: rgba(224,100,100,0.22); border-color: #e06464; color: #e06464; }
-  .sl-pick-btn:disabled { cursor: default; opacity: 0.9; }
-  .sl-pred-game-row { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: center; gap: 8px; padding: 4px 2px; font-size: 12px; }
+  .sl-poll-card { background: var(--bg-secondary); border-radius: var(--radius-md); padding: 11px 13px; margin-bottom: 10px; }
+  .sl-poll-head { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; margin-bottom: 9px; flex-wrap: wrap; }
+  .sl-poll-opt { position: relative; overflow: hidden; border-radius: 7px; background: var(--bg-primary); border: 1px solid var(--border-tertiary); margin-bottom: 5px; cursor: pointer; transition: border-color 0.12s; }
+  .sl-poll-opt:hover { border-color: var(--text-tertiary); }
+  .sl-poll-fill { position: absolute; inset: 0 auto 0 0; opacity: 0.30; transition: width 0.35s ease; }
+  .sl-poll-row { position: relative; display: flex; align-items: center; gap: 8px; padding: 6px 10px; font-size: 12px; }
+  .sl-poll-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sl-poll-votes { font-size: 11px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .sl-poll-pct { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 38px; text-align: right; }
+  .sl-poll-opt.voted { border-color: var(--accent); }
+  .sl-poll-opt.voted .sl-poll-label::after { content: ' ✓ oyun'; font-size: 10px; color: var(--accent); font-weight: 600; }
+  .sl-pundit-pick { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 5px; font-size: 10px; font-weight: 700; margin-left: 6px; }
   .sl-modal-overlay { position: fixed; inset: 0; background: rgba(4,6,10,0.66); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; animation: fadeIn 0.15s ease; }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   .sl-modal { background: var(--bg-primary); border: 1px solid var(--border-secondary); border-radius: var(--radius-lg); box-shadow: var(--card-shadow); width: 100%; max-width: 580px; max-height: 86vh; overflow-y: auto; padding: 18px; animation: slideIn 0.2s ease; }
@@ -1056,7 +1061,7 @@
     const fat = state.cupFatigue || {};
     const fatAdj = fat[teamIdx] === wiSafe ? -1.5 : 0;
     const outAdj = -unavailablePenalty(teamIdx, wiSafe) * 0.6;
-    const mgrAdj = newManagerBoost(teamIdx, wiSafe) * 0.6;
+    const mgrAdj = newManagerBoost(teamIdx, wiSafe) * 0.6 + (t.manager ? (t.manager.rating - 62) * 0.06 : 0);
     // Bu sezon aynı rakibi yendiyse psikolojik üstünlük
     let h2h = 0;
     if(oppIdx !== undefined && oppIdx !== null){
@@ -1088,9 +1093,31 @@
       ae: Math.min(4, Math.max(0.22, SIM_BASE_AWAY * Math.exp(-d)))
     };
   }
+  /* Teknik direktör tarzı maçın temposunu belirler: hücumcu hoca hem kendi
+     takımının hem rakibin gol beklentisini yükseltir (açık oyun), savunmacı hoca
+     ikisini de düşürür. İki savunmacı hocanın maçı kilitli, iki hücumcununki
+     gol düellosu olur; dengeli hocalar beraberliğe yatkın maçlar çıkarır. */
+  const MGR_GOAL_FX = {
+    attack:   {own: 1.10, opp: 1.07},
+    defense:  {own: 0.93, opp: 0.89},
+    balanced: {own: 1.00, opp: 0.97},
+    youth:    {own: 1.00, opp: 1.00}
+  };
+  function mgrFx(teamIdx){
+    const t = teamIdx >= 0 ? state.teams[teamIdx] : null;
+    const s = t && t.manager ? t.manager.style : 'balanced';
+    return MGR_GOAL_FX[s] || MGR_GOAL_FX.balanced;
+  }
+  function applyManagerStyle(g, homeIdx, awayIdx){
+    const h = mgrFx(homeIdx), a = mgrFx(awayIdx);
+    return {
+      he: Math.min(4, Math.max(0.18, g.he * h.own * a.opp)),
+      ae: Math.min(4, Math.max(0.18, g.ae * a.own * h.opp))
+    };
+  }
   function matchExpGoals(homeIdx, awayIdx, weekIdx){
     const r = computeMatchRatings(homeIdx, awayIdx, weekIdx);
-    const g = ratingsToGoals(r.homeRating, r.awayRating);
+    const g = applyManagerStyle(ratingsToGoals(r.homeRating, r.awayRating), homeIdx, awayIdx);
     return {he: g.he, ae: g.ae, r: r};
   }
   // Beklenen gollerden doğrudan sonuç olasılıkları — ekranda görünen oranlar
@@ -1997,6 +2024,17 @@
         dBtn.addEventListener('click', function(e){ e.stopPropagation(); openMatchDetail(wk, mi); });
         block.appendChild(dBtn);
       } else if(!played && dBtn){ dBtn.remove(); }
+      // Oynanmamış maçlarda tek maçlık simülasyon butonu
+      let sBtn = block.querySelector('.sl-onesim-btn');
+      if(!played && !sBtn){
+        sBtn = document.createElement('button');
+        sBtn.className = 'sl-onesim-btn';
+        sBtn.style.cssText = 'position:absolute; bottom:2px; right:6px; background:transparent; border:none; color:var(--text-tertiary); font-size:10px; cursor:pointer; padding:2px 4px; font-family:inherit;';
+        sBtn.textContent = '▶ maçı simüle et';
+        sBtn.title = 'Yalnızca bu maçı oynat';
+        sBtn.addEventListener('click', function(e){ e.stopPropagation(); simulateSingleMatch(mi); });
+        block.appendChild(sBtn);
+      } else if(played && sBtn){ sBtn.remove(); }
     });
     updateWeekStatus();
   }
@@ -2283,24 +2321,73 @@
     const container = document.getElementById('pundits-container');
     container.innerHTML = '';
     // Her görüntülemede taze üret (offline, anında)
+    // Yorumcuların sezonluk isabet karnesi
+    const stats = computePredictionStats();
+    const board = PUNDITS.map(function(p, pi){
+      return {name: p.name, initials: p.initials, style: p.style, ok: stats.pundits[pi].ok, n: stats.pundits[pi].n};
+    }).sort(function(a, b){ return b.ok - a.ok; });
+    if(board[0].n > 0){
+      const lb = document.createElement('div');
+      lb.style.cssText = 'display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;';
+      board.forEach(function(e, i){
+        const chip = document.createElement('span');
+        chip.className = 'sl-chip' + (i === 0 ? ' active' : '');
+        chip.style.cursor = 'default';
+        chip.textContent = (i === 0 ? '🏅 ' : '') + e.name + ' · ' + e.ok + '/' + e.n + ' (%' + Math.round(e.ok / e.n * 100) + ')';
+        lb.appendChild(chip);
+      });
+      container.appendChild(lb);
+    }
     const pundits = generatePunditsForWeek(wk);
+    const PICK_LABEL = ['1', 'X', '2'];
     pundits.forEach(function(match){
+      const pair = state.fixtures[wk][match.mi];
+      const res = state.results[wk][match.mi];
+      const played = res && res[0] !== null && res[1] !== null;
+      const out = played ? outcomeOf(res) : null;
+      const probs = computeProbabilities(pair[0], pair[1], wk);
       const group = document.createElement('div');
       group.className = 'sl-match-pundit-group';
       const header = document.createElement('div');
-      header.style.cssText = 'display:flex; align-items:center; gap:6px; margin-bottom:8px; font-size:13px; font-weight:600;';
+      header.style.cssText = 'display:flex; align-items:center; gap:6px; margin-bottom:8px; font-size:13px; font-weight:600; flex-wrap:wrap;';
       header.appendChild(makeBadge(match.hName));
       const tt = document.createElement('span'); tt.textContent = match.hName + ' - ' + match.aName; header.appendChild(tt);
       header.appendChild(makeBadge(match.aName));
       if(match.derby){ const db = document.createElement('span'); db.style.cssText = 'background:linear-gradient(135deg,#BA7517,#E0A800); color:#fff; font-size:9px; font-weight:600; padding:1px 6px; border-radius:8px; letter-spacing:0.5px;'; db.textContent = 'DERBİ'; header.appendChild(db); }
+      const meta = document.createElement('span');
+      meta.style.cssText = 'margin-left:auto; font-size:10px; color:var(--text-tertiary); font-weight:400;';
+      meta.textContent = played ? ('Sonuç ' + res[0] + '-' + res[1]) : ('Model: %' + probs.home + ' / %' + probs.draw + ' / %' + probs.away);
+      header.appendChild(meta);
       group.appendChild(header);
       const cardsWrap = document.createElement('div'); cardsWrap.style.cssText = 'display:flex; flex-direction:column; gap:6px;';
       match.comments.forEach(function(c){
-        const pundit = PUNDITS.find(function(p){ return p.name === c.pundit; }) || {initials: c.pundit.slice(0,2).toUpperCase()};
+        const pi = PUNDITS.findIndex(function(p){ return p.name === c.pundit; });
+        const pundit = PUNDITS[pi] || {initials: c.pundit.slice(0,2).toUpperCase(), style: 'balanced'};
+        const pick = pi >= 0 ? punditPick(pi, wk, match.mi, probs) : null;
         const card = document.createElement('div'); card.className = 'sl-pundit-card';
         const av = document.createElement('div'); av.className = 'sl-pundit-avatar'; av.textContent = pundit.initials; card.appendChild(av);
         const col = document.createElement('div'); col.style.flex = '1';
-        col.innerHTML = '<p class="sl-pundit-name">' + c.pundit + '</p><p class="sl-pundit-quote">' + c.text + '</p>';
+        const nameRow = document.createElement('p'); nameRow.className = 'sl-pundit-name';
+        nameRow.style.cssText += 'display:flex; align-items:center; flex-wrap:wrap;';
+        const nm = document.createElement('span'); nm.textContent = c.pundit; nameRow.appendChild(nm);
+        const sty = document.createElement('span');
+        sty.style.cssText = 'font-size:9px; color:var(--text-tertiary); font-weight:400; margin-left:5px; letter-spacing:0.3px;';
+        sty.textContent = {analytical: 'ANALİZCİ', bold: 'İDDİALI', cautious: 'TEMKİNLİ'}[pundit.style] || '';
+        nameRow.appendChild(sty);
+        if(pick !== null){
+          const badge = document.createElement('span');
+          badge.className = 'sl-pundit-pick';
+          const hit = played && pick === out;
+          const miss = played && pick !== out;
+          badge.style.cssText += hit ? 'background:#1D9E75; color:#fff;'
+            : (miss ? 'background:rgba(224,100,100,0.2); color:#e06464;' : 'background:var(--accent-bg); color:var(--accent);');
+          badge.textContent = 'Tahmin: ' + PICK_LABEL[pick] + (hit ? ' ✓' : (miss ? ' ✗' : ''));
+          badge.title = pick === 0 ? (match.hName + ' kazanır') : (pick === 1 ? 'Beraberlik' : match.aName + ' kazanır');
+          nameRow.appendChild(badge);
+        }
+        col.appendChild(nameRow);
+        const q = document.createElement('p'); q.className = 'sl-pundit-quote'; q.textContent = c.text;
+        col.appendChild(q);
         card.appendChild(col); cardsWrap.appendChild(card);
       });
       group.appendChild(cardsWrap);
@@ -2553,14 +2640,11 @@
   }
   function computePredictionStats(){
     if(predCache) return predCache;
-    const res = {user: {ok: 0, n: 0}, pundits: PUNDITS.map(function(){ return {ok: 0, n: 0}; })};
+    const res = {pundits: PUNDITS.map(function(){ return {ok: 0, n: 0}; })};
     state.results.forEach(function(week, wi){
       week.forEach(function(r, mi){
         if(!r || r[0] === null || r[1] === null) return;
         const out = outcomeOf(r);
-        const wp = state.userPicks ? state.userPicks[wi] : null;
-        const up = wp ? wp[mi] : undefined;
-        if(up !== undefined && up !== null){ res.user.n++; if(up === out) res.user.ok++; }
         const pair = state.fixtures[wi][mi];
         const probs = computeProbabilities(pair[0], pair[1], wi);
         PUNDITS.forEach(function(_, pi){ res.pundits[pi].n++; if(punditPick(pi, wi, mi, probs) === out) res.pundits[pi].ok++; });
@@ -2568,72 +2652,112 @@
     });
     predCache = res; return res;
   }
-  function renderPredictionGame(){
+  /* ============ TARAFTAR OYLAMASI ============ */
+  // Kulüplerin taraftar büyüklüğü oy sayılarını belirler; büyük kulüpler ve derbiler
+  // daha çok katılım çeker. Taraftarlar kendi takımlarını kayırır, beraberliği az seçer.
+  const FAN_BASE = {
+    'Juventus': 100, 'Inter': 93, 'Milan': 93, 'Napoli': 86, 'Roma': 80, 'Lazio': 60,
+    'Fiorentina': 56, 'Atalanta': 48, 'Torino': 44, 'Genoa': 40, 'Bologna': 38,
+    'Sampdoria': 42, 'Palermo': 36, 'Bari': 34, 'Cagliari': 30, 'Udinese': 28,
+    'Parma': 30, 'Hellas Verona': 28, 'Lecce': 26, 'Pisa': 22, 'Cremonese': 20,
+    'Como': 24, 'Sassuolo': 22, 'Monza': 24, 'Empoli': 22, 'Venezia': 22, 'Spezia': 20
+  };
+  function fanPopularity(name){
+    if(FAN_BASE[name]) return FAN_BASE[name];
+    const t = state.teams.find(function(x){ return x.name === name; });
+    return 16 + (t ? Math.max(0, t.strength - 45) * 0.5 : 5);
+  }
+  function pollKey(wk, mi){ return wk + ':' + mi; }
+  function getUserVote(wk, mi){
+    return state.fanVotes ? state.fanVotes[pollKey(wk, mi)] : undefined;
+  }
+  function setUserVote(wk, mi, opt){
+    if(!state.fanVotes) state.fanVotes = {};
+    const k = pollKey(wk, mi);
+    if(state.fanVotes[k] === opt) delete state.fanVotes[k];
+    else state.fanVotes[k] = opt;
+    scheduleSave();
+  }
+  function computePoll(wk, mi){
+    const pair = state.fixtures[wk][mi];
+    const hN = state.teams[pair[0]].name, aN = state.teams[pair[1]].name;
+    const probs = computeProbabilities(pair[0], pair[1], wk);
+    const popH = fanPopularity(hN), popA = fanPopularity(aN);
+    const rng = mulberry32(((state.seasonSeed || 0) ^ (wk * 7919) ^ (mi * 104729) ^ 0x2f6e2b1) | 0);
+    // Oylar iki kaynaktan gelir: maçı okuyanlar (model olasılıkları) ve
+    // her hâlükârda kendi takımını seçen taraftarlar (kulüp büyüklüğü payı).
+    // Bu yüzden zayıf takım bile ciddi oy alır, beraberlik ise az seçilir.
+    const shareH = popH / (popH + popA);
+    let h = 0.62 * (probs.home / 100) + 0.38 * shareH + (rng() - 0.5) * 0.05;
+    let a = 0.62 * (probs.away / 100) + 0.38 * (1 - shareH) + (rng() - 0.5) * 0.05;
+    let d = 0.62 * (probs.draw / 100) * (0.85 + rng() * 0.25);
+    h = Math.max(0.05, h); a = Math.max(0.05, a); d = Math.max(0.04, d);
+    const tot = h + d + a;
+    h /= tot; d /= tot; a /= tot;
+    const derby = isDerby(hN, aN);
+    const total = Math.round((popH + popA) * (derby ? 470 : 250) * (0.75 + rng() * 0.55));
+    const votes = [Math.round(total * h), Math.round(total * d), Math.round(total * a)];
+    const uv = getUserVote(wk, mi);
+    if(uv !== undefined) votes[uv]++;
+    return {votes: votes, total: votes[0] + votes[1] + votes[2]};
+  }
+  function trThousands(n){ return n.toLocaleString('tr-TR'); }
+  function renderFanPoll(){
     const card = document.getElementById('prediction-card'); if(!card) return;
-    if(!state.userPicks) state.userPicks = {};
     const wk = state.viewWeek;
-    card.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">' +
-      '<p style="font-size:14px; font-weight:500; margin:0;">🎯 Tahmin Oyunu <span style="font-size:10px; color:var(--text-tertiary); font-weight:400; margin-left:4px;">— ' + (wk + 1) + '. hafta, maç oynanmadan 1 / X / 2 seç</span></p></div>';
-    // Skor tablosu
-    const stats = computePredictionStats();
-    const board = [{name: 'Sen', ok: stats.user.ok, n: stats.user.n, me: true}];
-    PUNDITS.forEach(function(p, pi){ board.push({name: p.name, ok: stats.pundits[pi].ok, n: stats.pundits[pi].n}); });
-    board.sort(function(a, b){ return b.ok - a.ok || a.n - b.n; });
-    const lb = document.createElement('div');
-    lb.style.cssText = 'display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;';
-    board.forEach(function(e, i){
-      const chip = document.createElement('span');
-      chip.className = 'sl-chip' + (e.me ? ' active' : '');
-      chip.style.cursor = 'default';
-      const pct = e.n > 0 ? Math.round(e.ok / e.n * 100) : 0;
-      chip.textContent = (i + 1) + '. ' + e.name + ': ' + e.ok + ' isabet' + (e.n > 0 ? ' (%' + pct + ')' : '');
-      lb.appendChild(chip);
-    });
-    card.appendChild(lb);
-    // Haftanın maçları
-    const list = document.createElement('div');
-    const wkPicks = state.userPicks[wk] || {};
+    card.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">' +
+      '<p style="font-size:14px; font-weight:500; margin:0;">🗳️ Taraftar oylaması <span style="font-size:10px; color:var(--text-tertiary); font-weight:400; margin-left:4px;">— ' + (wk + 1) + '. hafta · sen de oy kullanabilirsin</span></p></div>';
     state.fixtures[wk].forEach(function(pair, mi){
       const hN = state.teams[pair[0]].name, aN = state.teams[pair[1]].name;
       const res = state.results[wk][mi];
       const played = res && res[0] !== null && res[1] !== null;
       const out = played ? outcomeOf(res) : null;
-      const pick = wkPicks[mi];
-      const row = document.createElement('div'); row.className = 'sl-pred-game-row';
-      const l = document.createElement('span'); l.style.cssText = 'display:flex; align-items:center; gap:6px; justify-content:flex-end; min-width:0;';
-      const lt = document.createElement('span'); lt.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'; lt.textContent = hN;
-      l.appendChild(lt); l.appendChild(makeBadge(hN));
-      const mid = document.createElement('span'); mid.style.cssText = 'display:flex; gap:4px; align-items:center;';
-      [['1', 0], ['X', 1], ['2', 2]].forEach(function(opt){
-        const b = document.createElement('button');
-        b.className = 'sl-pick-btn';
-        b.textContent = opt[0];
-        if(pick === opt[1]){
-          if(played) b.classList.add(pick === out ? 'hit' : 'miss');
-          else b.classList.add('sel');
-        }
-        if(played){
-          b.disabled = true;
-          if(pick === undefined && out === opt[1]) b.style.borderColor = 'var(--text-tertiary)';
-        } else {
-          b.addEventListener('click', function(){
-            if(!state.userPicks[wk]) state.userPicks[wk] = {};
-            if(state.userPicks[wk][mi] === opt[1]) delete state.userPicks[wk][mi];
-            else state.userPicks[wk][mi] = opt[1];
-            predCache = null; scheduleSave(); renderPredictionGame();
-          });
-        }
-        mid.appendChild(b);
+      const poll = computePoll(wk, mi);
+      const uv = getUserVote(wk, mi);
+      const box = document.createElement('div'); box.className = 'sl-poll-card';
+      const head = document.createElement('div'); head.className = 'sl-poll-head';
+      head.appendChild(makeBadge(hN));
+      const ht = document.createElement('span'); ht.textContent = hN + ' - ' + aN; head.appendChild(ht);
+      head.appendChild(makeBadge(aN));
+      if(isDerby(hN, aN)){
+        const db = document.createElement('span');
+        db.style.cssText = 'background:linear-gradient(135deg,#BA7517,#E0A800); color:#fff; font-size:9px; font-weight:700; padding:1px 6px; border-radius:8px; letter-spacing:0.5px;';
+        db.textContent = 'DERBİ'; head.appendChild(db);
+      }
+      const tv = document.createElement('span');
+      tv.style.cssText = 'margin-left:auto; font-size:10px; color:var(--text-tertiary);';
+      tv.textContent = trThousands(poll.total) + ' oy';
+      head.appendChild(tv);
+      if(played){
+        const sc = document.createElement('span');
+        sc.style.cssText = 'font-size:11px; color:var(--text-secondary); font-variant-numeric:tabular-nums;';
+        sc.textContent = res[0] + '-' + res[1];
+        head.appendChild(sc);
+      }
+      box.appendChild(head);
+      const colors = [teamPrimaryColor(hN), '#8a92a1', teamPrimaryColor(aN)];
+      const labels = [hN + ' kazanır', 'Beraberlik', aN + ' kazanır'];
+      [0, 1, 2].forEach(function(opt){
+        const pct = poll.total > 0 ? Math.round(poll.votes[opt] / poll.total * 100) : 0;
+        const row = document.createElement('div');
+        row.className = 'sl-poll-opt' + (uv === opt ? ' voted' : '');
+        if(played && out === opt) row.style.boxShadow = 'inset 0 0 0 1px #1D9E75';
+        const fill = document.createElement('div');
+        fill.className = 'sl-poll-fill';
+        fill.style.cssText += 'width:' + pct + '%; background:' + colors[opt] + ';';
+        row.appendChild(fill);
+        const inner = document.createElement('div'); inner.className = 'sl-poll-row';
+        const lbl = document.createElement('span'); lbl.className = 'sl-poll-label'; lbl.textContent = labels[opt];
+        const vts = document.createElement('span'); vts.className = 'sl-poll-votes'; vts.textContent = trThousands(poll.votes[opt]);
+        const pc = document.createElement('span'); pc.className = 'sl-poll-pct'; pc.textContent = '%' + pct;
+        inner.appendChild(lbl); inner.appendChild(vts); inner.appendChild(pc);
+        row.appendChild(inner);
+        if(played){ row.style.cursor = 'default'; }
+        else row.addEventListener('click', function(){ setUserVote(wk, mi, opt); renderFanPoll(); });
+        box.appendChild(row);
       });
-      const r2 = document.createElement('span'); r2.style.cssText = 'display:flex; align-items:center; gap:6px; min-width:0;';
-      r2.appendChild(makeBadge(aN));
-      const rt = document.createElement('span'); rt.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
-      rt.textContent = aN + (played ? ' · ' + res[0] + '-' + res[1] : '');
-      r2.appendChild(rt);
-      row.appendChild(l); row.appendChild(mid); row.appendChild(r2);
-      list.appendChild(row);
+      card.appendChild(box);
     });
-    card.appendChild(list);
   }
 
   /* ============ HABERLER ============ */
@@ -3030,7 +3154,8 @@
   }
   function entExpGoals(hId, aId, guests){
     const wi = Math.min(state.viewWeek, state.fixtures.length - 1);
-    return ratingsToGoals(entRating(hId, guests, wi) + SIM_HOME_EDGE, entRating(aId, guests, wi));
+    const g = ratingsToGoals(entRating(hId, guests, wi) + SIM_HOME_EDGE, entRating(aId, guests, wi));
+    return applyManagerStyle(g, hId, aId);
   }
   function entSimScore(hId, aId, guests){
     const g = entExpGoals(hId, aId, guests);
@@ -4148,8 +4273,11 @@
     newTeams.forEach(function(t){
       if(!t.players || t.players.length === 0) return;
       const keep = [];
+      const youthCoach = t.manager && t.manager.style === 'youth';
       t.players.forEach(function(p){
         developPlayer(p);
+        // Genç yetiştiren hoca altyapıdan gelenleri hızlı geliştirir
+        if(youthCoach && p.age <= 23) p.rating = clamp(40, 94, p.rating + 1);
         delete p.outUntil; delete p.outReason; // sakatlık/cezalar sezonla birlikte kapanır
         if(shouldRetire(p)) events.retirements.push({name: p.name, team: t.name, age: p.age, rating: p.rating, seasons: p.seasons});
         else keep.push(p);
@@ -4465,6 +4593,17 @@
   }
 
   /* ============ AKSİYONLAR ============ */
+  // Bir hafta tamamlandığında çalışan ortak işler (haber, kupa, sakatlık, TD)
+  function afterWeekPlayed(wk, advance){
+    invalidateStandings();
+    const allDone = state.results[wk].every(function(r){ return r && r[0] !== null && r[1] !== null; });
+    renderStandings(); renderWeekSummary(); checkLeaderChange();
+    if(allDone){ maybeGenerateNews(wk); playDueCupRounds(); euroPlayDue(); checkMilestones(wk); rollAvailability(wk); checkManagerChanges(wk); }
+    if(allDone && !maybeGoToCup()) maybeGoToEuro();
+    if(advance && allDone && state.viewWeek < state.fixtures.length - 1){ state.viewWeek++; buildFixtures(); }
+    else { buildFixtures(); }
+    scheduleSave();
+  }
   function simulateWeek(){
     const wk = state.viewWeek;
     state.fixtures[wk].forEach(function(pair, mi){
@@ -4473,14 +4612,20 @@
         attributeMatch(wk, mi);
       }
     });
-    invalidateStandings();
-    const allDone = state.results[wk].every(function(r){ return r && r[0] !== null && r[1] !== null; });
-    renderStandings(); renderWeekSummary(); checkLeaderChange();
-    if(allDone){ maybeGenerateNews(wk); playDueCupRounds(); euroPlayDue(); checkMilestones(wk); rollAvailability(wk); checkManagerChanges(wk); }
-    if(allDone && !maybeGoToCup()) maybeGoToEuro();
-    if(state.viewWeek < state.fixtures.length - 1){ state.viewWeek++; buildFixtures(); }
-    else updateFixtureValues();
-    scheduleSave();
+    afterWeekPlayed(wk, true);
+  }
+  // Tek bir maçı simüle et — diğerlerine elle skor girmeye devam edebilirsin
+  function simulateSingleMatch(mi){
+    if(liveSimRunning) return;
+    const wk = state.viewWeek;
+    const cur = state.results[wk][mi];
+    if(cur && cur[0] !== null && cur[1] !== null) return;
+    if(state.liveSim){ liveSimulateWeek(mi); return; }
+    const pair = state.fixtures[wk][mi];
+    state.results[wk][mi] = simScore(pair[0], pair[1], wk);
+    attributeMatch(wk, mi);
+    refreshNewsForWeek(wk);
+    afterWeekPlayed(wk, false);
   }
   function maybeGenerateNews(wk){
     if((state.newsGeneratedWeeks || []).indexOf(wk) !== -1) return;
@@ -4528,18 +4673,19 @@
     const inp = b.querySelectorAll('input')[side];
     if(inp){ inp.classList.add('sl-score-pulse'); setTimeout(function(){ inp.classList.remove('sl-score-pulse'); }, 700); }
   }
-  function liveSimulateWeek(){
+  function liveSimulateWeek(onlyMi){
     if(liveSimRunning) return;
     const wk = state.viewWeek;
     const toPlay = [];
     state.fixtures[wk].forEach(function(pair, mi){
+      if(onlyMi !== undefined && mi !== onlyMi) return;
       const r = state.results[wk][mi];
       if(!r || r[0] === null || r[1] === null){
         const fin = simScore(pair[0], pair[1], wk);
         toPlay.push({mi: mi, final: fin, live: [0,0], att: computeAttribution(wk, mi, fin[0], fin[1])});
       }
     });
-    if(toPlay.length === 0){ simulateWeek(); return; }
+    if(toPlay.length === 0){ if(onlyMi === undefined) simulateWeek(); return; }
     liveSimRunning = true;
     setSimControls(true);
     toPlay.forEach(function(m){
@@ -4571,16 +4717,11 @@
         clearInterval(timer);
         ensureScorersShape();
         toPlay.forEach(function(m){ state.results[wk][m.mi] = m.final; state.scorers[wk][m.mi] = m.att; });
-        invalidateStandings(); playerStatsCache = null;
+        playerStatsCache = null;
         liveSimRunning = false;
         setSimControls(false);
-        renderStandings(); renderWeekSummary(); checkLeaderChange();
-        const allDone = state.results[wk].every(function(r){ return r && r[0] !== null && r[1] !== null; });
-        if(allDone){ refreshNewsForWeek(wk); playDueCupRounds(); euroPlayDue(); checkMilestones(wk); rollAvailability(wk); checkManagerChanges(wk); }
-        if(state.viewWeek < state.fixtures.length - 1) state.viewWeek++;
-        buildFixtures();
-        scheduleSave();
-        if(allDone && !maybeGoToCup()) maybeGoToEuro();
+        refreshNewsForWeek(wk);
+        afterWeekPlayed(wk, onlyMi === undefined);
       }
     }, stepMs);
   }
@@ -4980,7 +5121,7 @@
     for(let i=0;i<tabs.length;i++){ tabs[i].classList.toggle('active', tabs[i].dataset.tab === tab); }
     const contents = document.querySelectorAll('.sl-tab-content');
     for(let i=0;i<contents.length;i++){ contents[i].style.display = contents[i].id === 'tab-' + tab ? 'block' : 'none'; }
-    if(tab === 'tahminler'){ renderPredictionGame(); renderPundits(); }
+    if(tab === 'tahminler'){ renderFanPoll(); renderPundits(); }
     else if(tab === 'coppa'){ renderCoppaActive(); renderCup(); }
     else if(tab === 'avrupa') renderEuro();
     else if(tab === 'manset') renderNewsFeed();
