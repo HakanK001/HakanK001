@@ -103,6 +103,7 @@
   .sl-match-block.derby { background: linear-gradient(180deg, rgba(186,117,23,0.10), transparent); border: 1px solid rgba(186,117,23,0.3); }
   .sl-match-block.derby.played { background: linear-gradient(180deg, rgba(186,117,23,0.16), var(--bg-secondary)); }
   .sl-derby-badge { position: absolute; top: -7px; right: 10px; background: linear-gradient(135deg, #BA7517, #E0A800); color: #fff; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 8px; letter-spacing: 0.5px; }
+  .sl-big-badge { position: absolute; top: -7px; right: 10px; background: linear-gradient(135deg, var(--accent-dim), var(--accent)); color: #fff; font-size: 9px; font-weight: 700; padding: 2px 6px; border-radius: 8px; letter-spacing: 0.5px; }
   .sl-match-row { display: grid; grid-template-columns: minmax(0,1fr) 40px 12px 40px minmax(0,1fr); align-items: center; gap: 8px; font-size: 12px; }
   .sl-pred-row { display: grid; grid-template-columns: minmax(0,1fr) 40px 12px 40px minmax(0,1fr); align-items: center; gap: 8px; font-size: 10px; color: var(--text-tertiary); text-align: center; margin-bottom: 2px; }
   .sl-pred-score { font-weight: 500; color: var(--text-secondary); }
@@ -390,6 +391,7 @@
       <div id="trophies-container"></div>
     </div>
     <div class="sl-card" style="margin-top:12px;" id="alltime-card"></div>
+    <div class="sl-card" style="margin-top:12px;" id="legends-card"></div>
   </div>
 </div>
 
@@ -438,7 +440,14 @@
     'Venezia': ['#F5821F','#000000'], 'Monza': ['#B0182F','#FFFFFF'],
     'Empoli': ['#1B75BC','#FFFFFF'], 'Reggiana': ['#8A0303','#FFFFFF'],
     'Modena': ['#F5C518','#1B3A6B'], 'Salernitana': ['#8A0303','#FFFFFF'],
-    'Frosinone': ['#F5C518','#1B75BC']
+    'Frosinone': ['#F5C518','#1B75BC'],
+    'Brescia': ['#1B75BC','#FFFFFF'], 'Perugia': ['#C8102E','#FFFFFF'],
+    'Cesena': ['#000000','#FFFFFF'], 'Catanzaro': ['#F5C518','#C8102E'],
+    'Cosenza': ['#C8102E','#1B3A6B'], 'Padova': ['#C8102E','#FFFFFF'],
+    'Ternana': ['#C8102E','#00A650'], 'Avellino': ['#00A650','#FFFFFF'],
+    'Ascoli': ['#000000','#FFFFFF'], 'Pescara': ['#1B75BC','#FFFFFF'],
+    'Foggia': ['#C8102E','#000000'], 'Catania': ['#C8102E','#1B75BC'],
+    'SPAL': ['#1B75BC','#FFFFFF']
   };
   const DERBIES = [
     ['Inter','Juventus'],['Inter','Milan'],['Milan','Juventus'],
@@ -478,7 +487,10 @@
     {name:'Parma', strength:50}, {name:'Lecce', strength:49},
     {name:'Pisa', strength:47}, {name:'Cremonese', strength:46}
   ];
-  const PROMOTION_POOL = ['Palermo','Bari','Sampdoria','Spezia','Venezia','Monza','Empoli','Reggiana','Modena','Salernitana','Frosinone'];
+  // Havuz, lig büyüklüğü + 3 küme düşen + pay olacak kadar geniş tutulmalı (>= 24);
+  // aksi hâlde yükselen takımlar ligde tutundukça havuz tükenir ve lig küçülür.
+  const PROMOTION_POOL = ['Palermo','Bari','Sampdoria','Spezia','Venezia','Monza','Empoli','Reggiana','Modena','Salernitana','Frosinone','Brescia','Perugia','Cesena','Catanzaro','Cosenza','Padova','Ternana','Avellino','Ascoli','Pescara','Foggia','Catania','SPAL'];
+  const LEAGUE_SIZE = 20;
 
   /* ============ OYUNCU SİSTEMİ ============ */
   // İsimler kurgusal kombinasyonlardır; gerçek futbolculardan bağımsızdır.
@@ -646,6 +658,27 @@
     return stored;
   }
   function saveTitles(){ try { localStorage.setItem(TITLES_KEY, JSON.stringify(titles)); } catch(e){} }
+  // ---- kariyer arşivi: tüm sezonların gol/asist toplamları (emekliler dahil) ----
+  const LEGENDS_KEY = 'serie_a_legends_standalone_v1';
+  let legends = {};
+  function loadLegends(){ try { const r = localStorage.getItem(LEGENDS_KEY); return r ? JSON.parse(r) : {}; } catch(e){ return {}; } }
+  function saveLegends(){ try { localStorage.setItem(LEGENDS_KEY, JSON.stringify(legends)); } catch(e){} }
+  function recordSeasonIntoLegends(){
+    const stats = computePlayerStats();
+    const idx = playerIndex();
+    Object.keys(stats).forEach(function(pid){
+      const info = idx[pid]; if(!info) return;
+      const s = stats[pid];
+      if((s.goals || 0) === 0 && (s.assists || 0) === 0) return;
+      const key = info.p.name;
+      if(!legends[key]) legends[key] = {g: 0, a: 0, seasons: 0, team: ''};
+      legends[key].g += s.goals || 0;
+      legends[key].a += s.assists || 0;
+      legends[key].seasons++;
+      legends[key].team = state.teams[info.teamIdx].name;
+    });
+    saveLegends();
+  }
   function getTitleCount(name, type){ const t = titles[name]; return (t && t[type]) || 0; }
   function addTitle(name, type){ if(!titles[name]) titles[name] = {}; titles[name][type] = (titles[name][type] || 0) + 1; saveTitles(); }
   function showSaveIndicator(){
@@ -1464,7 +1497,7 @@
     const mt = document.querySelector('meta[name="theme-color"]'); if(mt) mt.setAttribute('content', t === 'light' ? '#eef1f6' : '#080a0e');
   }
   function exportSave(){
-    const data = {app: 'seriea-sim', version: 2, exportedAt: new Date().toISOString(), state: state, history: history, titles: titles};
+    const data = {app: 'seriea-sim', version: 2, exportedAt: new Date().toISOString(), state: state, history: history, titles: titles, legends: legends};
     const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -1482,6 +1515,8 @@
       state = data.state;
       history = Array.isArray(data.history) ? data.history : [];
       titles = data.titles && typeof data.titles === 'object' ? data.titles : baselineTitles();
+      legends = data.legends && typeof data.legends === 'object' ? data.legends : {};
+      saveLegends();
       if(!state.seasonSeed) state.seasonSeed = (Math.random() * 1e9) | 0;
       syncPidCounter(); ensureSquads(state.teams); ensureScorersShape();
       if(!state.cup) state.cup = initCup(state.teams);
@@ -1502,6 +1537,14 @@
     const list = document.getElementById('fixtures-list');
     const wk = state.viewWeek;
     list.innerHTML = '';
+    // Haftanın maçı: derbi dışındaki en yüksek profilli eşleşme
+    let bigMi = -1, bigSum = -1;
+    state.fixtures[wk].forEach(function(match, mi){
+      if(isDerby(state.teams[match[0]].name, state.teams[match[1]].name)) return;
+      const s = state.teams[match[0]].strength + (state.teams[match[0]].momentum || 0) +
+                state.teams[match[1]].strength + (state.teams[match[1]].momentum || 0);
+      if(s > bigSum){ bigSum = s; bigMi = mi; }
+    });
     state.fixtures[wk].forEach(function(match, mi){
       const homeIdx = match[0], awayIdx = match[1];
       const homeName = state.teams[homeIdx].name;
@@ -1510,6 +1553,7 @@
       const block = document.createElement('div');
       block.className = 'sl-match-block' + (derb ? ' derby' : '');
       if(derb){ const d = document.createElement('span'); d.className = 'sl-derby-badge'; d.textContent = 'DERBİ'; block.appendChild(d); }
+      else if(mi === bigMi){ const b = document.createElement('span'); b.className = 'sl-big-badge'; b.textContent = 'HAFTANIN MAÇI'; block.appendChild(b); }
       const pred = predictScore(homeIdx, awayIdx, wk);
       const predRow = document.createElement('div');
       predRow.className = 'sl-pred-row';
@@ -2353,15 +2397,18 @@
     if(m.hg !== m.ag) return m.hg > m.ag ? m.h : m.a;
     return m.pens && m.pens[0] > m.pens[1] ? m.h : m.a;
   }
+  function genPens(m){
+    const homeWins = Math.random() < 0.5;
+    const wp = randInt(3, 5), lp = Math.max(0, wp - randInt(1, 2));
+    m.pens = homeWins ? [wp, lp] : [lp, wp];
+  }
   function playCupRound(r){
     r.matches.forEach(function(m){
-      const sc = simScore(m.h, m.a, Math.min(state.viewWeek, state.fixtures.length - 1));
-      m.hg = sc[0]; m.ag = sc[1];
-      if(m.hg === m.ag){
-        const homeWins = Math.random() < 0.5;
-        const wp = randInt(3, 5), lp = Math.max(0, wp - randInt(1, 2));
-        m.pens = homeWins ? [wp, lp] : [lp, wp];
+      if(m.hg === null || m.ag === null){
+        const sc = simScore(m.h, m.a, Math.min(state.viewWeek, state.fixtures.length - 1));
+        m.hg = sc[0]; m.ag = sc[1]; m.pens = null;
       }
+      if(m.hg === m.ag && !m.pens) genPens(m);
     });
     r.done = true;
   }
@@ -2441,6 +2488,20 @@
     scheduleSave();
     renderCoppaActive(); renderCup();
   }
+  // Elle girilen skorlarla tur tamamlandıysa sonuçlandır
+  function finalizeCupRoundIfComplete(ri){
+    const rounds = state.cup.rounds;
+    const r = rounds[ri];
+    if(!r || r.done) return;
+    if(!r.matches.every(function(m){ return m.hg !== null && m.ag !== null; })) return;
+    r.matches.forEach(function(m){ if(m.hg === m.ag && !m.pens) genPens(m); });
+    r.done = true;
+    drawNextCupRound(ri);
+    cupRoundNews(r);
+    maybeCrownCupChampion(ri, r);
+    scheduleSave();
+    renderCoppaActive(); renderCup();
+  }
   function activeCupRoundInfo(){
     if(!state.cup) return null;
     const rounds = state.cup.rounds;
@@ -2495,7 +2556,9 @@
     info.appendChild(btn);
     const hint = document.createElement('span');
     hint.style.cssText = 'font-size:10px; color:var(--text-tertiary);';
-    hint.textContent = 'Sen oynatmazsan tur, lig bir hafta daha ilerleyince otomatik oynanır. Beraberlikte penaltılar konuşur.';
+    hint.textContent = due
+      ? 'Skorları elle girebilirsin; buton kalan maçları simüle eder. Beraberlikte penaltılar konuşur.'
+      : 'Sen oynatmazsan tur, lig bir hafta daha ilerleyince otomatik oynanır.';
     info.appendChild(hint);
     card.appendChild(info);
     const list = document.createElement('div');
@@ -2504,7 +2567,7 @@
       const block = document.createElement('div');
       block.className = 'sl-match-block';
       const row = document.createElement('div'); row.className = 'sl-match-row';
-      row.style.gridTemplateColumns = 'minmax(0,1fr) 92px minmax(0,1fr)';
+      row.style.gridTemplateColumns = 'minmax(0,1fr) 104px minmax(0,1fr)';
       const mkSide = function(idx, isHome){
         const s = document.createElement('div'); s.className = isHome ? 'sl-home-side' : 'sl-away-side';
         const f = document.createElement('div'); f.className = 'sl-mini-form';
@@ -2517,8 +2580,30 @@
         return s;
       };
       const sc = document.createElement('div');
-      sc.style.cssText = 'text-align:center; font-weight:600; font-size:14px; font-variant-numeric:tabular-nums;';
-      sc.textContent = '—'; sc.style.color = 'var(--text-tertiary)';
+      sc.style.cssText = 'display:flex; align-items:center; justify-content:center; gap:5px;';
+      if(due){
+        const mkInput = function(side){
+          const inp = document.createElement('input');
+          inp.type = 'number'; inp.min = 0; inp.max = 15; inp.className = 'sl-score-input';
+          const val = side === 0 ? m.hg : m.ag;
+          inp.value = val !== null ? val : '';
+          inp.addEventListener('input', function(){
+            const v = inp.value === '' ? null : Math.max(0, Math.min(15, parseInt(inp.value) || 0));
+            if(side === 0) m.hg = v; else m.ag = v;
+            m.pens = null;
+            scheduleSave();
+            finalizeCupRoundIfComplete(act.ri);
+          });
+          return inp;
+        };
+        const dash = document.createElement('span');
+        dash.style.cssText = 'color:var(--text-tertiary); font-size:11px;'; dash.textContent = '−';
+        sc.appendChild(mkInput(0)); sc.appendChild(dash); sc.appendChild(mkInput(1));
+      } else {
+        const d = document.createElement('span');
+        d.style.cssText = 'color:var(--text-tertiary); font-weight:400;'; d.textContent = '—';
+        sc.appendChild(d);
+      }
       row.appendChild(mkSide(m.h, true)); row.appendChild(sc); row.appendChild(mkSide(m.a, false));
       block.appendChild(row);
       const probs = computeProbabilities(m.h, m.a);
@@ -2617,32 +2702,27 @@
       });
       t.players = keep;
     });
-    // 1b) Sezon performansı kadroya yansır: iyi sezon oyuncuları geliştirir,
-    //     beklentinin altındaki sezon kadroyu aşındırır
+    // 1b) Sıralama-hedef yakınsaması: bitirdiğin sıra, kadronun ulaşması gereken
+    // seviyeyi belirler ve kadro her sezon o hedefe doğru çekilir. Üst üste Avrupa
+    // potasında biten bir takım (örn. yükselen Palermo) birkaç sezonda 72-75 bandına
+    // tırmanır; sıralamanın çok altında kalan dev ise yavaşça aşınır.
+    const leagueSize = Object.keys(rankMap).length || 20;
+    const rankTargetStrength = function(rank){
+      const tt = 1 - (rank - 1) / (leagueSize - 1);
+      return Math.round(50 + Math.pow(tt, 1.35) * 35); // 1. sıra ≈ 85 ... son sıra ≈ 50
+    };
     newTeams.forEach(function(t){
       if(!t.players || t.players.length === 0) return;
       const rank = rankMap[t.name]; if(!rank) return;
       const exp = expMap[t.name] || rank;
       const perf = exp - rank; // pozitif = beklentinin üstünde bitirdi
-      let boost = 0;
-      if(rank === 1) boost += 3;        // şampiyonluk: gelir, prestij, özgüven patlaması
-      else if(rank === 2) boost += 2;
-      else if(rank <= 4) boost += 1;    // Avrupa gelirleri
-      if(perf >= 5) boost++;            // sürpriz sezon
-      if(perf <= -5) boost--;           // hayal kırıklığı sezonu
-      if(boost > 0){
-        for(let b = 0; b < boost * 2; b++){
-          const cands = t.players.filter(function(p){ return p.age <= 29; });
-          if(cands.length === 0) break;
-          const p = cands[randInt(0, cands.length - 1)];
-          p.rating = clamp(40, 94, p.rating + 1);
-        }
-      } else if(boost < 0){
-        for(let b = 0; b < 2; b++){
-          const p = t.players[randInt(0, t.players.length - 1)];
-          p.rating = clamp(40, 94, p.rating - 1);
-        }
-      }
+      const target = rankTargetStrength(rank);
+      const cur = squadStrength(t.players);
+      let shift = Math.round((target - cur) * 0.4);
+      shift = clamp(-2, 4, shift); // yükseliş hızlı, çöküş yavaş yaşanır
+      if(perf >= 5) shift = Math.min(shift + 1, 5);
+      if(perf <= -5) shift = Math.max(shift - 1, -3);
+      if(shift !== 0) t.players.forEach(function(p){ p.rating = clamp(40, 94, p.rating + shift); });
     });
     // 2) Küme düşen takımların yıldızları, ligi üst sıralarda bitirenlere gider
     relegatedTeams.forEach(function(rt){
@@ -2717,12 +2797,12 @@
   }
   function archiveTeamMatches(){ const a = {}; state.teams.forEach(function(t, i){ a[t.name] = getTeamMatches(i); }); return a; }
   function getNextPromotedTeams(count){
-    const used = {}; (state.promotedTeams || []).forEach(function(n){ used[n] = true; });
     const cur = {}; state.teams.forEach(function(t){ cur[t.name] = true; });
-    let av = PROMOTION_POOL.filter(function(n){ return !used[n] && !cur[n]; });
-    if(av.length < count){ av = PROMOTION_POOL.filter(function(n){ return !cur[n]; }); state.promotedTeams = []; }
-    av = shuffleArr(av);
-    return av.slice(0, count);
+    // Yakın zamanda yükselmiş isimler tercih edilmez ama havuz daralırsa serbest kalır
+    const recent = {}; (state.promotedTeams || []).slice(-6).forEach(function(n){ recent[n] = true; });
+    let av = PROMOTION_POOL.filter(function(n){ return !cur[n] && !recent[n]; });
+    if(av.length < count) av = PROMOTION_POOL.filter(function(n){ return !cur[n]; });
+    return shuffleArr(av).slice(0, count);
   }
   function advanceToNextSeason(){
     playDueCupRounds();
@@ -2730,6 +2810,7 @@
     const champion = st[0];
     const rel = st.slice(-3);
     const goldenBoot = playerLeaders('goals', 3);
+    recordSeasonIntoLegends();
     history.unshift({
       season: state.season, champion: champion.name,
       top4: st.slice(0, 4).map(function(s){ return s.name; }), relegated: rel.map(function(s){ return s.name; }),
@@ -2745,7 +2826,8 @@
     const relNames = {}; rel.forEach(function(s){ relNames[s.name] = true; });
     const remaining = state.teams.filter(function(t){ return !relNames[t.name]; });
     const relegatedObjs = state.teams.filter(function(t){ return relNames[t.name]; });
-    const pN = getNextPromotedTeams(3);
+    // Lig her zaman LEAGUE_SIZE takıma tamamlanır (küçülmüş eski kayıtlar da onarılır)
+    const pN = getNextPromotedTeams(Math.max(3, LEAGUE_SIZE - remaining.length));
     const promoted = pN.map(function(name){ return {name:name, strength: 45 + Math.floor(Math.random()*12)}; });
     const newTeams = remaining.concat(promoted);
     const nsLabel = nextSeasonLabel(state.season);
@@ -2774,7 +2856,7 @@
       }
       t.momentum = clamp(-6, 10, m);
     });
-    const npH = (state.promotedTeams || []).concat(pN);
+    const npH = (state.promotedTeams || []).concat(pN).slice(-12);
     const keepFav = state.favTeam, keepTactic = state.favTactic;
     state = initState(newTeams, nsLabel, npH);
     state.seasonsCompleted = history.length;
@@ -3016,6 +3098,38 @@
     tbl.appendChild(tb); card.appendChild(tbl);
   }
 
+  /* ============ EFSANELER (kariyer gol kralları) ============ */
+  function renderLegends(){
+    const card = document.getElementById('legends-card'); if(!card) return;
+    card.innerHTML = '<p style="font-size:14px; font-weight:500; margin:0 0 12px;">👑 Efsaneler <span style="font-size:10px; color:var(--text-tertiary); font-weight:400; margin-left:4px;">— tüm zamanların kariyer golcüleri (emekliler dahil)</span></p>';
+    const rows = Object.keys(legends).map(function(name){
+      const l = legends[name];
+      return {name: name, g: l.g, a: l.a, seasons: l.seasons, team: l.team};
+    }).filter(function(r){ return r.g > 0; })
+      .sort(function(x, y){ return y.g - x.g || y.a - x.a || x.name.localeCompare(y.name, 'tr'); })
+      .slice(0, 12);
+    if(rows.length === 0){
+      card.innerHTML += '<div class="sl-empty-hint">İlk sezon tamamlandığında kariyer golcüleri burada birikmeye başlayacak.</div>';
+      return;
+    }
+    const list = document.createElement('div');
+    rows.forEach(function(r, i){
+      const row = document.createElement('div'); row.className = 'sl-scorer-row';
+      row.style.gridTemplateColumns = '22px minmax(0,1fr) 44px 44px 44px';
+      const rk = document.createElement('span'); rk.style.cssText = 'color:var(--text-tertiary); font-size:11px; font-variant-numeric:tabular-nums;'; rk.textContent = (i + 1) + '.';
+      const nm = document.createElement('span'); nm.style.cssText = 'display:flex; align-items:center; gap:6px; min-width:0;';
+      if(r.team && TEAM_COLORS[r.team]) nm.appendChild(makeBadge(r.team));
+      const nt = document.createElement('span');
+      nt.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;' + (i === 0 ? ' font-weight:600; color:#F0C04A;' : '');
+      nt.textContent = r.name; nm.appendChild(nt);
+      const cell = function(v, l){ const s = document.createElement('span'); s.style.cssText = 'text-align:right; font-variant-numeric:tabular-nums; font-size:11px;'; s.innerHTML = '<b>' + v + '</b> <span style="color:var(--text-tertiary); font-size:9px;">' + l + '</span>'; return s; };
+      row.appendChild(rk); row.appendChild(nm);
+      row.appendChild(cell(r.g, 'gol')); row.appendChild(cell(r.a, 'asist')); row.appendChild(cell(r.seasons, 'sezon'));
+      list.appendChild(row);
+    });
+    card.appendChild(list);
+  }
+
   /* ============ SEZON SONU TAHMİNİ (Monte Carlo) ============ */
   function computeSeasonProjection(iters){
     iters = iters || 1000;
@@ -3140,7 +3254,9 @@
     try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
     try { localStorage.removeItem(HISTORY_KEY); } catch(e){}
     try { localStorage.removeItem(TITLES_KEY); } catch(e){}
+    try { localStorage.removeItem(LEGENDS_KEY); } catch(e){}
     history = [];
+    legends = {};
     titles = baselineTitles(); saveTitles();
     state = initState(freshInitialTeams(), '2026-27', []);
     invalidateStandings(); invalidatePlayers();
@@ -3162,7 +3278,7 @@
     else if(tab === 'grafik') renderChart();
     else if(tab === 'istatistik'){ renderProjection(); renderScorerLeaders(); renderSeasonStats(); }
     else if(tab === 'gecmis'){ closeHistoryDetail(); renderHistoryTab(); }
-    else if(tab === 'kupalar'){ renderTrophies(); renderAllTime(); }
+    else if(tab === 'kupalar'){ renderTrophies(); renderAllTime(); renderLegends(); }
   }
 
   /* ============ OLAY DİNLEYİCİLERİ ============ */
@@ -3231,6 +3347,7 @@
   const saved = loadState();
   history = loadHistory();
   titles = loadTitles();
+  legends = loadLegends();
   if(saved && saved.teams && saved.fixtures){
     state = saved;
     if(!state.news) state.news = [];
