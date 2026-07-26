@@ -247,10 +247,15 @@
   .sl-poll-opt.voted .sl-poll-label::after { content: ' ✓ oyun'; font-size: 10px; color: var(--accent); font-weight: 600; }
   /* Turnuva ağacı */
   .sl-br-wrap { display: flex; gap: 10px; align-items: stretch; overflow-x: auto; padding-bottom: 6px; }
-  .sl-br-col { display: flex; flex-direction: column; min-width: 196px; flex: 1 0 auto; }
-  .sl-br-body { display: flex; flex-direction: column; justify-content: space-around; gap: 8px; flex: 1; }
+  .sl-br-col { display: flex; flex-direction: column; min-width: 172px; flex: 1 0 auto; }
+  .sl-br-body { display: flex; flex-direction: column; flex: 1; }
+  /* Her eşleşme eşit yükseklikte bir yuvanın ortasına oturur; böylece bir sonraki
+     turdaki kutu, kendisini besleyen iki eşleşmenin tam ortasında hizalanır. */
+  .sl-br-slot { flex: 1 0 auto; display: flex; align-items: center; padding: 4px 0; }
+  .sl-br-slot > .sl-br-tie { width: 100%; }
   .sl-br-title { font-size: 10px; font-weight: 700; letter-spacing: 0.6px; color: var(--text-tertiary); text-align: center; margin-bottom: 6px; text-transform: uppercase; white-space: nowrap; }
   .sl-br-tie { background: var(--bg-secondary); border: 1px solid var(--border-tertiary); border-radius: 8px; padding: 5px 6px; position: relative; }
+  .sl-br-hint { font-size: 10px; color: var(--text-tertiary); text-align: center; margin-top: 6px; }
   .sl-br-tie.done { border-color: var(--border-secondary); }
   .sl-br-tie.live { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-border); }
   .sl-br-row { display: flex; align-items: center; gap: 4px; padding: 2px 0; font-size: 11px; }
@@ -3893,6 +3898,14 @@
     for(let i = 0; i + 1 < a.length; i += 2) m.push({h: a[i], a: a[i+1], legs: [[null, null]], aet: null, pens: null});
     return m;
   }
+  /* Turnuva ağacı eşleşmesi: kazananlar sıralarını korur, yani üstteki iki
+     eşleşmenin galipleri bir üst turda birbiriyle oynar. Ağaç böylece soldan
+     sağa okunabilir bir şema olur; kura her turda yeniden çekilmez. */
+  function pairBracket(idxs){
+    const m = [];
+    for(let i = 0; i + 1 < idxs.length; i += 2) m.push({h: idxs[i], a: idxs[i+1], legs: [[null, null]], aet: null, pens: null});
+    return m;
+  }
   // Güç sırasına göre seri başı eşleşmesi: 1-son, 2-sondan bir önceki...
   function pairSeeded(ids){
     const m = [];
@@ -4065,7 +4078,7 @@
     const cur = rounds[ri], next = rounds[ri + 1];
     if(!next || next.matches.length > 0 || !cur.done) return;
     const winners = cur.matches.map(cupWinner).filter(function(w){ return w !== null; });
-    next.matches = pairUp((next.seeds || []).concat(winners));
+    next.matches = pairBracket((next.seeds || []).concat(winners));
     next.matches.forEach(function(m){ ensureTie(m, next.legs || 1); });
   }
   function fullyPlayedWeekCount(){
@@ -4516,7 +4529,11 @@
       const t = document.createElement('div'); t.className = 'sl-br-title'; t.textContent = r.name;
       c.appendChild(t);
       const body = document.createElement('div'); body.className = 'sl-br-body';
-      for(let i = from; i < to; i++) body.appendChild(buildTieBox(r.matches[i], r, ri, i, opts));
+      for(let i = from; i < to; i++){
+        const slot = document.createElement('div'); slot.className = 'sl-br-slot';
+        slot.appendChild(buildTieBox(r.matches[i], r, ri, i, opts));
+        body.appendChild(slot);
+      }
       c.appendChild(body);
       return c;
     };
@@ -4531,8 +4548,9 @@
       t.textContent = '🏆 ' + last.name; t.style.color = opts.color || 'var(--accent)';
       c.appendChild(t);
       const body = document.createElement('div'); body.className = 'sl-br-body';
-      body.style.justifyContent = 'center';
-      body.appendChild(buildTieBox(last.matches[0], last, fi, 0, opts));
+      const slot = document.createElement('div'); slot.className = 'sl-br-slot';
+      slot.appendChild(buildTieBox(last.matches[0], last, fi, 0, opts));
+      body.appendChild(slot);
       c.appendChild(body);
       wrap.appendChild(c);
     }
@@ -4543,6 +4561,22 @@
       wrap.appendChild(col(r, ri, half, r.matches.length));
     });
     container.appendChild(wrap);
+    // Ağaç ekrana sığmıyorsa: kaydırma ipucu ver ve sırası gelen turu ortala
+    setTimeout(function(){
+      if(wrap.scrollWidth <= wrap.clientWidth + 4) return;
+      const hint = document.createElement('div'); hint.className = 'sl-br-hint';
+      hint.textContent = '← ağaç yana kaydırılabilir →';
+      container.appendChild(hint);
+      // Sırası gelen tur varsa oraya kaydır; yoksa ağaç baştan görünsün
+      let target = null;
+      const cols = wrap.querySelectorAll('.sl-br-col');
+      for(let i = 0; i < pre.length && i < cols.length; i++){
+        if(opts.isDue && opts.isDue(i, pre[i])){ target = cols[i]; break; }
+      }
+      if(!target) return;
+      const want = target.offsetLeft - (wrap.clientWidth - target.offsetWidth) / 2;
+      wrap.scrollLeft = Math.max(0, Math.min(want, wrap.scrollWidth - wrap.clientWidth));
+    }, 0);
   }
   function buildTieBox(m, r, roundIdx, matchIdx, opts){
     const legCount = r.legs || 1;
@@ -4916,7 +4950,8 @@
       next.matches = ms;
       return;
     }
-    next.matches = pairUp(winners);
+    // Son 16'dan sonra ağaç sabittir: 1-2, 3-4 ... eşleşmelerinin galipleri buluşur
+    next.matches = pairBracket(winners);
     next.matches.forEach(function(m){ ensureTie(m, next.legs || 1); });
   }
   function euroRoundNews(c, r){
