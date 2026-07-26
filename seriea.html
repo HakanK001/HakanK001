@@ -1025,79 +1025,93 @@
     return score;
   }
 
-  function computeMatchRatings(homeIdx, awayIdx, weekIdx){
-    const hMatches = getTeamMatches(homeIdx, weekIdx);
-    const aMatches = getTeamMatches(awayIdx, weekIdx);
-    const homeForm = hMatches.slice(-5);
-    const awayForm = aMatches.slice(-5);
-    const homeStr = state.teams[homeIdx].strength;
-    const awayStr = state.teams[awayIdx].strength;
-    const derb = isDerby(state.teams[homeIdx].name, state.teams[awayIdx].name);
-    const hFR = weightedFormRating(homeForm);
-    const aFR = weightedFormRating(awayForm);
-    const hS = Math.min(homeForm.length / 5, 1);
-    const aS = Math.min(awayForm.length / 5, 1);
-    const FORM_WEIGHT = 20;
-    const hFD = hFR * FORM_WEIGHT * hS;
-    const aFD = aFR * FORM_WEIGHT * aS;
-    let adjH = homeStr, adjA = awayStr;
-    if(derb){ const avg = (homeStr + awayStr) / 2; adjH = avg + (homeStr - avg) * 0.5; adjA = avg + (awayStr - avg) * 0.5; }
-    // Sezon geneli + saha bazlı performans: genel puan ortalaması, ilgili sahadaki
-    // (ev/deplasman) ortalamayla harmanlanır — "ev canavarı" ve "deplasman zayıfı"
-    // profilleri gerçekçi biçimde ayrışır
-    const ppgOf = function(ms, minN){
-      if(ms.length < (minN || 4)) return null;
-      let p = 0;
-      ms.forEach(function(m){ p += m.outcome === 'W' ? 3 : (m.outcome === 'D' ? 1 : 0); });
-      return p / ms.length;
-    };
-    const blendPpg = function(all, venue){ if(all === null) return null; if(venue === null) return all; return venue * 0.6 + all * 0.4; };
-    const hPpg = blendPpg(ppgOf(hMatches), ppgOf(hMatches.filter(function(m){ return m.isHome; }), 3));
-    const aPpg = blendPpg(ppgOf(aMatches), ppgOf(aMatches.filter(function(m){ return !m.isHome; }), 3));
-    const hPD = hPpg === null ? 0 : (hPpg - 1.35) * 7;
-    const aPD = aPpg === null ? 0 : (aPpg - 1.35) * 7;
-    // Geçmiş sezon momentumu sezon ilerledikçe etkisini yitirir: açılışta tam,
-    // sezon sonuna doğru ~%30 — güncel form devralır
+  /* Maç modeli: beklenen goller iki takımın gücünün FARKINDAN türetilir.
+     λ_ev  = BASE_HOME × exp((R_ev − R_dep) / SCALE)
+     λ_dep = BASE_AWAY × exp((R_dep − R_ev) / SCALE)
+     Böylece güçlü takım hem çok atar hem az yer; form/momentum gibi etkenler
+     R üzerinde ölçülü kaymalar yapar, takımın sınıfını silip süpürmez. */
+  const SIM_BASE_HOME = 1.48, SIM_BASE_AWAY = 1.16, SIM_SCALE = 70, SIM_HOME_EDGE = 3;
+  function teamMatchRating(teamIdx, weekIdx, oppIdx){
+    const t = state.teams[teamIdx];
     const wiSafe = weekIdx === undefined ? (state.viewWeek || 0) : weekIdx;
+    const ms = getTeamMatches(teamIdx, weekIdx);
+    const form = ms.slice(-5);
+    // Form: son 5 maç, örneklem büyüdükçe ağırlığı artar (±5 puan)
+    const formAdj = weightedFormRating(form) * 5 * Math.min(form.length / 5, 1);
+    // Sezon geneli + oynanacak sahadaki puan ortalaması (±3 puan)
+    const ppgOf = function(list, minN){
+      if(list.length < (minN || 5)) return null;
+      let p = 0;
+      list.forEach(function(m){ p += m.outcome === 'W' ? 3 : (m.outcome === 'D' ? 1 : 0); });
+      return p / list.length;
+    };
+    const isHome = oppIdx === undefined ? true : null;
+    const all = ppgOf(ms);
+    const venue = ppgOf(ms.filter(function(m){ return isHome === null ? true : m.isHome === isHome; }), 4);
+    const ppg = all === null ? null : (venue === null ? all : venue * 0.5 + all * 0.5);
+    const ppgAdj = ppg === null ? 0 : (ppg - 1.35) * 2.5;
+    // Geçen sezon momentumu sezon ilerledikçe sönümlenir
     const momScale = Math.max(0.3, 1 - (wiSafe / Math.max(1, state.fixtures.length)) * 0.9);
-    const hMom = (state.teams[homeIdx].momentum || 0) * momScale;
-    const aMom = (state.teams[awayIdx].momentum || 0) * momScale;
-    // Kupa yorgunluğu: son kupa turunda ter döken takım, ardından gelen lig haftasında hafif yorgun
+    const momAdj = (t.momentum || 0) * 0.35 * momScale;
     const fat = state.cupFatigue || {};
-    const hFat = (fat[homeIdx] === wiSafe ? -2.5 : 0) - unavailablePenalty(homeIdx, wiSafe) + newManagerBoost(homeIdx, wiSafe);
-    const aFat = (fat[awayIdx] === wiSafe ? -2.5 : 0) - unavailablePenalty(awayIdx, wiSafe) + newManagerBoost(awayIdx, wiSafe);
-    // Bu sezonki ilk karşılaşmanın galibi psikolojik üstünlük taşır
+    const fatAdj = fat[teamIdx] === wiSafe ? -1.5 : 0;
+    const outAdj = -unavailablePenalty(teamIdx, wiSafe) * 0.6;
+    const mgrAdj = newManagerBoost(teamIdx, wiSafe) * 0.6;
+    // Bu sezon aynı rakibi yendiyse psikolojik üstünlük
     let h2h = 0;
-    for(let i = 0; i < hMatches.length; i++){
-      const m = hMatches[i];
-      if(m.homeIdx === awayIdx || m.awayIdx === awayIdx){ h2h = m.outcome === 'W' ? 2 : (m.outcome === 'L' ? -2 : 0); break; }
+    if(oppIdx !== undefined && oppIdx !== null){
+      for(let i = 0; i < ms.length; i++){
+        const m = ms[i];
+        if(m.homeIdx === oppIdx || m.awayIdx === oppIdx){ h2h = m.outcome === 'W' ? 1.5 : (m.outcome === 'L' ? -1.5 : 0); break; }
+      }
     }
-    const homeAdv = derb ? 4 : 8;
+    return t.strength + formAdj + ppgAdj + momAdj + fatAdj + outAdj + mgrAdj + h2h;
+  }
+  function computeMatchRatings(homeIdx, awayIdx, weekIdx){
+    const derb = isDerby(state.teams[homeIdx].name, state.teams[awayIdx].name);
+    let rh = teamMatchRating(homeIdx, weekIdx, awayIdx);
+    let ra = teamMatchRating(awayIdx, weekIdx, homeIdx);
+    // Derbide sınıf farkı yarıya iner
+    if(derb){ const avg = (rh + ra) / 2; rh = avg + (rh - avg) * 0.5; ra = avg + (ra - avg) * 0.5; }
+    const hForm = getTeamForm(homeIdx, weekIdx), aForm = getTeamForm(awayIdx, weekIdx);
     return {
-      homeRating: adjH + hFD + hPD + hMom + hFat + h2h + homeAdv,
-      awayRating: adjA + aFD + aPD + aMom + aFat,
-      isDerby: derb, hFR: hFR, aFR: aFR
+      homeRating: rh + (derb ? SIM_HOME_EDGE * 0.5 : SIM_HOME_EDGE),
+      awayRating: ra,
+      isDerby: derb,
+      hFR: weightedFormRating(hForm), aFR: weightedFormRating(aForm)
     };
   }
-  // Sezon içi gol profili: hücum/savunma ortalamaları beklenen golü şekillendirir
-  function seasonGoalProfile(teamIdx, weekIdx){
-    const ms = getTeamMatches(teamIdx, weekIdx);
-    if(ms.length < 4) return null;
-    let gf = 0, ga = 0;
-    ms.forEach(function(m){ gf += m.isHome ? m.hg : m.ag; ga += m.isHome ? m.ag : m.hg; });
-    return {gf: gf / ms.length, ga: ga / ms.length};
+  function ratingsToGoals(homeRating, awayRating){
+    const d = (homeRating - awayRating) / SIM_SCALE;
+    return {
+      he: Math.min(4, Math.max(0.22, SIM_BASE_HOME * Math.exp(d))),
+      ae: Math.min(4, Math.max(0.22, SIM_BASE_AWAY * Math.exp(-d)))
+    };
   }
   function matchExpGoals(homeIdx, awayIdx, weekIdx){
     const r = computeMatchRatings(homeIdx, awayIdx, weekIdx);
-    let he = Math.max(0.25, (r.homeRating / 60) * 1.35);
-    let ae = Math.max(0.25, (r.awayRating / 60) * 1.05);
-    // Güç modeli, takımların bu sezonki gerçek gol üretimi/yeme oranlarıyla harmanlanır
-    const hp = seasonGoalProfile(homeIdx, weekIdx), ap = seasonGoalProfile(awayIdx, weekIdx);
-    if(hp && ap){
-      he = he * 0.65 + ((hp.gf * 0.6 + ap.ga * 0.4) * 1.06) * 0.35;
-      ae = ae * 0.65 + ((ap.gf * 0.6 + hp.ga * 0.4) * 0.92) * 0.35;
+    const g = ratingsToGoals(r.homeRating, r.awayRating);
+    return {he: g.he, ae: g.ae, r: r};
+  }
+  // Beklenen gollerden doğrudan sonuç olasılıkları — ekranda görünen oranlar
+  // simülasyonun kendisiyle birebir tutarlı olur
+  function poissonPmf(lambda, k){
+    let p = Math.exp(-lambda);
+    for(let i = 1; i <= k; i++) p = p * lambda / i;
+    return p;
+  }
+  function outcomeProbs(lh, la){
+    let h = 0, d = 0, a = 0;
+    const ph = [], pa = [];
+    for(let k = 0; k <= 9; k++){ ph.push(poissonPmf(lh, k)); pa.push(poissonPmf(la, k)); }
+    for(let i = 0; i <= 9; i++){
+      for(let j = 0; j <= 9; j++){
+        const p = ph[i] * pa[j];
+        if(i > j) h += p; else if(i === j) d += p; else a += p;
+      }
     }
-    return {he: Math.min(Math.max(0.25, he), 3.2), ae: Math.min(Math.max(0.25, ae), 3.2), r: r};
+    const t = h + d + a || 1;
+    return {home: h / t, draw: d / t, away: a / t};
   }
   function poisson(lambda){ const L = Math.exp(-lambda); let k = 0, p = 1; do { k++; p *= Math.random(); } while(p > L); return k - 1; }
   function favTeamIdx(){
@@ -1122,46 +1136,28 @@
     }
     return [Math.min(poisson(homeExp), 7), Math.min(poisson(awayExp), 7)];
   }
-  function computeProbabilities(homeIdx, awayIdx, weekIdx){
-    const wi = weekIdx === undefined ? state.viewWeek : weekIdx;
-    const r = computeMatchRatings(homeIdx, awayIdx, wi);
-    const diff = r.homeRating - r.awayRating;
-    let homeWin = 1 / (1 + Math.exp(-diff / 18));
-    let awayWin = 1 - homeWin;
-    const drawBase = 0.27 - Math.abs(diff) / 180;
-    const draw = Math.max(0.18, Math.min(0.30, drawBase));
-    homeWin = homeWin * (1 - draw);
-    awayWin = awayWin * (1 - draw);
-    let total = homeWin + draw + awayWin;
-    homeWin /= total; awayWin /= total;
-    let drawN = draw / total;
-    const MIN_WIN = 0.08;
-    if(homeWin < MIN_WIN){ const d = MIN_WIN - homeWin; homeWin = MIN_WIN; awayWin = Math.max(0, awayWin - d); }
-    if(awayWin < MIN_WIN){ const d = MIN_WIN - awayWin; awayWin = MIN_WIN; homeWin = Math.max(0, homeWin - d); }
-    total = homeWin + drawN + awayWin;
-    homeWin /= total; drawN /= total; awayWin /= total;
-    let h = Math.round(homeWin * 100), d = Math.round(drawN * 100), a = Math.round(awayWin * 100);
+  function pctTriple(p){
+    let h = Math.round(p.home * 100), d = Math.round(p.draw * 100), a = Math.round(p.away * 100);
     const sum = h + d + a;
     if(sum !== 100){ const mx = Math.max(h, d, a); if(mx === h) h += (100-sum); else if(mx === d) d += (100-sum); else a += (100-sum); }
     return {home: h, draw: d, away: a};
   }
+  function computeProbabilities(homeIdx, awayIdx, weekIdx){
+    const wi = weekIdx === undefined ? state.viewWeek : weekIdx;
+    const eg = matchExpGoals(homeIdx, awayIdx, wi);
+    return pctTriple(outcomeProbs(eg.he, eg.ae));
+  }
   function predictScore(homeIdx, awayIdx, weekIdx){
     const wi = weekIdx === undefined ? state.viewWeek : weekIdx;
     const eg = matchExpGoals(homeIdx, awayIdx, wi);
-    const r = eg.r;
-    const formDiff = r.hFR - r.aFR;
-    const homeExp = Math.max(0.3, eg.he + formDiff * 0.25);
-    const awayExp = Math.max(0.3, eg.ae - formDiff * 0.25);
+    // En olası skor: beklenen gollerin etrafında, hafta/eşleşmeye göre sabit bir sapma
     function seededRand(w, hi, ai){ const s = (w * 73 + hi * 11 + ai * 17) % 1000; return s / 1000; }
     const rr = seededRand(wi, homeIdx, awayIdx);
-    let hg = Math.floor(homeExp), ag = Math.floor(awayExp);
-    if(rr < (homeExp - hg)) hg++;
-    if(((rr * 1.7) % 1) < (awayExp - ag)) ag++;
-    if(r.hFR > 0.5 && rr > 0.6) hg = Math.min(hg + 1, 5);
-    if(r.aFR > 0.5 && rr > 0.7) ag = Math.min(ag + 1, 5);
-    if(r.hFR < -0.5 && rr < 0.3 && hg > 0) hg = Math.max(hg - 1, 0);
-    if(r.aFR < -0.5 && rr < 0.4 && ag > 0) ag = Math.max(ag - 1, 0);
-    return [Math.min(hg, 6), Math.min(ag, 6)];
+    const pick = function(lambda, r){
+      const base = Math.floor(lambda);
+      return (r < (lambda - base)) ? base + 1 : base;
+    };
+    return [Math.min(pick(eg.he, rr), 6), Math.min(pick(eg.ae, (rr * 1.7) % 1), 6)];
   }
 
   let standingsCache = null;
@@ -2319,38 +2315,101 @@
     const res = state.results[wk][mi];
     if(!res || res[0] === null || res[1] === null) return null;
     const hg = res[0], ag = res[1];
-    const seed = ((state.seasonSeed || 0) ^ (wk * 40503) ^ (mi * 2654435761) ^ (hg * 7919) ^ (ag * 104729) ^ 0x5bf03635) | 0;
+    const variant = getStatVariant(wk, mi);
+    const seed = ((state.seasonSeed || 0) ^ (wk * 40503) ^ (mi * 2654435761) ^ (hg * 7919) ^ (ag * 104729) ^ (variant * 22695477) ^ 0x5bf03635) | 0;
     const rng = mulberry32(seed);
     const r = computeMatchRatings(pair[0], pair[1], wk);
-    const diff = r.homeRating - r.awayRating;
-    let hPoss = clamp(31, 69, Math.round(50 + diff * 0.5 + (rng() - 0.5) * 9));
+    // Sınıf farkı: -1 (deplasman çok üstün) ... +1 (ev sahibi çok üstün)
+    const d = clamp(-1, 1, (r.homeRating - r.awayRating) / 40);
+    const gd = hg - ag;
+    const homeWon = gd > 0, awayWon = gd < 0;
+    // Sürpriz sonuçta kazanan geri çekilir, oyunu ve topu mağlup tarafa bırakır
+    const upset = (homeWon && d < 0) || (awayWon && d > 0);
+    const sitBack = upset ? 3.2 : 0.9;
+    const hPoss = clamp(28, 72, Math.round(50 + d * 16 - gd * sitBack + (rng() - 0.5) * 7));
     const aPoss = 100 - hPoss;
-    const side = function(goals, poss){
-      const shots = Math.max(goals + Math.floor(rng() * 3), Math.round(2 + poss * 0.09 + goals * 1.2 + rng() * 4));
-      const onTarget = clamp(goals, shots, Math.round(goals + (shots - goals) * (0.2 + rng() * 0.26)));
-      const bigCh = Math.max(goals, Math.round(goals * 0.75 + onTarget * 0.18 + rng() * 1.3));
+    const side = function(goals, conceded, poss){
+      // Geride kalan taraf baskı kurar: daha çok şut, daha çok korner
+      const chase = Math.min(2, Math.max(0, conceded - goals));
+      const shots = Math.max(goals, Math.round(2.5 + poss * 0.10 + goals * 1.05 + chase * 2.0 + rng() * 3.5));
+      const onTarget = clamp(goals, shots, Math.round(goals + (shots - goals) * (0.2 + rng() * 0.25)));
+      const bigCh = Math.max(goals, Math.round(shots * 0.22 + goals * 0.3 + rng() * 1.2));
       return {
         poss: poss, shots: shots, onTarget: onTarget,
-        boxTouches: Math.round(shots * 0.9 + poss * 0.1 + rng() * 5),
+        boxTouches: Math.round(shots * 0.9 + poss * 0.1 + chase * 1.5 + rng() * 5),
         bigCh: bigCh, bigMissed: Math.max(0, bigCh - goals),
         passes: Math.round(160 + poss * 4.6 + rng() * 60),
         passAcc: clamp(69, 93, Math.round(72 + poss * 0.25 + rng() * 6)),
-        xg: goals * 0.45 + onTarget * 0.12 + bigCh * 0.16 + rng() * 0.25,
-        yellow: Math.round(rng() * 3.2),
-        corners: Math.round(1 + poss * 0.06 + rng() * 4)
+        xg: shots * 0.085 + onTarget * 0.09 + bigCh * 0.14 + goals * 0.08 + rng() * 0.25,
+        yellow: Math.round(rng() * 2.6 + chase * 0.5),
+        corners: Math.round(1 + poss * 0.06 + chase * 0.8 + rng() * 3.5)
       };
     };
-    return {home: side(hg, hPoss, ag), away: side(ag, aPoss, hg)};
+    return {home: side(hg, ag, hPoss), away: side(ag, hg, aPoss), upset: upset};
+  }
+  // Maçın hikâyesini tek cümleyle özetler
+  function matchStoryLine(st, hName, aName, hg, ag){
+    const h = st.home, a = st.away;
+    if(st.upset){
+      const winner = hg > ag ? hName : aName;
+      const loser = hg > ag ? aName : hName;
+      const lStat = hg > ag ? a : h;
+      return loser + ' oyunu kontrol etti (%' + lStat.poss + ' topla oynadı, ' + lStat.shots + ' şut çekti) ama ' + winner + ' fırsatlarını değerlendirip sahadan galip ayrıldı.';
+    }
+    if(hg === ag){
+      return Math.abs(h.poss - a.poss) <= 8
+        ? 'İki takım da üstünlük kuramadı; dengeli bir mücadele puanların paylaşılmasıyla bitti.'
+        : (h.poss > a.poss ? hName : aName) + ' topa daha çok sahip oldu ama farkı yaratamadı.';
+    }
+    const w = hg > ag ? hName : aName;
+    const ws = hg > ag ? h : a;
+    if(Math.abs(hg - ag) >= 3) return w + ', ' + ws.shots + ' şut ve ' + ws.bigCh + ' net fırsatla rakibini sahadan sildi.';
+    return w + ' üstünlüğünü skora yansıttı; ' + ws.onTarget + ' isabetli şutla sonucu getirdi.';
+  }
+  function statVariantKey(wk, mi){ return wk + ':' + mi; }
+  function getStatVariant(wk, mi){
+    return (state.statVariants && state.statVariants[statVariantKey(wk, mi)]) || 0;
+  }
+  function bumpStatVariant(wk, mi){
+    if(!state.statVariants) state.statVariants = {};
+    const k = statVariantKey(wk, mi);
+    state.statVariants[k] = (state.statVariants[k] || 0) + 1;
+    scheduleSave();
   }
   function trNum(v){ return v.toFixed(2).replace('.', ','); }
-  function renderMatchStats(container, wk, mi, hName, aName){
+  function renderMatchStats(host, wk, mi, hName, aName){
+    // İstatistikler kendi kapsayıcısında durur; "Yenile" yalnızca burayı tazeler
+    let container = host.querySelector('.sl-ms-box');
+    if(!container){
+      container = document.createElement('div');
+      container.className = 'sl-ms-box';
+      host.appendChild(container);
+    }
+    container.innerHTML = '';
     const st = computeMatchStats(wk, mi);
     if(!st) return;
+    const res = state.results[wk][mi];
     const hCol = teamPrimaryColor(hName), aCol = teamPrimaryColor(aName);
     const hTxt = isLightColor(hCol) ? '#101317' : '#fff';
     const aTxt = isLightColor(aCol) ? '#101317' : '#fff';
-    const title = document.createElement('div'); title.className = 'sl-ms-title'; title.textContent = 'Önemli İstatistik';
+    const title = document.createElement('div'); title.className = 'sl-ms-title';
+    title.style.cssText += 'display:flex; align-items:center; justify-content:center; gap:8px;';
+    const tt = document.createElement('span'); tt.textContent = 'Önemli İstatistik';
+    const reroll = document.createElement('button');
+    reroll.className = 'sl-btn';
+    reroll.style.cssText = 'height:24px; font-size:10px; padding:0 8px; font-weight:400;';
+    reroll.textContent = '🔄 Yenile';
+    reroll.title = 'İstatistikleri yeniden üret — kafandaki maça uyana kadar basabilirsin';
+    reroll.addEventListener('click', function(){
+      bumpStatVariant(wk, mi);
+      renderMatchStats(host, wk, mi, hName, aName);
+    });
+    title.appendChild(tt); title.appendChild(reroll);
     container.appendChild(title);
+    const story = document.createElement('div');
+    story.style.cssText = 'font-size:11px; color:var(--text-secondary); line-height:1.5; text-align:center; margin:-2px 0 12px; padding:0 4px;';
+    story.textContent = matchStoryLine(st, hName, aName, res[0], res[1]);
+    container.appendChild(story);
     const psub = document.createElement('div'); psub.className = 'sl-ms-sub'; psub.textContent = 'Topa sahip olma';
     container.appendChild(psub);
     const bar = document.createElement('div'); bar.className = 'sl-poss-bar';
@@ -2966,33 +3025,20 @@
     return g ? g.strength : 45;
   }
   function entRating(id, guests, weekIdx){
-    if(id >= 0 && state.teams[id]){
-      const form = getTeamForm(id, weekIdx);
-      const fr = weightedFormRating(form) * 20 * Math.min(form.length / 5, 1);
-      return state.teams[id].strength + (state.teams[id].momentum || 0) * 0.6 + fr - unavailablePenalty(id, weekIdx);
-    }
+    if(id >= 0 && state.teams[id]) return teamMatchRating(id, weekIdx, null);
     return entStrength(id, guests);
   }
-  function entSimScore(hId, aId, guests){
+  function entExpGoals(hId, aId, guests){
     const wi = Math.min(state.viewWeek, state.fixtures.length - 1);
-    const hr = entRating(hId, guests, wi) + 6;
-    const ar = entRating(aId, guests, wi);
-    const he = Math.max(0.3, Math.min(3.2, (hr / 60) * 1.3));
-    const ae = Math.max(0.3, Math.min(3.2, (ar / 60) * 1.0));
-    return [Math.min(poisson(he), 7), Math.min(poisson(ae), 7)];
+    return ratingsToGoals(entRating(hId, guests, wi) + SIM_HOME_EDGE, entRating(aId, guests, wi));
+  }
+  function entSimScore(hId, aId, guests){
+    const g = entExpGoals(hId, aId, guests);
+    return [Math.min(poisson(g.he), 7), Math.min(poisson(g.ae), 7)];
   }
   function entProbs(hId, aId, guests){
-    const wi = Math.min(state.viewWeek, state.fixtures.length - 1);
-    const diff = (entRating(hId, guests, wi) + 6) - entRating(aId, guests, wi);
-    let hw = 1 / (1 + Math.exp(-diff / 18));
-    let aw = 1 - hw;
-    // Güçler yakınlaştıkça beraberlik olasılığı yükselir
-    const draw = Math.max(0.14, Math.min(0.29, 0.28 - Math.abs(diff) / 170));
-    hw *= (1 - draw); aw *= (1 - draw);
-    let h = Math.round(hw * 100), d = Math.round(draw * 100), a = Math.round(aw * 100);
-    const sum = h + d + a;
-    if(sum !== 100){ const mx = Math.max(h, d, a); if(mx === h) h += 100 - sum; else if(mx === d) d += 100 - sum; else a += 100 - sum; }
-    return {home: h, draw: d, away: a};
+    const g = entExpGoals(hId, aId, guests);
+    return pctTriple(outcomeProbs(g.he, g.ae));
   }
   function cupTeamName(id){ return entName(id, state.cup ? state.cup.guests : null); }
   function cupSimScore(hId, aId){ return entSimScore(hId, aId, state.cup ? state.cup.guests : null); }
@@ -3846,21 +3892,15 @@
     po.matches = matches;
     c.koSeeds = table.slice(0, 8).map(function(r){ return r.id; });
   }
-  // Avrupa kupaları yoksa kurar: geçmiş sezon varsa onun tablosundan,
-  // yoksa mevcut güç sıralamasından kota belirlenir
+  // Avrupa kupaları ilk sezonda oynanmaz: kotalar ancak bir sezon tamamlandığında
+  // (Serie A sıralaması ve Coppa şampiyonu belli olunca) oluşur
   function ensureEuro(){
     if(state.euro && state.euro.comps) return;
-    let table = null, coppaWinner = null;
-    if(history && history[0] && history[0].fullTable){
-      table = history[0].fullTable.map(function(r){ return {name: r.name}; });
-      coppaWinner = history[0].coppaWinner;
-    } else {
-      const st = computeStandings();
-      const played = st.some(function(r){ return r.P > 0; });
-      table = played ? st.map(function(s){ return {name: s.name}; })
-        : state.teams.slice().sort(function(a, b){ return b.strength - a.strength; }).map(function(t){ return {name: t.name}; });
-    }
-    state.euro = initEuro(computeEuroQualification(table, coppaWinner));
+    if(!history || !history[0] || !history[0].fullTable) return;
+    state.euro = initEuro(computeEuroQualification(
+      history[0].fullTable.map(function(r){ return {name: r.name}; }),
+      history[0].coppaWinner
+    ));
     if(!state.euroPrompted) state.euroPrompted = {};
   }
   function euroComp(key){ return state.euro && state.euro.comps ? state.euro.comps[key] : null; }
@@ -4402,9 +4442,9 @@
     if(keepLive !== undefined) state.liveSim = keepLive;
     if(keepSpeed) state.liveSpeed = keepSpeed;
     // Yeni sezonun Avrupa kotaları, geride kalan sezonun sıralamasından belirlenir
-    state.euro = initEuro(computeEuroQualification(history[0].fullTable, history[0].coppaWinner));
     state.euroPrompted = {};
-    syncSimControlsUI();
+    ensureEuro();
+    syncSimControlsUI(); syncEuroTabVisibility();
     invalidateStandings(); invalidatePlayers();
     saveNow();
     renderFavSelect(); buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderTrophies();
@@ -4917,7 +4957,8 @@
     legends = {};
     titles = baselineTitles(); saveTitles();
     state = initState(freshInitialTeams(), '2026-27', []);
-    ensureEuro();
+    state.euro = null;
+    syncEuroTabVisibility();
     invalidateStandings(); invalidatePlayers();
     document.getElementById('champion-banner').style.display = 'none';
     document.getElementById('leader-banner-container').innerHTML = '';
@@ -4925,6 +4966,14 @@
     saveNow();
     closeTeamDetail(); closeHistoryDetail();
     renderFavSelect(); buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderTrophies();
+  }
+  // Avrupa sekmesi yalnızca kupalar başladığında görünür
+  function syncEuroTabVisibility(){
+    const t = document.querySelector('.sl-tab[data-tab="avrupa"]');
+    if(!t) return;
+    const show = !!(state.euro && state.euro.comps);
+    t.style.display = show ? '' : 'none';
+    if(!show && t.classList.contains('active')) switchTab('lig');
   }
   function switchTab(tab){
     const tabs = document.querySelectorAll('.sl-tab');
@@ -5032,7 +5081,8 @@
     if(!state.euroPrompted) state.euroPrompted = {};
     if(state.cup && !state.cup.guests) state.cup.guests = [];
     ensureManagers(state.teams);
-    // Eski kayıtlarda Avrupa kupaları yoksa kurulur ve sırası gelen turlar oynanır
+    // Avrupa kupaları ilk sezonda oynanmaz; sonraki sezonlarda eksikse kurulur
+    if(!history || history.length === 0) state.euro = null;
     const hadEuro = !!state.euro;
     ensureEuro();
     if(!hadEuro) euroPlayDue();
@@ -5042,7 +5092,7 @@
     ensureEuro();
     saveNow();
   }
-  syncSimControlsUI();
+  syncSimControlsUI(); syncEuroTabVisibility();
   applyTheme((function(){ try { return localStorage.getItem(THEME_KEY) || 'dark'; } catch(e){ return 'dark'; } })());
   renderFavSelect();
   buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary();
