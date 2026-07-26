@@ -1150,9 +1150,10 @@
     const wiSafe = weekIdx === undefined ? (state.viewWeek || 0) : weekIdx;
     const ms = getTeamMatches(teamIdx, weekIdx);
     const form = ms.slice(-5);
-    // Form: son 5 maç, örneklem büyüdükçe ağırlığı artar (±9 puan)
-    const formAdj = weightedFormRating(form) * 9 * Math.min(form.length / 5, 1);
-    // Sezon geneli + oynanacak sahadaki puan ortalaması (±6 puan)
+    // Form: son 5 maç, örneklem büyüdükçe ağırlığı artar (±11 puan)
+    const formAdj = weightedFormRating(form) * 11 * Math.min(form.length / 5, 1);
+    // Sezon geneli + oynanacak sahadaki puan ortalaması (±6 puan; sezon boyu birikip
+    // kartopuna dönmesin diye form kadar ağır değildir)
     const ppgOf = function(list, minN){
       if(list.length < (minN || 4)) return null;
       let p = 0;
@@ -1232,10 +1233,15 @@
       ae: Math.min(4, Math.max(0.18, g.ae * a.own * h.opp))
     };
   }
+  /* Formda olan takım yalnızca daha çok atmaz, daha az da yer: güven, ritim ve
+     oturmuş kadro savunmayı da toparlar. Bu yüzden formun bir kısmı doğrudan
+     rakibin gol beklentisini kısar — üst üste kazanan bir takım 4-0'lık bir
+     yenilgiye eskisinden daha az açık olur. Sürpriz kapıyı kapatmaz, seyreltir. */
+  function formResilience(fr){ return clamp(0.86, 1.14, 1 - fr * 0.13); }
   function matchExpGoals(homeIdx, awayIdx, weekIdx){
     const r = computeMatchRatings(homeIdx, awayIdx, weekIdx);
     const g = applyManagerStyle(ratingsToGoals(r.homeRating, r.awayRating), homeIdx, awayIdx);
-    return {he: g.he, ae: g.ae, r: r};
+    return {he: g.he * formResilience(r.aFR), ae: g.ae * formResilience(r.hFR), r: r};
   }
   // Beklenen gollerden doğrudan sonuç olasılıkları — ekranda görünen oranlar
   // simülasyonun kendisiyle birebir tutarlı olur
@@ -3953,7 +3959,9 @@
   function migrateTies(){
     const fix = function(rounds, defLegs){
       (rounds || []).forEach(function(r){
-        if(r.legs === undefined) r.legs = defLegs(r);
+        // Oynanmış eski turlar tek maçlık kalır; yalnızca oynanmamış turlar çift maça geçer
+        const played = r.done || (r.matches || []).some(function(m){ return m.hg !== null && m.hg !== undefined; });
+        if(r.legs === undefined) r.legs = played ? 1 : defLegs(r);
         (r.matches || []).forEach(function(m){ ensureTie(m, r.legs || 1); });
       });
     };
