@@ -446,6 +446,7 @@
       <div id="euro-subtabs" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
     </div>
     <div class="sl-card sl-mb12" id="euro-active-card"></div>
+    <div class="sl-card sl-mb12" id="euro-league-card"></div>
     <div class="sl-card" id="euro-bracket-card"></div>
   </div>
 
@@ -551,7 +552,66 @@
     ['Rapid Viyana', 59, ['#00A64F','#FFFFFF'], 'solid'], ['Basel', 59, ['#D0021B','#0B3B8C'], 'halves'],
     ['Genk', 58, ['#005BAC','#FFFFFF'], 'stripes'], ['Sparta Prag', 58, ['#8B1A1A','#FFFFFF'], 'solid'],
     ['Molde', 56, ['#0067B1','#FFFFFF'], 'solid'], ['Malmö', 56, ['#87CEEB','#FFFFFF'], 'solid'],
-    ['Hearts', 54, ['#800020','#FFFFFF'], 'solid'], ['Riga FC', 52, ['#8B0E1E','#FFFFFF'], 'solid']
+    ['Hearts', 54, ['#800020','#FFFFFF'], 'solid'], ['Riga FC', 52, ['#8B0E1E','#FFFFFF'], 'solid'],
+    ['Athletic Bilbao', 75, ['#EE2523','#FFFFFF'], 'stripes'], ['Real Betis', 72, ['#00954C','#FFFFFF'], 'stripes'],
+    ['Valencia', 71, ['#FFFFFF','#F4A300'], 'solid'], ['Girona', 70, ['#CD2534','#FFFFFF'], 'stripes'],
+    ['Osasuna', 67, ['#D91A21','#0A346F'], 'solid'], ['Celta Vigo', 66, ['#8AC3EE','#FFFFFF'], 'solid'],
+    ['Mallorca', 63, ['#E20613','#000000'], 'solid'], ['Rayo Vallecano', 62, ['#FFFFFF','#E53027'], 'sash'],
+    ['West Ham', 73, ['#7A263A','#1BB1E7'], 'solid'], ['Brighton', 72, ['#0057B8','#FFFFFF'], 'stripes'],
+    ['Nottingham Forest', 71, ['#DD0000','#FFFFFF'], 'solid'], ['Crystal Palace', 70, ['#1B458F','#C4122E'], 'stripes'],
+    ['Fulham', 69, ['#FFFFFF','#000000'], 'solid'], ['Brentford', 68, ['#E30613','#FFFFFF'], 'stripes'],
+    ['Everton', 67, ['#003399','#FFFFFF'], 'solid'], ['Wolves', 66, ['#FDB913','#231F20'], 'solid'],
+    ['Stuttgart', 74, ['#FFFFFF','#E32219'], 'solid'], ['Wolfsburg', 70, ['#65B32E','#FFFFFF'], 'solid'],
+    ['Freiburg', 69, ['#000000','#E2001A'], 'solid'], ['Hoffenheim', 68, ['#1C63B7','#FFFFFF'], 'solid'],
+    ['Union Berlin', 67, ['#EB1923','#FFFFFF'], 'solid'], ['Werder Bremen', 66, ['#1D9053','#FFFFFF'], 'solid'],
+    ['Mönchengladbach', 66, ['#000000','#FFFFFF'], 'solid'], ['Mainz', 64, ['#C3141E','#FFFFFF'], 'solid'],
+    ['Nice', 70, ['#CC0000','#000000'], 'halves'], ['Rennes', 69, ['#E63329','#000000'], 'halves'],
+    ['Lens', 68, ['#FFCB05','#E1000F'], 'stripes'], ['Strasbourg', 65, ['#0072BC','#FFFFFF'], 'solid'],
+    ['Nantes', 64, ['#FCD500','#008C44'], 'solid'], ['Toulouse', 63, ['#582C83','#FFFFFF'], 'solid'],
+    ['Brest', 62, ['#E2001A','#FFFFFF'], 'solid'], ['Reims', 61, ['#E1000F','#FFFFFF'], 'stripes'],
+    ['AZ Alkmaar', 67, ['#E4002B','#FFFFFF'], 'solid'], ['Twente', 64, ['#E30613','#FFFFFF'], 'solid'],
+    ['Utrecht', 62, ['#E30613','#FFFFFF'], 'solid'], ['Guimaraes', 63, ['#FFFFFF','#000000'], 'stripes'],
+    ['Boavista', 60, ['#000000','#FFFFFF'], 'stripes'], ['Rio Ave', 57, ['#008C45','#FFFFFF'], 'solid'],
+    ['Gent', 65, ['#0067B1','#FFFFFF'], 'stripes'], ['Antwerp', 63, ['#E30613','#FFFFFF'], 'solid'],
+    ['Union Saint-Gilloise', 65, ['#FFD100','#003DA5'], 'solid'], ['Standard Liege', 61, ['#E30613','#FFFFFF'], 'stripes'],
+    ['Sturm Graz', 63, ['#000000','#FFFFFF'], 'stripes'], ['LASK', 60, ['#000000','#FFFFFF'], 'halves'],
+    ['Servette', 59, ['#7A1F2B','#FFFFFF'], 'solid'], ['Lugano', 56, ['#000000','#FFFFFF'], 'halves'],
+    ['Viktoria Plzen', 62, ['#0066B3','#E30613'], 'stripes'], ['Slovan Bratislava', 58, ['#005BAA','#FFFFFF'], 'solid'],
+    ['Rakow', 60, ['#C8102E','#0055A4'], 'stripes'], ['Lech Poznan', 59, ['#005CA9','#FFFFFF'], 'solid'],
+    ['Dinamo Kyiv', 66, ['#FFFFFF','#0057B8'], 'solid'], ['Crvena Zvezda', 65, ['#E4002B','#FFFFFF'], 'stripes'],
+    ['Partizan', 61, ['#000000','#FFFFFF'], 'stripes'], ['Hajduk Split', 60, ['#FFFFFF','#0057B8'], 'solid'],
+    ['Maccabi Tel Aviv', 62, ['#FFE500','#0057B8'], 'stripes'], ['Qarabağ', 64, ['#000000','#FFFFFF'], 'solid'],
+    ['Ludogorets', 62, ['#00873E','#FFFFFF'], 'stripes'], ['FCSB', 61, ['#E30613','#003DA5'], 'solid'],
+    ['CFR Cluj', 58, ['#7A1F2B','#FFFFFF'], 'stripes'], ['Bodø/Glimt', 64, ['#FFE500','#000000'], 'solid'],
+    ['Rosenborg', 58, ['#FFFFFF','#000000'], 'solid'], ['Djurgården', 59, ['#005BAA','#87CEEB'], 'stripes'],
+    ['AIK', 57, ['#000000','#FFD700'], 'solid'], ['Midtjylland', 62, ['#000000','#E30613'], 'stripes'],
+    ['Brøndby', 59, ['#FFE500','#005BAA'], 'solid'], ['HJK Helsinki', 55, ['#005BAA','#FFFFFF'], 'solid'],
+    ['PAOK', 63, ['#000000','#FFFFFF'], 'stripes'], ['Aris', 58, ['#FFE500','#000000'], 'solid'],
+    ['Başakşehir', 62, ['#F47B20','#001F5B'], 'solid'], ['Sivasspor', 57, ['#E30613','#FFFFFF'], 'solid'],
+    ['Aberdeen', 57, ['#E4002B','#FFFFFF'], 'solid'], ['Shamrock Rovers', 53, ['#008C45','#FFFFFF'], 'hoop'],
+    ['Astana', 55, ['#00A3E0','#FFE500'], 'solid'], ['Sheriff Tiraspol', 55, ['#FFE500','#000000'], 'solid'],
+    ['Pafos', 54, ['#003DA5','#FFFFFF'], 'solid'], ['APOEL', 56, ['#003DA5','#FFFFFF'], 'stripes'],
+    ['Zrinjski', 52, ['#E30613','#FFFFFF'], 'solid'], ['Petrocub', 48, ['#008C45','#FFE500'], 'solid'],
+    ['Larne', 47, ['#E30613','#FFFFFF'], 'solid'], ['Lincoln Red Imps', 46, ['#000000','#E30613'], 'stripes'],
+    ['Víkingur', 46, ['#E30613','#000000'], 'stripes'], ['Ballkani', 48, ['#E30613','#FFE500'], 'solid'],
+    ['Struga', 47, ['#E30613','#000000'], 'solid'], ['Dinamo Minsk', 50, ['#003DA5','#FFFFFF'], 'solid'],
+    ['Jagiellonia', 57, ['#FFE500','#E30613'], 'stripes'], ['Cercle Brugge', 56, ['#00873E','#000000'], 'stripes'],
+    ['Heidenheim', 60, ['#E30613','#003DA5'], 'solid'], ['St. Gilloise B', 45, ['#FFD100','#000000'], 'solid'],
+    ['Omonia', 53, ['#008C45','#FFFFFF'], 'solid'], ['Legia B', 45, ['#00693E','#FFFFFF'], 'solid'],
+    ['Panevėžys', 45, ['#003DA5','#FFE500'], 'solid'], ['Levski Sofya', 55, ['#003DA5','#FFFFFF'], 'solid'],
+    ['Universitatea Craiova', 54, ['#003DA5','#FFFFFF'], 'stripes'], ['Bragança', 45, ['#E30613','#FFFFFF'], 'solid'],
+    ['Rijeka', 56, ['#FFFFFF','#003DA5'], 'solid'], ['Spartak Trnava', 51, ['#E30613','#000000'], 'solid'],
+    ['Zira', 47, ['#003DA5','#FFFFFF'], 'solid'], ['Milsami', 45, ['#E30613','#FFE500'], 'solid'],
+    ['Vaduz', 46, ['#E30613','#003DA5'], 'solid'], ['Klaksvík', 46, ['#003DA5','#FFFFFF'], 'solid'],
+    ['Borac', 49, ['#E30613','#003DA5'], 'stripes'], ['Noah', 48, ['#FFE500','#000000'], 'solid'],
+    ['Astana B', 45, ['#00A3E0','#FFFFFF'], 'solid'], ['Sabah', 50, ['#003DA5','#FFE500'], 'solid'],
+    ['Paks', 49, ['#008C45','#FFFFFF'], 'solid'], ['Puskás Akadémia', 51, ['#003DA5','#FFE500'], 'solid'],
+    ['Djurgården B', 45, ['#005BAA','#FFFFFF'], 'solid'], ['Kryvbas', 50, ['#003DA5','#FFE500'], 'solid'],
+    ['Sabail', 46, ['#003DA5','#FFFFFF'], 'solid'], ['Torpedo Kutaisi', 47, ['#003DA5','#FFE500'], 'solid'],
+    ['Iberia 1999', 46, ['#E30613','#FFFFFF'], 'solid'], ['Olimpija', 52, ['#008C45','#FFFFFF'], 'solid'],
+    ['Celje', 53, ['#FFE500','#003DA5'], 'stripes'], ['Mladá Boleslav', 50, ['#003DA5','#FFFFFF'], 'solid'],
+    ['Hammarby', 55, ['#008C45','#FFFFFF'], 'solid'], ['Silkeborg', 52, ['#003DA5','#FFFFFF'], 'solid'],
+    ['Fredrikstad', 48, ['#E30613','#FFFFFF'], 'solid'], ['Lillestrøm', 50, ['#FFE500','#000000'], 'solid']
   ];
   EURO_CLUBS.forEach(function(c){ TEAM_COLORS[c[0]] = c[2]; });
 
@@ -2926,7 +2986,8 @@
     const diff = (entRating(hId, guests, wi) + 6) - entRating(aId, guests, wi);
     let hw = 1 / (1 + Math.exp(-diff / 18));
     let aw = 1 - hw;
-    const draw = 0.22;
+    // Güçler yakınlaştıkça beraberlik olasılığı yükselir
+    const draw = Math.max(0.14, Math.min(0.29, 0.28 - Math.abs(diff) / 170));
     hw *= (1 - draw); aw *= (1 - draw);
     let h = Math.round(hw * 100), d = Math.round(draw * 100), a = Math.round(aw * 100);
     const sum = h + d + a;
@@ -2951,10 +3012,10 @@
     const low = entries.slice(T - cut * 2).map(function(e){ return e.id; });
     const rounds = [];
     if(cut > 0) rounds.push({key: 'r32', name: T >= 31 ? 'Son 32' : '1. Tur', week: 2, matches: pairSeeded(low), done: false});
-    rounds.push({key: 'r16', name: 'Son 16', week: 6, matches: [], done: false, seeds: seeds});
-    rounds.push({key: 'qf', name: 'Çeyrek Final', week: 13, matches: [], done: false});
-    rounds.push({key: 'sf', name: 'Yarı Final', week: 22, matches: [], done: false});
-    rounds.push({key: 'f', name: 'Final', week: 32, matches: [], done: false});
+    rounds.push({key: 'r16', name: 'Son 16', week: 7, matches: [], done: false, seeds: seeds});
+    rounds.push({key: 'qf', name: 'Çeyrek Final', week: 14, matches: [], done: false});
+    rounds.push({key: 'sf', name: 'Yarı Final', week: 23, matches: [], done: false});
+    rounds.push({key: 'f', name: 'Final', week: 33, matches: [], done: false});
     return {champion: null, guests: guests, rounds: rounds};
   }
   function cupWinner(m){
@@ -3271,7 +3332,64 @@
   function renderEuro(){
     renderEuroSubtabs();
     renderEuroActive();
+    renderEuroLeagueTable();
     renderEuroBracket();
+  }
+  // 36 takımlı lig aşaması tablosu
+  function renderEuroLeagueTable(){
+    const card = document.getElementById('euro-league-card'); if(!card) return;
+    card.innerHTML = '';
+    if(!state.euro){ card.style.display = 'none'; return; }
+    const def = euroDef(state.euro.view) || EURO_DEFS[0];
+    const c = euroComp(def.key);
+    if(!c || !c.league || c.league.matchdays.length === 0){ card.style.display = 'none'; return; }
+    card.style.display = '';
+    card.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">' +
+      '<p style="font-size:14px; font-weight:500; margin:0;">Lig aşaması <span style="font-size:10px; color:var(--text-tertiary); font-weight:400; margin-left:4px;">36 takım · ' +
+      c.league.playedMd + '/' + c.league.matchdays.length + ' maç günü</span></p>' +
+      '<div style="display:flex; gap:8px; font-size:10px; color:var(--text-secondary); flex-wrap:wrap;">' +
+      '<span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#3fc99a;"></span>1-8 Son 16</span>' +
+      '<span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#d99738;"></span>9-24 Eleme turu</span>' +
+      '<span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#e06464;"></span>25-36 Elendi</span></div></div>';
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'max-height:420px; overflow-y:auto; overflow-x:auto;';
+    const tbl = document.createElement('table');
+    tbl.style.cssText = 'width:100%; font-size:12px; table-layout:fixed; min-width:340px;';
+    tbl.innerHTML = '<thead><tr style="color:var(--text-secondary); text-align:left;">' +
+      '<th style="width:30px; padding:6px 2px 6px 10px; font-weight:400; font-size:11px;">#</th>' +
+      '<th style="padding:6px 2px; font-weight:400; font-size:11px;">Takım</th>' +
+      '<th style="width:24px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">O</th>' +
+      '<th style="width:24px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">G</th>' +
+      '<th style="width:24px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">B</th>' +
+      '<th style="width:24px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">M</th>' +
+      '<th style="width:32px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">AV</th>' +
+      '<th style="width:28px; padding:6px 6px 6px 2px; font-weight:400; text-align:right; font-size:11px;">P</th></tr></thead>';
+    const tb = document.createElement('tbody');
+    euroLeagueTable(c).forEach(function(row, i){
+      const gd = row.GF - row.GA;
+      const isItalian = row.id >= 0;
+      const tr = document.createElement('tr');
+      tr.style.borderTop = i === 0 ? 'none' : '1px solid var(--border-tertiary)';
+      if(isItalian) tr.style.background = 'var(--accent-soft)';
+      const zone = i < 8 ? '#3fc99a' : (i < 24 ? '#d99738' : '#e06464');
+      const tdR = document.createElement('td');
+      tdR.style.cssText = 'padding:6px 2px 6px 10px; font-variant-numeric:tabular-nums; box-shadow:inset 3px 0 0 ' + zone + '; color:var(--text-tertiary);';
+      tdR.textContent = i + 1;
+      const tdN = document.createElement('td'); tdN.style.cssText = 'padding:6px 2px; overflow:hidden; white-space:nowrap;';
+      const nw = document.createElement('span'); nw.style.cssText = 'display:inline-flex; align-items:center; gap:6px; min-width:0; max-width:100%;';
+      const name = entName(row.id, c.guests);
+      const nt = document.createElement('span');
+      nt.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;' + (isItalian ? ' font-weight:700;' : '');
+      nt.textContent = name;
+      nw.appendChild(nt); nw.appendChild(makeBadge(name, 'sl-team-badge-lg')); tdN.appendChild(nw);
+      const cell = function(v){ const td = document.createElement('td'); td.style.cssText = 'padding:6px 2px; text-align:center; color:var(--text-secondary); font-variant-numeric:tabular-nums;'; td.textContent = v; return td; };
+      const tdP = document.createElement('td'); tdP.style.cssText = 'padding:6px 6px 6px 2px; text-align:right; font-weight:700; font-variant-numeric:tabular-nums;'; tdP.textContent = row.Pts;
+      tr.appendChild(tdR); tr.appendChild(tdN);
+      tr.appendChild(cell(row.P)); tr.appendChild(cell(row.W)); tr.appendChild(cell(row.D)); tr.appendChild(cell(row.L));
+      tr.appendChild(cell(gd > 0 ? '+' + gd : gd)); tr.appendChild(tdP);
+      tb.appendChild(tr);
+    });
+    tbl.appendChild(tb); wrap.appendChild(tbl); card.appendChild(wrap);
   }
   function renderEuroSubtabs(){
     const bar = document.getElementById('euro-subtabs'); if(!bar) return;
@@ -3322,40 +3440,46 @@
       card.appendChild(strip);
       return;
     }
-    const act = euroActiveRound(c);
-    if(!act){ card.innerHTML += '<div class="sl-empty-hint">Kupa programı bekleniyor.</div>'; return; }
-    const r = act.r;
+    const unit = euroNextUnit(c);
+    if(!unit){ card.innerHTML += '<div class="sl-empty-hint">Kupa programı bekleniyor.</div>'; return; }
+    const r = unit;
     const done = fullyPlayedWeekCount();
-    const due = r.matches.length > 0 && done >= r.week && (act.ri === 0 || c.rounds[act.ri - 1].done);
+    const due = unit.matches.length > 0 && done >= unit.week;
     const status = document.createElement('span');
     status.style.cssText = 'font-size:11px; color:var(--text-tertiary);';
-    status.textContent = r.matches.length === 0 ? 'Kura, önceki tur bitince çekilecek'
-      : (due ? r.name + ' oynanmaya hazır' : r.name + ', ' + r.week + '. lig haftası tamamlanınca oynanabilir');
+    status.textContent = unit.matches.length === 0 ? 'Kura, önceki tur bitince çekilecek'
+      : (due ? unit.name + ' oynanmaya hazır' : unit.name + ', ' + unit.week + '. lig haftası tamamlanınca oynanabilir');
     head.appendChild(status);
-    if(r.matches.length === 0) return;
+    if(unit.matches.length === 0) return;
     const info = document.createElement('div');
     info.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;';
     const pill = document.createElement('span'); pill.className = 'sl-week-pill';
     pill.style.cssText = 'background:' + def.color + '22; color:' + def.color + ';';
-    pill.textContent = r.name;
+    pill.textContent = unit.type === 'md' ? ('Lig aşaması · ' + unit.name) : unit.name;
     info.appendChild(pill);
     const btn = document.createElement('button');
     btn.className = 'sl-btn sl-btn-primary';
     btn.style.cssText = due ? 'background:' + def.color + '; border-color:' + def.color + ';' : '';
-    btn.textContent = '▶ Turu oynat';
+    btn.textContent = unit.type === 'md' ? '▶ Maç gününü oynat' : '▶ Turu oynat';
     btn.disabled = !due;
-    if(!due) btn.title = r.week + '. lig haftası tamamlanınca aktif olur';
+    if(!due) btn.title = unit.week + '. lig haftası tamamlanınca aktif olur';
     btn.addEventListener('click', function(){ euroPlayManual(def.key); });
     info.appendChild(btn);
     const hint = document.createElement('span');
     hint.style.cssText = 'font-size:10px; color:var(--text-tertiary);';
-    hint.textContent = due ? 'Skorları elle girebilirsin; beraberlikte penaltıyı da sen belirlersin.'
-      : 'Sen oynatmazsan tur, lig bir hafta daha ilerleyince otomatik oynanır.';
+    hint.textContent = due
+      ? (unit.type === 'md' ? 'Skorları elle girebilirsin; lig aşamasında beraberlik normaldir.' : 'Skorları elle girebilirsin; beraberlikte penaltıyı da sen belirlersin.')
+      : 'Sen oynatmazsan, lig bir hafta daha ilerleyince otomatik oynanır.';
     info.appendChild(hint);
     card.appendChild(info);
     const list = document.createElement('div');
     list.style.cssText = 'display:flex; flex-direction:column; gap:6px;';
-    r.matches.forEach(function(m){
+    // Lig aşamasında 18 maç oynanır; İtalyan takımlarının maçları öne alınır
+    const ordered = unit.matches.slice().sort(function(x, y){
+      const it = function(m){ return (m.h >= 0 || m.a >= 0) ? 0 : 1; };
+      return it(x) - it(y);
+    });
+    ordered.forEach(function(m){
       const block = document.createElement('div');
       block.className = 'sl-match-block';
       const isItalian = function(id){ return id >= 0; };
@@ -3394,7 +3518,7 @@
             m.pens = null;
             scheduleSave();
             const isDraw = m.hg !== null && m.ag !== null && m.hg === m.ag;
-            if(isDraw !== wasDraw) renderEuroActive();
+            if(unit.type === 'ko' && isDraw !== wasDraw) renderEuroActive();
             euroFinalizeIfComplete(def.key);
           });
           return inp;
@@ -3409,7 +3533,8 @@
       }
       row.appendChild(mkSide(m.h, true)); row.appendChild(sc); row.appendChild(mkSide(m.a, false));
       block.appendChild(row);
-      if(due && m.hg !== null && m.ag !== null && m.hg === m.ag){
+      // Lig aşamasında beraberlik geçerlidir; penaltı yalnızca eleme turlarında
+      if(due && unit.type === 'ko' && m.hg !== null && m.ag !== null && m.hg === m.ag){
         const penRow = document.createElement('div');
         penRow.style.cssText = 'display:flex; align-items:center; justify-content:center; gap:6px; margin-top:6px; font-size:10px; color:var(--text-tertiary);';
         const lbl = document.createElement('span'); lbl.textContent = '⚽ Penaltılar:';
@@ -3457,8 +3582,13 @@
     const def = euroDef(state.euro.view) || EURO_DEFS[0];
     const c = euroComp(def.key); if(!c) return;
     card.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">' +
-      '<p style="font-size:14px; font-weight:500; margin:0;">Turnuva ağacı</p>' +
+      '<p style="font-size:14px; font-weight:500; margin:0;">Eleme aşaması</p>' +
       '<span style="font-size:11px; color:var(--text-tertiary);">Serie A temsilcileri kalın yazıyla gösterilir</span></div>';
+    if(!euroLeagueDone(c)){
+      const e = document.createElement('div'); e.className = 'sl-empty-hint';
+      e.textContent = 'Eleme kuraları, 36 takımlı lig aşaması tamamlanınca çekilecek. İlk 8 doğrudan Son 16\'ya, 9-24 arası eleme turuna gider.';
+      card.appendChild(e); return;
+    }
     c.rounds.forEach(function(r){
       const sec = document.createElement('div'); sec.style.marginBottom = '12px';
       const head = document.createElement('div');
@@ -3474,7 +3604,9 @@
       r.matches.forEach(function(m){
         const w = cupWinner(m);
         const row = document.createElement('div');
-        row.style.cssText = 'display:grid; grid-template-columns:minmax(0,1fr) 74px minmax(0,1fr); align-items:center; gap:8px; font-size:12px; padding:5px 8px; border-radius:var(--radius-md); background:var(--bg-secondary); margin-bottom:4px;';
+        const hasItalian = m.h >= 0 || m.a >= 0;
+        row.style.cssText = 'display:grid; grid-template-columns:minmax(0,1fr) 74px minmax(0,1fr); align-items:center; gap:8px; font-size:12px; padding:5px 8px; border-radius:var(--radius-md); background:var(--bg-secondary); margin-bottom:4px;' +
+          (hasItalian ? ' box-shadow:inset 2px 0 0 ' + def.color + ';' : '');
         const mkSide = function(id, right){
           const s = document.createElement('span');
           s.style.cssText = 'display:flex; align-items:center; gap:6px; min-width:0;' + (right ? '' : ' justify-content:flex-end;');
@@ -3551,37 +3683,94 @@
     {key: 'uel', name: 'Avrupa Ligi', short: 'AL', title: 'uel', color: '#d99738', minStr: 60},
     {key: 'uecl', name: 'Konferans Ligi', short: 'KL', title: 'uecl', color: '#3fc99a', minStr: 0}
   ];
-  const EURO_WEEKS = {po: 4, qf: 12, sf: 22, f: 33};
+  // UEFA'nın güncel formatı: 36 takımlı lig aşaması (8 maç) → eleme turu (9-24) → Son 16 → ... → Final
+  const EURO_SIZE = 36, EURO_MD = 8;
+  // Coppa haftalarıyla çakışmayacak şekilde yerleştirilmiştir
+  const EURO_MD_WEEKS = [3, 5, 8, 10, 12, 15, 17, 19];
+  const EURO_WEEKS = {po: 22, r16: 26, qf: 29, sf: 32, f: 35};
   function euroDef(key){ return EURO_DEFS.find(function(d){ return d.key === key; }); }
   // Lig sıralaması + kupa şampiyonundan Avrupa kotalarını belirler
   function computeEuroQualification(table, coppaWinner){
     const nameAt = function(i){ return table[i] ? table[i].name : null; };
     const used = {};
     const take = function(n){ if(!n || used[n]) return null; used[n] = true; return n; };
+    // Yeni UEFA sisteminde ilk 4 doğrudan ŞL lig aşamasına girer
     const q = {ucl: {direct: [], po: []}, uel: {direct: [], po: []}, uecl: {direct: [], po: []}};
-    [0, 1, 2].forEach(function(i){ const n = take(nameAt(i)); if(n) q.ucl.direct.push(n); });
-    const fourth = take(nameAt(3)); if(fourth) q.ucl.po.push(fourth);
+    [0, 1, 2, 3].forEach(function(i){ const n = take(nameAt(i)); if(n) q.ucl.direct.push(n); });
     const cw = take(coppaWinner); if(cw) q.uel.direct.push(cw);
     for(let i = 4; i < table.length && q.uel.direct.length < 2; i++){ const n = take(nameAt(i)); if(n) q.uel.direct.push(n); }
-    for(let i = 4; i < table.length && q.uecl.po.length < 1; i++){ const n = take(nameAt(i)); if(n) q.uecl.po.push(n); }
+    for(let i = 4; i < table.length && q.uecl.direct.length < 1; i++){ const n = take(nameAt(i)); if(n) q.uecl.direct.push(n); }
     return q;
   }
-  // Bir Avrupa kupası kurar: 4 direkt + 8 takımlı ön eleme (4 galip) → Çeyrek Final
-  function initEuroComp(def, italianDirect, italianPo, pool){
+  // Her takımın derecesi çift olduğundan Euler yönlendirmesi ev/deplasmanı tam yarı yarıya böler
+  function orientEulerian(ids, matches){
+    const adj = {}; ids.forEach(function(i){ adj[i] = []; });
+    matches.forEach(function(m, i){ adj[m.h].push(i); adj[m.a].push(i); });
+    const used = new Array(matches.length).fill(false);
+    const ptr = {}; ids.forEach(function(i){ ptr[i] = 0; });
+    ids.forEach(function(start){
+      const stack = [start];
+      while(stack.length){
+        const v = stack[stack.length - 1];
+        while(ptr[v] < adj[v].length && used[adj[v][ptr[v]]]) ptr[v]++;
+        if(ptr[v] >= adj[v].length){ stack.pop(); continue; }
+        const ei = adj[v][ptr[v]];
+        used[ei] = true;
+        const m = matches[ei];
+        const w = (m.h === v) ? m.a : m.h;
+        m.h = v; m.a = w; // yürüyüş yönü ev sahipliğini belirler
+        stack.push(w);
+      }
+    });
+  }
+  // İsviçre sistemi takvim: her takım 8 farklı rakiple, 4 iç 4 dış saha
+  function buildSwissSchedule(ids, rounds){
+    const met = {}; ids.forEach(function(i){ met[i] = {}; });
+    const mds = [];
+    const all = [];
+    for(let md = 0; md < rounds; md++){
+      let built = null;
+      for(let attempt = 0; attempt < 500 && !built; attempt++){
+        const pool = shuffleArr(ids.slice());
+        const used = {}; const matches = []; let fail = false;
+        for(let i = 0; i < pool.length; i++){
+          const x = pool[i];
+          if(used[x]) continue;
+          let y = null;
+          for(let j = i + 1; j < pool.length; j++){
+            const c = pool[j];
+            if(used[c] || met[x][c]) continue;
+            y = c; break;
+          }
+          if(y === null){ fail = true; break; }
+          used[x] = true; used[y] = true;
+          matches.push({h: x, a: y, hg: null, ag: null, pens: null});
+        }
+        if(!fail && matches.length === ids.length / 2) built = matches;
+      }
+      if(!built) return null;
+      built.forEach(function(m){ met[m.h][m.a] = true; met[m.a][m.h] = true; all.push(m); });
+      mds.push(built);
+    }
+    orientEulerian(ids, all);
+    return mds;
+  }
+  function initEuroComp(def, italianNames, pool){
     const idxOf = function(name){ return state.teams.findIndex(function(t){ return t.name === name; }); };
     const guests = [];
     const guestId = function(club){ guests.push({name: club[0], strength: club[1]}); return -guests.length; };
-    const directIds = [], poIds = [];
-    italianDirect.forEach(function(n){ const i = idxOf(n); if(i >= 0) directIds.push(i); });
-    italianPo.forEach(function(n){ const i = idxOf(n); if(i >= 0) poIds.push(i); });
-    while(directIds.length < 4 && pool.length > 0) directIds.push(guestId(pool.shift()));
-    while(poIds.length < 8 && pool.length > 0) poIds.push(guestId(pool.shift()));
-    const seeds = shuffleArr(directIds);
+    const ids = [];
+    italianNames.forEach(function(n){ const i = idxOf(n); if(i >= 0) ids.push(i); });
+    while(ids.length < EURO_SIZE && pool.length > 0) ids.push(guestId(pool.shift()));
+    let mds = buildSwissSchedule(ids, EURO_MD);
+    if(!mds) mds = buildSwissSchedule(ids, EURO_MD); // nadir başarısızlıkta tek tekrar
     return {
       key: def.key, name: def.name, champion: null, guests: guests,
+      league: {ids: ids, matchdays: mds || [], playedMd: 0},
       rounds: [
-        {key: 'po', name: 'Ön Eleme', week: EURO_WEEKS.po, matches: pairSeeded(poIds), done: false},
-        {key: 'qf', name: 'Çeyrek Final', week: EURO_WEEKS.qf, matches: [], done: false, seeds: seeds},
+        {key: 'po', name: 'Eleme Turu', week: EURO_WEEKS.po, matches: [], done: false},
+        {key: 'r16', name: 'Son 16', week: EURO_WEEKS.r16, matches: [], done: false},
+        {key: 'qf', name: 'Çeyrek Final', week: EURO_WEEKS.qf, matches: [], done: false},
         {key: 'sf', name: 'Yarı Final', week: EURO_WEEKS.sf, matches: [], done: false},
         {key: 'f', name: 'Final', week: EURO_WEEKS.f, matches: [], done: false}
       ]
@@ -3589,16 +3778,73 @@
   }
   function initEuro(qual){
     // Kulüpler güç seviyesine göre kupalara dağıtılır; her kupa kendi havuzunu kullanır
-    const shuffled = shuffleArr(EURO_CLUBS.slice());
+    let remaining = shuffleArr(EURO_CLUBS.slice());
     const comps = {};
     EURO_DEFS.forEach(function(def){
-      const eligible = shuffled.filter(function(c){ return c[1] >= def.minStr; });
-      const pool = shuffleArr(eligible).slice(0, 12);
-      pool.forEach(function(c){ const i = shuffled.indexOf(c); if(i >= 0) shuffled.splice(i, 1); });
       const q = qual[def.key] || {direct: [], po: []};
-      comps[def.key] = initEuroComp(def, q.direct, q.po, pool);
+      const italians = q.direct.concat(q.po);
+      const need = EURO_SIZE - italians.length;
+      const eligible = remaining.filter(function(c){ return c[1] >= def.minStr; });
+      // Güçlüden zayıfa doğru seçilir, biraz karıştırılarak sezondan sezona çeşitlilik sağlanır
+      eligible.sort(function(a, b){ return b[1] - a[1]; });
+      const pool = shuffleArr(eligible.slice(0, Math.min(eligible.length, need + 8))).slice(0, need);
+      let short = need - pool.length;
+      if(short > 0){
+        const extra = remaining.filter(function(c){ return pool.indexOf(c) === -1; }).slice(0, short);
+        extra.forEach(function(c){ pool.push(c); });
+      }
+      pool.forEach(function(c){ const i = remaining.indexOf(c); if(i >= 0) remaining.splice(i, 1); });
+      comps[def.key] = initEuroComp(def, italians, pool);
     });
     return {comps: comps, view: 'ucl'};
+  }
+  // Lig aşaması puan tablosu
+  function euroLeagueTable(c){
+    const rows = {};
+    c.league.ids.forEach(function(id){ rows[id] = {id: id, P: 0, W: 0, D: 0, L: 0, GF: 0, GA: 0, Pts: 0}; });
+    c.league.matchdays.forEach(function(md, mi){
+      if(mi >= c.league.playedMd) return;
+      md.forEach(function(m){
+        if(m.hg === null || m.ag === null) return;
+        const H = rows[m.h], A = rows[m.a];
+        if(!H || !A) return;
+        H.P++; A.P++; H.GF += m.hg; H.GA += m.ag; A.GF += m.ag; A.GA += m.hg;
+        if(m.hg > m.ag){ H.W++; H.Pts += 3; A.L++; }
+        else if(m.hg < m.ag){ A.W++; A.Pts += 3; H.L++; }
+        else { H.D++; A.D++; H.Pts++; A.Pts++; }
+      });
+    });
+    return Object.values(rows).sort(function(a, b){
+      return b.Pts - a.Pts || (b.GF - b.GA) - (a.GF - a.GA) || b.GF - a.GF ||
+        entName(a.id, c.guests).localeCompare(entName(b.id, c.guests), 'tr');
+    });
+  }
+  function euroLeagueDone(c){ return c.league.matchdays.length > 0 && c.league.playedMd >= c.league.matchdays.length; }
+  function euroPlayMatchday(c){
+    const md = c.league.matchdays[c.league.playedMd];
+    if(!md) return;
+    md.forEach(function(m){
+      if(m.hg === null || m.ag === null){
+        const sc = entSimScore(m.h, m.a, c.guests);
+        m.hg = sc[0]; m.ag = sc[1];
+      }
+    });
+    c.league.playedMd++;
+    euroFatigueList(md);
+  }
+  // Lig aşaması bitince eleme kuraları çekilir: 1-8 Son 16'ya, 9-24 eleme turuna
+  function euroSeedKnockout(c){
+    const po = c.rounds[0];
+    if(po.matches.length > 0 || !euroLeagueDone(c)) return;
+    const table = euroLeagueTable(c);
+    const poTeams = table.slice(8, 24).map(function(r){ return r.id; });
+    const matches = [];
+    for(let i = 0; i < poTeams.length / 2; i++){
+      // 9-24, 10-23 ... üst sıradaki ikinci maçın ev sahibi olur (rövanş avantajı temsili)
+      matches.push({h: poTeams[poTeams.length - 1 - i], a: poTeams[i], hg: null, ag: null, pens: null});
+    }
+    po.matches = matches;
+    c.koSeeds = table.slice(0, 8).map(function(r){ return r.id; });
   }
   // Avrupa kupaları yoksa kurar: geçmiş sezon varsa onun tablosundan,
   // yoksa mevcut güç sıralamasından kota belirlenir
@@ -3623,6 +3869,21 @@
     for(let i = 0; i < c.rounds.length; i++){ if(!c.rounds[i].done) return {r: c.rounds[i], ri: i}; }
     return null;
   }
+  // Sıradaki oynanacak birim: lig aşaması maç günü ya da eleme turu
+  function euroNextUnit(c){
+    if(!c || c.champion) return null;
+    if(!euroLeagueDone(c)){
+      const mi = c.league.playedMd;
+      const md = c.league.matchdays[mi];
+      if(!md) return null;
+      return {type: 'md', index: mi, week: EURO_MD_WEEKS[mi] || (2 + mi * 2), name: (mi + 1) + '. Maç Günü', matches: md};
+    }
+    euroSeedKnockout(c);
+    const act = euroActiveRound(c);
+    if(!act) return null;
+    if(act.matches && act.matches.length === 0 && act.ri > 0 && c.rounds[act.ri - 1].done) euroDrawNext(c, act.ri - 1);
+    return {type: 'ko', index: act.ri, week: act.r.week, name: act.r.name, matches: act.r.matches, round: act.r};
+  }
   function euroPlayRound(c, r){
     r.matches.forEach(function(m){
       if(m.hg === null || m.ag === null){
@@ -3634,19 +3895,29 @@
     r.done = true;
     euroFatigue(r);
   }
-  function euroFatigue(r){
+  function euroFatigueList(matches){
     if(!state.cupFatigue) state.cupFatigue = {};
     const nextWeek = fullyPlayedWeekCount();
-    r.matches.forEach(function(m){
+    matches.forEach(function(m){
       if(m.h >= 0) state.cupFatigue[m.h] = nextWeek;
       if(m.a >= 0) state.cupFatigue[m.a] = nextWeek;
     });
   }
+  function euroFatigue(r){ euroFatigueList(r.matches); }
   function euroDrawNext(c, ri){
     const cur = c.rounds[ri], next = c.rounds[ri + 1];
     if(!next || next.matches.length > 0 || !cur.done) return;
     const winners = cur.matches.map(cupWinner).filter(function(w){ return w !== null; });
-    next.matches = pairUp((next.seeds || []).concat(winners));
+    // Son 16'da lig aşamasının ilk 8'i, eleme turu galipleriyle eşleşir
+    if(next.key === 'r16'){
+      const seeds = shuffleArr((c.koSeeds || []).slice());
+      const ws = shuffleArr(winners);
+      const ms = [];
+      for(let i = 0; i < seeds.length && i < ws.length; i++) ms.push({h: seeds[i], a: ws[i], hg: null, ag: null, pens: null});
+      next.matches = ms;
+      return;
+    }
+    next.matches = pairUp(winners);
   }
   function euroRoundNews(c, r){
     const def = euroDef(c.key);
@@ -3691,21 +3962,46 @@
     if(!state.euro) return;
     const done = fullyPlayedWeekCount();
     EURO_DEFS.forEach(function(def){
-      const c = euroComp(def.key); if(!c || c.champion) return;
-      for(let ri = 0; ri < c.rounds.length; ri++){
-        const r = c.rounds[ri];
-        if(r.done){ euroDrawNext(c, ri); continue; }
-        if(r.matches.length === 0){
-          if(ri > 0 && c.rounds[ri - 1].done) euroDrawNext(c, ri - 1);
-          if(r.matches.length === 0) break;
+      const c = euroComp(def.key); if(!c) return;
+      for(let guard = 0; guard < 20; guard++){
+        const unit = euroNextUnit(c);
+        if(!unit || unit.matches.length === 0) break;
+        if(done < Math.min(unit.week + 1, state.fixtures.length)) break;
+        if(unit.type === 'md'){
+          euroPlayMatchday(c);
+          euroMatchdayNews(c, unit);
+        } else {
+          euroPlayRound(c, unit.round);
+          euroDrawNext(c, unit.index);
+          euroRoundNews(c, unit.round);
+          euroCrown(c, unit.index, unit.round);
         }
-        if(done < Math.min(r.week + 1, state.fixtures.length)) break;
-        euroPlayRound(c, r);
-        euroDrawNext(c, ri);
-        euroRoundNews(c, r);
-        euroCrown(c, ri, r);
       }
     });
+  }
+  function euroMatchdayNews(c, unit){
+    const def = euroDef(c.key);
+    const italian = [];
+    unit.matches.forEach(function(m){
+      [m.h, m.a].forEach(function(id){
+        if(id < 0) return;
+        const isHome = id === m.h;
+        const gf = isHome ? m.hg : m.ag, ga = isHome ? m.ag : m.hg;
+        italian.push(state.teams[id].name + ' ' + (gf > ga ? 'kazandı' : (gf === ga ? 'berabere kaldı' : 'kaybetti')) +
+          ' (' + entName(m.h, c.guests) + ' ' + m.hg + '-' + m.ag + ' ' + entName(m.a, c.guests) + ')');
+      });
+    });
+    if(italian.length === 0) return;
+    const table = euroLeagueTable(c);
+    const itRows = table.map(function(r, i){ return {r: r, pos: i + 1}; }).filter(function(x){ return x.r.id >= 0; });
+    const posLine = itRows.map(function(x){ return x.pos + '. ' + entName(x.r.id, c.guests) + ' (' + x.r.Pts + ' p)'; }).join(' · ');
+    state.news = (state.news || []).concat([{
+      week: 0, tag: def.short,
+      headline: def.name + ' ' + unit.name + ': ' + italian.length + ' İtalyan temsilcisi sahnedeydi',
+      body: def.name + ' lig aşamasının ' + unit.name.toLowerCase() + ' geride kaldı. ' + italian.join('. ') + '.' +
+        '\n\n36 takımlı lig aşamasında İtalyan takımlarının durumu: ' + posLine + '. İlk 8 doğrudan son 16\'ya, 9-24 arası eleme turuna gidiyor.',
+      teamName: itRows[0] ? entName(itRows[0].r.id, c.guests) : undefined
+    }]);
   }
   function euroCrown(c, ri, r){
     if(ri !== c.rounds.length - 1) return;
@@ -3717,41 +4013,52 @@
   }
   function euroPlayManual(key){
     const c = euroComp(key); if(!c) return;
-    const act = euroActiveRound(c); if(!act || act.r.matches.length === 0) return;
-    if(act.ri > 0 && !c.rounds[act.ri - 1].done) return;
-    if(fullyPlayedWeekCount() < act.r.week) return;
-    euroPlayRound(c, act.r);
-    euroDrawNext(c, act.ri);
-    euroRoundNews(c, act.r);
-    euroCrown(c, act.ri, act.r);
+    const unit = euroNextUnit(c);
+    if(!unit || unit.matches.length === 0) return;
+    if(fullyPlayedWeekCount() < unit.week) return;
+    if(unit.type === 'md'){
+      euroPlayMatchday(c);
+      euroMatchdayNews(c, unit);
+    } else {
+      euroPlayRound(c, unit.round);
+      euroDrawNext(c, unit.index);
+      euroRoundNews(c, unit.round);
+      euroCrown(c, unit.index, unit.round);
+    }
     scheduleSave();
     renderEuro();
   }
   function euroFinalizeIfComplete(key){
     const c = euroComp(key); if(!c) return;
-    const act = euroActiveRound(c); if(!act) return;
-    if(!act.r.matches.every(cupMatchResolved)) return;
-    act.r.done = true;
-    euroFatigue(act.r);
-    euroDrawNext(c, act.ri);
-    euroRoundNews(c, act.r);
-    euroCrown(c, act.ri, act.r);
+    const unit = euroNextUnit(c); if(!unit) return;
+    if(unit.type === 'md'){
+      if(!unit.matches.every(function(m){ return m.hg !== null && m.ag !== null; })) return;
+      c.league.playedMd++;
+      euroFatigueList(unit.matches);
+      euroMatchdayNews(c, unit);
+    } else {
+      if(!unit.matches.every(cupMatchResolved)) return;
+      unit.round.done = true;
+      euroFatigue(unit.round);
+      euroDrawNext(c, unit.index);
+      euroRoundNews(c, unit.round);
+      euroCrown(c, unit.index, unit.round);
+    }
     scheduleSave();
     renderEuro();
   }
-  // Avrupa turunun sırası geldiyse kullanıcıyı Avrupa sekmesine götür
+  // Avrupa maç gününün/turunun sırası geldiyse kullanıcıyı Avrupa sekmesine götür
   function maybeGoToEuro(){
-    if(!state.euro) return;
+    if(!state.euro) return false;
     const done = fullyPlayedWeekCount();
     if(!state.euroPrompted) state.euroPrompted = {};
     for(let i = 0; i < EURO_DEFS.length; i++){
       const def = EURO_DEFS[i];
       const c = euroComp(def.key); if(!c || c.champion) continue;
-      const act = euroActiveRound(c);
-      if(!act || act.r.matches.length === 0) continue;
-      if(act.ri > 0 && !c.rounds[act.ri - 1].done) continue;
-      if(done < act.r.week) continue;
-      const tag = def.key + ':' + act.r.key;
+      const unit = euroNextUnit(c);
+      if(!unit || unit.matches.length === 0) continue;
+      if(done < unit.week) continue;
+      const tag = def.key + ':' + unit.type + unit.index;
       if(state.euroPrompted[tag]) continue;
       state.euroPrompted[tag] = true;
       state.euro.view = def.key;
