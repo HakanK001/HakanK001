@@ -9,6 +9,9 @@ Tamamen çevrimdışı çalışan, tek dosyalık (framework'süz) bir Serie A se
 - **Transfer piyasası** — sezon aralarında kulüpler oyuncu alıp satar, düşen takımların yıldızları büyük kulüplere gider, kadrolar altyapıdan gençlerle tamamlanır; takım gücü kadrodan hesaplanır
 - **Coppa Italia** — kendi sekmesinde, lig formatında: kura, ön eleme + eleme turları, penaltılar; skorları elle girebilir veya "Turu oynat" ile simüle edebilirsin, turlar lig haftalarıyla birlikte ilerler
 - **Kalıcı kadro evrimi** — bitirilen sıra kadronun hedef seviyesini belirler: üst üste Avrupa potasında biten bir takım birkaç sezonda 72-75+ bandına tırmanır, sıralamasının çok altında kalan dev yavaşça aşınır
+- **Yükselme seçimi & takım kurucu** — sezon sonunda lige yükselecek takımları listeden sen seç, ya da adını, renklerini ve kadro profilini belirlediğin kendi takımını kur (kalıcıdır, düşse bile havuzdan geri gelebilir)
+- **Derin gerçekçilik** — ev/deplasman form ayrımı ("ev canavarı" profili), sezon ilerledikçe sönen momentum, kupa maçı sonrası lig haftasında hafif yorgunluk
+- **Üç tema** — koyu, açık ve Notte (simsiyah/İtalyan yeşili); cam efektli yapışkan sekme çubuğu
 - **Efsaneler arşivi** — tüm sezonların kariyer gol/asist toplamları (emekliler dahil) Kupalar sekmesinde birikir; fikstürde her hafta "Haftanın Maçı" öne çıkarılır
 - **Momentum sistemi** — şampiyonluk ve iyi sezonlar ertesi sezona taşınan bir momentum kazandırır (kademeli söner); sürpriz şampiyon bir anda dibe çakılmaz
 - **Gerçekçi simülasyon** — güç + son 5 maç formu + sezon geneli puan ortalaması + sezon içi ikili üstünlük (H2H) + hücum/savunma gol profilleri birlikte değerlendirilir, Poisson dağılımıyla sürpriz payı korunur
