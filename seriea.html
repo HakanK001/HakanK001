@@ -146,10 +146,12 @@
   .sl-form-W { background: #C0DD97; color: #173404; }
   .sl-form-D { background: #D3D1C7; color: #2C2C2A; }
   .sl-form-L { background: #F7C1C1; color: #501313; }
-  .sl-team-badge { display: inline-block; position: relative; width: 13px; height: 13px; border-radius: 4px; flex-shrink: 0; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.16), 0 1px 2px rgba(0,0,0,0.45); transform: rotate(0deg); overflow: hidden; }
-  .sl-team-badge::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 45%; background: linear-gradient(180deg, rgba(255,255,255,0.30), transparent); pointer-events: none; }
-  .sl-team-badge-lg { width: 15px; height: 15px; border-radius: 5px; }
-  .sl-team-badge-xl { width: 26px; height: 26px; border-radius: 8px; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.18), 0 2px 6px rgba(0,0,0,0.5); }
+  .sl-team-badge { display: inline-block; position: relative; width: 13px; height: 14px; flex-shrink: 0; clip-path: polygon(8% 0, 92% 0, 100% 12%, 100% 58%, 50% 100%, 0 58%, 0 12%); filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.5)); overflow: hidden; }
+  .sl-team-badge::before { content: ''; position: absolute; inset: 0; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.28); pointer-events: none; }
+  .sl-team-badge::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 42%; background: linear-gradient(180deg, rgba(255,255,255,0.32), transparent); pointer-events: none; }
+  .sl-team-badge-lg { width: 15px; height: 16px; }
+  .sl-team-badge-xl { width: 28px; height: 31px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.55)); }
+  .sl-team-badge-xl::before { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.30); }
 
   #sl-tooltip { position: fixed; background: #2C2C2A; color: #F1EFE8; padding: 5px 9px; border-radius: 4px; font-size: 11px; white-space: nowrap; pointer-events: none; z-index: 9999; opacity: 0; transition: opacity 0.12s; }
   #sl-tooltip.show { opacity: 1; }
@@ -509,6 +511,35 @@
     return TEAM_COLORS[name] || ['#444','#888'];
   }
   function teamHasColors(name){ return !!(TEAM_COLORS[name] || (customTeams[name] && customTeams[name].colors)); }
+  // Forma kimliğine uygun arma desenleri: çubuklu, yarı yarıya, bantlı, düz+şerit, çapraz
+  const TEAM_PATTERN = {
+    'Juventus':'stripes','Inter':'stripes','Milan':'stripes','Atalanta':'stripes','Udinese':'stripes',
+    'Sassuolo':'stripes','Bologna':'stripes','Lecce':'stripes','Monza':'stripes','Cremonese':'stripes',
+    'Modena':'stripes','Palermo':'stripes','Ascoli':'stripes','Catania':'stripes','Foggia':'stripes',
+    'SPAL':'stripes','Cesena':'stripes','Catanzaro':'stripes','Cosenza':'stripes','Frosinone':'stripes',
+    'Genoa':'halves','Cagliari':'halves','Ternana':'halves','Pescara':'halves','Bari':'halves','Hellas Verona':'halves',
+    'Sampdoria':'hoop','Parma':'hoop',
+    'Napoli':'solid','Lazio':'solid','Fiorentina':'solid','Roma':'solid','Torino':'solid','Spezia':'solid',
+    'Empoli':'solid','Brescia':'solid','Perugia':'solid','Avellino':'solid','Padova':'solid','Reggiana':'solid',
+    'Salernitana':'solid','Venezia':'solid','Pisa':'solid','Como':'solid'
+  };
+  function getTeamPattern(name){
+    if(customTeams[name] && customTeams[name].pattern) return customTeams[name].pattern;
+    return TEAM_PATTERN[name] || 'sash';
+  }
+  function patternBackground(pattern, bottom, top){
+    switch(pattern){
+      case 'stripes': return 'repeating-linear-gradient(90deg, ' + bottom + ' 0 12.5%, ' + top + ' 12.5% 25%)';
+      case 'halves': return 'linear-gradient(90deg, ' + bottom + ' 0 50%, ' + top + ' 50% 100%)';
+      case 'hoop': return 'linear-gradient(180deg, ' + bottom + ' 0 30%, ' + top + ' 30% 62%, ' + bottom + ' 62% 100%)';
+      case 'solid': return 'linear-gradient(180deg, ' + bottom + ' 0 74%, ' + top + ' 74% 100%)';
+      default: return 'linear-gradient(125deg, ' + top + ' 0%, ' + top + ' 47%, ' + bottom + ' 53%, ' + bottom + ' 100%)';
+    }
+  }
+  function badgeBackground(name){
+    const c = getTeamColors(name);
+    return patternBackground(getTeamPattern(name), c[0], c[1]);
+  }
   function teamPrimaryColor(name){
     const [b,t] = getTeamColors(name);
     if(t === '#FFFFFF') return b;
@@ -516,10 +547,9 @@
     return b;
   }
   function makeBadge(teamName, sizeClass){
-    const [bottom, top] = getTeamColors(teamName);
     const badge = document.createElement('span');
     badge.className = 'sl-team-badge ' + (sizeClass || '');
-    badge.style.background = 'linear-gradient(125deg, ' + top + ' 0%, ' + top + ' 47%, ' + bottom + ' 53%, ' + bottom + ' 100%)';
+    badge.style.background = badgeBackground(teamName);
     return badge;
   }
 
@@ -2563,13 +2593,19 @@
     scheduleSave();
     renderCoppaActive(); renderCup();
   }
-  // Elle girilen skorlarla tur tamamlandıysa sonuçlandır
+  // Elle girilen skorlarla tur tamamlandıysa sonuçlandır.
+  // Beraberliklerde penaltı skorunu da kullanıcı girer; penaltılar berabere bitemez.
+  function cupMatchResolved(m){
+    if(m.hg === null || m.ag === null) return false;
+    if(m.hg !== m.ag) return true;
+    return !!(m.pens && m.pens[0] !== null && m.pens[0] !== undefined &&
+      m.pens[1] !== null && m.pens[1] !== undefined && m.pens[0] !== m.pens[1]);
+  }
   function finalizeCupRoundIfComplete(ri){
     const rounds = state.cup.rounds;
     const r = rounds[ri];
     if(!r || r.done) return;
-    if(!r.matches.every(function(m){ return m.hg !== null && m.ag !== null; })) return;
-    r.matches.forEach(function(m){ if(m.hg === m.ag && !m.pens) genPens(m); });
+    if(!r.matches.every(cupMatchResolved)) return;
     r.done = true;
     applyCupFatigue(r);
     drawNextCupRound(ri);
@@ -2657,7 +2693,7 @@
     const hint = document.createElement('span');
     hint.style.cssText = 'font-size:10px; color:var(--text-tertiary);';
     hint.textContent = due
-      ? 'Skorları elle girebilirsin; buton kalan maçları simüle eder. Beraberlikte penaltılar konuşur.'
+      ? 'Skorları elle girebilirsin; beraberlik yazarsan penaltı skorlarını da sen belirlersin. Buton kalan maçları simüle eder.'
       : 'Sen oynatmazsan tur, lig bir hafta daha ilerleyince otomatik oynanır.';
     info.appendChild(hint);
     card.appendChild(info);
@@ -2688,10 +2724,13 @@
           const val = side === 0 ? m.hg : m.ag;
           inp.value = val !== null ? val : '';
           inp.addEventListener('input', function(){
+            const wasDraw = m.hg !== null && m.ag !== null && m.hg === m.ag;
             const v = inp.value === '' ? null : Math.max(0, Math.min(15, parseInt(inp.value) || 0));
             if(side === 0) m.hg = v; else m.ag = v;
             m.pens = null;
             scheduleSave();
+            const isDraw = m.hg !== null && m.ag !== null && m.hg === m.ag;
+            if(isDraw !== wasDraw) renderCoppaActive(); // penaltı girişini göster/gizle
             finalizeCupRoundIfComplete(act.ri);
           });
           return inp;
@@ -2706,6 +2745,39 @@
       }
       row.appendChild(mkSide(m.h, true)); row.appendChild(sc); row.appendChild(mkSide(m.a, false));
       block.appendChild(row);
+      // Beraberlikte penaltı skorlarını kullanıcı belirler
+      if(due && m.hg !== null && m.ag !== null && m.hg === m.ag){
+        const penRow = document.createElement('div');
+        penRow.style.cssText = 'display:flex; align-items:center; justify-content:center; gap:6px; margin-top:6px; font-size:10px; color:var(--text-tertiary);';
+        const lbl = document.createElement('span'); lbl.textContent = '⚽ Penaltılar:';
+        const warn = document.createElement('span'); warn.style.cssText = 'color:#e06464; font-size:9px;';
+        const updWarn = function(){
+          const p = m.pens;
+          if(p && p[0] !== null && p[0] !== undefined && p[1] !== null && p[1] !== undefined && p[0] === p[1]) warn.textContent = 'berabere bitemez!';
+          else if(p && (p[0] !== null && p[0] !== undefined) !== (p[1] !== null && p[1] !== undefined)) warn.textContent = '';
+          else warn.textContent = '';
+        };
+        const mkPen = function(side){
+          const inp = document.createElement('input');
+          inp.type = 'number'; inp.min = 0; inp.max = 30; inp.className = 'sl-score-input';
+          inp.style.cssText = 'width:34px; height:24px; font-size:12px;';
+          const v = m.pens ? m.pens[side] : null;
+          inp.value = v !== null && v !== undefined ? v : '';
+          inp.addEventListener('input', function(){
+            const val = inp.value === '' ? null : Math.max(0, Math.min(30, parseInt(inp.value) || 0));
+            if(!m.pens) m.pens = [null, null];
+            m.pens[side] = val;
+            scheduleSave();
+            updWarn();
+            finalizeCupRoundIfComplete(act.ri);
+          });
+          return inp;
+        };
+        const pdash = document.createElement('span'); pdash.textContent = '−';
+        penRow.appendChild(lbl); penRow.appendChild(mkPen(0)); penRow.appendChild(pdash); penRow.appendChild(mkPen(1)); penRow.appendChild(warn);
+        updWarn();
+        block.appendChild(penRow);
+      }
       const probs = computeProbabilities(m.h, m.a);
       const probRow = document.createElement('div'); probRow.className = 'sl-prob-row';
       const mp = Math.max(probs.home, probs.draw, probs.away);
@@ -3298,8 +3370,7 @@
     return state.teams.map(function(t, i){ return {name: t.name, idx: i, champ: champ[i] / iters, top4: top4[i] / iters, rel: rel[i] / iters}; });
   }
   function projBadgeHTML(name){
-    const c = getTeamColors(name), top = c[1], bottom = c[0];
-    return '<span class="sl-team-badge sl-team-badge-lg" style="vertical-align:middle; margin-right:7px; background:linear-gradient(125deg,' + top + ' 0%,' + top + ' 47%,' + bottom + ' 53%,' + bottom + ' 100%);"></span>';
+    return '<span class="sl-team-badge sl-team-badge-lg" style="vertical-align:middle; margin-right:7px; background:' + badgeBackground(name) + ';"></span>';
   }
   function drawProjection(holder){
     const proj = computeSeasonProjection(1000);
@@ -3365,10 +3436,15 @@
     nameIn.placeholder = 'Takım adı (örn. Real Kartal)'; nameIn.maxLength = 18; nameIn.style.flex = '1'; nameIn.style.minWidth = '140px';
     const c1 = document.createElement('input'); c1.type = 'color'; c1.className = 'sl-color-input'; c1.value = '#c8102e'; c1.title = 'Ana renk';
     const c2 = document.createElement('input'); c2.type = 'color'; c2.className = 'sl-color-input'; c2.value = '#ffffff'; c2.title = 'İkinci renk';
-    const prev = document.createElement('span'); prev.className = 'sl-team-badge sl-team-badge-xl'; prev.title = 'Logo önizleme';
-    const updPrev = function(){ prev.style.background = 'linear-gradient(125deg, ' + c2.value + ' 0%, ' + c2.value + ' 47%, ' + c1.value + ' 53%, ' + c1.value + ' 100%)'; };
+    const prev = document.createElement('span'); prev.className = 'sl-team-badge sl-team-badge-xl'; prev.title = 'Arma önizleme';
+    const patternSel = document.createElement('select'); patternSel.className = 'sl-btn'; patternSel.style.height = '32px'; patternSel.title = 'Forma deseni';
+    [['stripes','Çubuklu'],['halves','Yarı yarıya'],['hoop','Bantlı'],['sash','Çapraz'],['solid','Düz + şerit']].forEach(function(o){
+      const op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; patternSel.appendChild(op);
+    });
+    patternSel.value = 'stripes';
+    const updPrev = function(){ prev.style.background = patternBackground(patternSel.value, c1.value, c2.value); };
     updPrev();
-    c1.addEventListener('input', updPrev); c2.addEventListener('input', updPrev);
+    c1.addEventListener('input', updPrev); c2.addEventListener('input', updPrev); patternSel.addEventListener('change', updPrev);
     const tierSel = document.createElement('select'); tierSel.className = 'sl-btn'; tierSel.style.height = '32px';
     [['mutevazi','Mütevazı kadro (45-50)'],['orta','Orta kadro (50-56)'],['iddiali','İddialı kadro (56-62)']].forEach(function(o){
       const op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; tierSel.appendChild(op);
@@ -3376,7 +3452,7 @@
     tierSel.value = 'orta';
     const addBtn = document.createElement('button'); addBtn.className = 'sl-btn sl-btn-success'; addBtn.textContent = '✚ Ekle';
     const errEl = document.createElement('div'); errEl.style.cssText = 'font-size:10px; color:#e06464; margin-top:6px; min-height:12px;';
-    row1.appendChild(nameIn); row1.appendChild(prev); row1.appendChild(c1); row1.appendChild(c2); row1.appendChild(tierSel); row1.appendChild(addBtn);
+    row1.appendChild(nameIn); row1.appendChild(prev); row1.appendChild(c1); row1.appendChild(c2); row1.appendChild(patternSel); row1.appendChild(tierSel); row1.appendChild(addBtn);
     box.appendChild(row1); box.appendChild(errEl);
     modal.appendChild(box);
     // Alt bar
@@ -3415,7 +3491,7 @@
       if(nm.length < 2){ errEl.textContent = 'Takım adı en az 2 karakter olmalı.'; return; }
       const exists = TEAM_COLORS[nm] || customTeams[nm] || state.teams.some(function(t){ return t.name === nm; });
       if(exists){ errEl.textContent = 'Bu isimde bir takım zaten var.'; return; }
-      customTeams[nm] = {colors: [c1.value.toUpperCase(), c2.value.toUpperCase()], tier: tierSel.value};
+      customTeams[nm] = {colors: [c1.value.toUpperCase(), c2.value.toUpperCase()], tier: tierSel.value, pattern: patternSel.value};
       saveCustomTeams();
       if(selected.size >= need){ const first = selected.values().next().value; selected.delete(first); }
       selected.add(nm);
