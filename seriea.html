@@ -245,6 +245,24 @@
   .sl-poll-pct { font-weight: 700; font-variant-numeric: tabular-nums; min-width: 38px; text-align: right; }
   .sl-poll-opt.voted { border-color: var(--accent); }
   .sl-poll-opt.voted .sl-poll-label::after { content: ' ✓ oyun'; font-size: 10px; color: var(--accent); font-weight: 600; }
+  /* Turnuva ağacı */
+  .sl-br-wrap { display: flex; gap: 10px; align-items: stretch; overflow-x: auto; padding-bottom: 6px; }
+  .sl-br-col { display: flex; flex-direction: column; min-width: 168px; flex: 1 0 auto; }
+  .sl-br-body { display: flex; flex-direction: column; justify-content: space-around; gap: 8px; flex: 1; }
+  .sl-br-title { font-size: 10px; font-weight: 700; letter-spacing: 0.6px; color: var(--text-tertiary); text-align: center; margin-bottom: 6px; text-transform: uppercase; white-space: nowrap; }
+  .sl-br-tie { background: var(--bg-secondary); border: 1px solid var(--border-tertiary); border-radius: 8px; padding: 5px 6px; position: relative; }
+  .sl-br-tie.done { border-color: var(--border-secondary); }
+  .sl-br-tie.live { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-border); }
+  .sl-br-row { display: flex; align-items: center; gap: 5px; padding: 2px 0; font-size: 11px; }
+  .sl-br-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sl-br-name.win { font-weight: 700; }
+  .sl-br-name.out { color: var(--text-tertiary); }
+  .sl-br-sc { width: 20px; text-align: center; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 11px; flex-shrink: 0; }
+  .sl-br-in { width: 26px; height: 21px; text-align: center; font-size: 11px; padding: 0; border: 1px solid var(--border-secondary); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-family: inherit; -moz-appearance: textfield; flex-shrink: 0; }
+  .sl-br-in::-webkit-outer-spin-button, .sl-br-in::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .sl-br-in:focus { outline: none; border-color: var(--accent); }
+  .sl-br-foot { font-size: 9px; color: var(--text-tertiary); text-align: center; margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--border-tertiary); }
+  .sl-br-extra { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 4px; font-size: 9px; color: var(--text-tertiary); }
   .sl-pundit-pick { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 5px; font-size: 10px; font-weight: 700; margin-left: 6px; }
   .sl-modal-overlay { position: fixed; inset: 0; background: rgba(4,6,10,0.66); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; animation: fadeIn 0.15s ease; }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -640,6 +658,58 @@
     'Ascoli': ['Cino e Lillo Del Duca', 20853], 'Pescara': ['Adriatico', 20476], 'Foggia': ['Pino Zaccheria', 25085],
     'Catania': ['Angelo Massimino', 20000], 'SPAL': ['Paolo Mazza', 13135]
   };
+  const CLUB_INFO = {
+    'Juventus': [1897, 'Torino', 'Bianconeri'], 'Inter': [1908, 'Milano', 'Nerazzurri'],
+    'Milan': [1899, 'Milano', 'Rossoneri'], 'Napoli': [1926, 'Napoli', 'Partenopei'],
+    'Roma': [1927, 'Roma', 'Giallorossi'], 'Lazio': [1900, 'Roma', 'Biancocelesti'],
+    'Atalanta': [1907, 'Bergamo', 'La Dea'], 'Fiorentina': [1926, 'Floransa', 'Viola'],
+    'Bologna': [1909, 'Bologna', 'Rossoblù'], 'Torino': [1906, 'Torino', 'Granata'],
+    'Udinese': [1896, 'Udine', 'Zebrette'], 'Genoa': [1893, 'Cenova', 'Grifone'],
+    'Sassuolo': [1920, 'Sassuolo', 'Neroverdi'], 'Hellas Verona': [1903, 'Verona', 'Gialloblù'],
+    'Cagliari': [1920, 'Cagliari', 'Rossoblù'], 'Parma': [1913, 'Parma', 'Crociati'],
+    'Lecce': [1908, 'Lecce', 'Giallorossi'], 'Pisa': [1909, 'Pisa', 'Nerazzurri'],
+    'Cremonese': [1903, 'Cremona', 'Grigiorossi'], 'Como': [1907, 'Como', 'Lariani'],
+    'Sampdoria': [1946, 'Cenova', 'Blucerchiati'], 'Palermo': [1900, 'Palermo', 'Rosanero'],
+    'Bari': [1908, 'Bari', 'Galletti'], 'Monza': [1912, 'Monza', 'Brianzoli'],
+    'Empoli': [1920, 'Empoli', 'Azzurri'], 'Venezia': [1907, 'Venedik', 'Arancioneroverdi'],
+    'Spezia': [1906, 'La Spezia', 'Aquilotti'], 'Salernitana': [1919, 'Salerno', 'Granata']
+  };
+  function ensureClubInfo(teams){
+    teams.forEach(function(t){
+      if(t.club) return;
+      const c = CLUB_INFO[t.name];
+      t.club = c ? {founded: c[0], city: c[1], nick: c[2]} : {founded: 1900 + randInt(0, 60), city: t.name, nick: ''};
+    });
+  }
+  /* ---- Yönetim hedefleri: her kulübün sezon başında bir hedefi olur ---- */
+  const SEASON_GOALS = [
+    {key: 'title', label: 'Şampiyonluk', short: 'Şampiyonluk', rank: 1},
+    {key: 'ucl', label: 'Şampiyonlar Ligi (ilk 4)', short: 'İlk 4', rank: 4},
+    {key: 'euro', label: 'Avrupa kupaları (ilk 6)', short: 'İlk 6', rank: 6},
+    {key: 'top10', label: 'İlk yarıda bitirmek (ilk 10)', short: 'İlk 10', rank: 10},
+    {key: 'mid', label: 'Sakin bir sezon (ilk 14)', short: 'İlk 14', rank: 14},
+    {key: 'safe', label: 'Ligde kalmak', short: 'Ligde kalmak', rank: 17}
+  ];
+  function goalDef(key){ return SEASON_GOALS.find(function(g){ return g.key === key; }) || SEASON_GOALS[SEASON_GOALS.length - 1]; }
+  function defaultGoalKey(rank){
+    if(rank <= 2) return 'title';
+    if(rank <= 5) return 'ucl';
+    if(rank <= 8) return 'euro';
+    if(rank <= 12) return 'top10';
+    if(rank <= 16) return 'mid';
+    return 'safe';
+  }
+  // Hedefler güce göre atanır; kullanıcı takım düzenleyiciden değiştirebilir
+  function ensureGoals(teams){
+    const order = teams.slice().sort(function(a, b){ return b.strength - a.strength; });
+    order.forEach(function(t, i){ if(!t.goal) t.goal = defaultGoalKey(i + 1); });
+  }
+  // Hedefe göre durum: pozitif = hedefin üstünde
+  function goalDelta(teamName, rank){
+    const t = state.teams.find(function(x){ return x.name === teamName; });
+    if(!t || !t.goal || !rank) return null;
+    return goalDef(t.goal).rank - rank;
+  }
   function defaultStadium(name, strength){
     if(STADIUMS[name]) return {name: STADIUMS[name][0], capacity: STADIUMS[name][1]};
     return {name: name + ' Arena', capacity: 12000 + Math.round(Math.max(0, (strength || 50) - 45) * 900)};
@@ -837,6 +907,8 @@
     teams.forEach(function(t){ if(!t.players || t.players.length === 0) t.players = makeSquad(t.strength, used); });
     ensureManagers(teams);
     ensureStadiums(teams);
+    ensureClubInfo(teams);
+    ensureGoals(teams);
   }
 
   // --- gol/asist ataması (skora göre deterministik; skor değişirse yeniden üretilir) ---
@@ -1078,11 +1150,11 @@
     const wiSafe = weekIdx === undefined ? (state.viewWeek || 0) : weekIdx;
     const ms = getTeamMatches(teamIdx, weekIdx);
     const form = ms.slice(-5);
-    // Form: son 5 maç, örneklem büyüdükçe ağırlığı artar (±5 puan)
-    const formAdj = weightedFormRating(form) * 5 * Math.min(form.length / 5, 1);
-    // Sezon geneli + oynanacak sahadaki puan ortalaması (±3 puan)
+    // Form: son 5 maç, örneklem büyüdükçe ağırlığı artar (±9 puan)
+    const formAdj = weightedFormRating(form) * 9 * Math.min(form.length / 5, 1);
+    // Sezon geneli + oynanacak sahadaki puan ortalaması (±6 puan)
     const ppgOf = function(list, minN){
-      if(list.length < (minN || 5)) return null;
+      if(list.length < (minN || 4)) return null;
       let p = 0;
       list.forEach(function(m){ p += m.outcome === 'W' ? 3 : (m.outcome === 'D' ? 1 : 0); });
       return p / list.length;
@@ -1091,7 +1163,14 @@
     const all = ppgOf(ms);
     const venue = ppgOf(ms.filter(function(m){ return isHome === null ? true : m.isHome === isHome; }), 4);
     const ppg = all === null ? null : (venue === null ? all : venue * 0.5 + all * 0.5);
-    const ppgAdj = ppg === null ? 0 : (ppg - 1.35) * 2.5;
+    const ppgAdj = ppg === null ? 0 : (ppg - 1.35) * 4.2;
+    // Seri etkisi: uzun galibiyet/yenilmezlik serisi özgüven, uzun kayıp serisi çöküş getirir
+    const sk = streakInfo(ms);
+    let streakAdj = 0;
+    if(sk.win >= 2) streakAdj += Math.min(3, sk.win - 1) * 1.1;
+    else if(sk.unbeaten >= 4) streakAdj += 1.4;
+    if(sk.loss >= 2) streakAdj -= Math.min(3, sk.loss - 1) * 1.1;
+    else if(sk.winless >= 5) streakAdj -= 1.2;
     // Geçen sezon momentumu sezon ilerledikçe sönümlenir
     const momScale = Math.max(0.3, 1 - (wiSafe / Math.max(1, state.fixtures.length)) * 0.9);
     const momAdj = (t.momentum || 0) * 0.35 * momScale;
@@ -1107,7 +1186,7 @@
         if(m.homeIdx === oppIdx || m.awayIdx === oppIdx){ h2h = m.outcome === 'W' ? 1.5 : (m.outcome === 'L' ? -1.5 : 0); break; }
       }
     }
-    return t.strength + formAdj + ppgAdj + momAdj + fatAdj + outAdj + mgrAdj + h2h;
+    return t.strength + formAdj + ppgAdj + streakAdj + momAdj + fatAdj + outAdj + mgrAdj + h2h;
   }
   function computeMatchRatings(homeIdx, awayIdx, weekIdx){
     const derb = isDerby(state.teams[homeIdx].name, state.teams[awayIdx].name);
@@ -2066,6 +2145,7 @@
       if(!state.euroPrompted) state.euroPrompted = {};
       ensureManagers(state.teams);
       ensureEuro();
+      syncEuroTabVisibility();
       invalidateStandings(); invalidatePlayers();
       saveNow(); saveHistory(); saveTitles();
       closeTeamDetail(); closeHistoryDetail();
@@ -2318,6 +2398,16 @@
       card('Ad', t.stadium.name);
       card('Kapasite', trThousands(t.stadium.capacity), 'seyirci');
       card('İç saha avantajı', '+' + edge.toFixed(1), 'Atmosfer: ' + atmos);
+      if(t.club){
+        card('Kuruluş', t.club.founded, t.club.city || '');
+        if(t.club.nick) card('Lakap', t.club.nick);
+      }
+      if(t.goal){
+        const g = goalDef(t.goal);
+        const d = rank ? g.rank - rank : null;
+        const dur = d === null ? '' : (d > 0 ? '✓ hedefin ' + d + ' sıra üstünde' : (d === 0 ? '✓ tam hedefte' : '✗ hedefin ' + (-d) + ' sıra altında'));
+        card('Yönetim hedefi', g.short, dur);
+      }
       sc.appendChild(grid); v.appendChild(sc);
     }
     v.appendChild(makeStatsCard(stats, t.manager));
@@ -2382,6 +2472,26 @@
     MGR_STYLES.forEach(function(o){ const op = document.createElement('option'); op.value = o.key; op.textContent = o.label; styleSel.appendChild(op); });
     styleSel.value = t.manager ? t.manager.style : 'balanced';
     field(powBox, 'Hoca tarzı', styleSel);
+    // Kulüp künyesi
+    const clBox = box('Kulüp künyesi');
+    if(!t.club) t.club = {founded: 1900, city: t.name, nick: ''};
+    const foundIn = document.createElement('input'); foundIn.type = 'number'; foundIn.min = 1850; foundIn.max = 2100;
+    foundIn.className = 'sl-text-input'; foundIn.style.width = '90px'; foundIn.value = t.club.founded || 1900;
+    field(clBox, 'Kuruluş yılı', foundIn);
+    const cityIn = document.createElement('input'); cityIn.className = 'sl-text-input'; cityIn.type = 'text';
+    cityIn.value = t.club.city || ''; cityIn.maxLength = 24; cityIn.style.minWidth = '150px';
+    field(clBox, 'Şehir', cityIn);
+    const nickIn = document.createElement('input'); nickIn.className = 'sl-text-input'; nickIn.type = 'text';
+    nickIn.value = t.club.nick || ''; nickIn.maxLength = 24; nickIn.style.minWidth = '150px';
+    field(clBox, 'Lakap', nickIn);
+    const goalSel = document.createElement('select'); goalSel.className = 'sl-btn'; goalSel.style.height = '32px';
+    SEASON_GOALS.forEach(function(g){ const op = document.createElement('option'); op.value = g.key; op.textContent = g.label; goalSel.appendChild(op); });
+    goalSel.value = t.goal || defaultGoalKey(10);
+    field(clBox, 'Yönetim hedefi', goalSel);
+    const goalHint = document.createElement('div');
+    goalHint.style.cssText = 'font-size:10px; color:var(--text-tertiary); margin-top:2px;';
+    goalHint.textContent = 'Hedefin çok altında biten takımlarda sezon sonunda teknik direktör değişme ihtimali artar. Elle seçtiğin hedef sonraki sezonlarda da korunur.';
+    clBox.appendChild(goalHint);
     // Stadyum
     const stBox = box('Stadyum');
     const stName = document.createElement('input'); stName.className = 'sl-text-input'; stName.type = 'text';
@@ -2437,6 +2547,12 @@
         name: stName.value.trim() || defaultStadium(t.name, t.strength).name,
         capacity: Math.max(2000, Math.min(120000, parseInt(capIn.value) || 20000))
       };
+      t.club = {
+        founded: Math.max(1850, Math.min(2100, parseInt(foundIn.value) || 1900)),
+        city: cityIn.value.trim(), nick: nickIn.value.trim()
+      };
+      if(t.goal !== goalSel.value) t.goalCustom = true;
+      t.goal = goalSel.value;
       invalidateStandings(); invalidatePlayers();
       saveNow();
       close();
@@ -2748,13 +2864,22 @@
         bigCh: bigCh, bigMissed: Math.max(0, bigCh - goals),
         passes: Math.round(150 + poss * 4.7 + rng() * 70),
         passAcc: clamp(69, 93, Math.round(72 + poss * 0.25 + rng() * 6)),
-        xg: (shots * 0.082 + onTarget * 0.085 + bigCh * 0.14 + goals * 0.08 + rng() * 0.25) * style.xg,
+        xgNoise: rng() * 0.25,
         yellow: Math.round(rng() * 2.6 + chase * 0.5),
         corners: Math.round(1 + poss * 0.062 + chase * 0.8 + rng() * 3.5)
       };
     };
     const out = {home: side(hg, ag, hPoss, hStyle), away: side(ag, hg, aPoss, aStyle), upset: upset};
-    return applyStatOverrides(wk, mi, out);
+    applyStatOverrides(wk, mi, out);
+    // xG elle girilmez: şut, isabet, net fırsat ve gollerden otomatik hesaplanır.
+    // Böylece diğer istatistikleri değiştirdiğinde xG kendiliğinden ona uyar.
+    out.home.xg = deriveXg(out.home, hg, hStyle);
+    out.away.xg = deriveXg(out.away, ag, aStyle);
+    return out;
+  }
+  function deriveXg(s, goals, style){
+    const base = s.shots * 0.082 + s.onTarget * 0.085 + s.bigCh * 0.14 + goals * 0.08 + (s.xgNoise || 0);
+    return Math.max(0.05, base * (style ? style.xg : 1));
   }
   // Elle düzenlenen değerler her zaman üretilen değerlerin üstüne yazılır
   function applyStatOverrides(wk, mi, st){
@@ -2938,7 +3063,7 @@
     const hi = function(a, b){ return [a > b, b > a]; };
     const lo = function(a, b){ return [a < b, b < a]; };
     let m;
-    m = hi(st.home.xg, st.away.xg); row('Beklenen goller (xG)', trNum(st.home.xg), trNum(st.away.xg), m[0], m[1], 'xg', 0.01);
+    m = hi(st.home.xg, st.away.xg); row('Beklenen goller (xG)', trNum(st.home.xg), trNum(st.away.xg), m[0], m[1]);
     m = hi(st.home.shots, st.away.shots); row('Toplam şut', st.home.shots, st.away.shots, m[0], m[1], 'shots');
     m = hi(st.home.onTarget, st.away.onTarget); row('İsabetli şut', st.home.onTarget, st.away.onTarget, m[0], m[1], 'onTarget');
     m = hi(st.home.boxTouches, st.away.boxTouches); row('Rakip ceza sahasında dokunuşlar', st.home.boxTouches, st.away.boxTouches, m[0], m[1], 'boxTouches');
@@ -2948,6 +3073,98 @@
     row('Tutarlı pas', st.home.passes + ' (%' + st.home.passAcc + ')', st.away.passes + ' (%' + st.away.passAcc + ')', m[0], m[1], 'passes');
     m = lo(st.home.yellow, st.away.yellow); row('Sarı kartlar', st.home.yellow, st.away.yellow, m[0], m[1], 'yellow');
     m = hi(st.home.corners, st.away.corners); row('Korner', st.home.corners, st.away.corners, m[0], m[1], 'corners');
+  }
+
+  /* ============ GOL DÖKÜMÜ (otomatik + elle düzenlenebilir) ============ */
+  function renderGoalList(host, wk, mi, pair, hName, aName){
+    host.innerHTML = '';
+    ensureScorersShape();
+    const sc = state.scorers[wk][mi];
+    const editing = !!host._goalEdit;
+    const events = [];
+    if(sc){
+      (sc.h || []).forEach(function(ev, k){ events.push({side: 0, ev: ev, k: k}); });
+      (sc.a || []).forEach(function(ev, k){ events.push({side: 1, ev: ev, k: k}); });
+    }
+    events.sort(function(x, y){ return (x.ev.m || 0) - (y.ev.m || 0); });
+    const bar = document.createElement('div');
+    bar.style.cssText = 'display:flex; align-items:center; justify-content:center; gap:8px; border-top:1px solid var(--border-tertiary); padding-top:8px; margin-bottom:2px;';
+    const lbl = document.createElement('span');
+    lbl.style.cssText = 'font-size:11px; font-weight:600; color:var(--text-secondary);';
+    lbl.textContent = 'Goller';
+    const eb = document.createElement('button');
+    eb.className = 'sl-btn' + (editing ? ' sl-btn-primary' : '');
+    eb.style.cssText = 'height:22px; font-size:10px; padding:0 8px; font-weight:400;';
+    eb.textContent = editing ? '✓ Bitir' : '✏️ Golleri düzenle';
+    eb.title = 'Dakikayı, golcüyü ve asisti kendin belirle';
+    eb.addEventListener('click', function(){ host._goalEdit = !host._goalEdit; renderGoalList(host, wk, mi, pair, hName, aName); });
+    bar.appendChild(lbl); bar.appendChild(eb);
+    host.appendChild(bar);
+    const list = document.createElement('div');
+    let hs = 0, as = 0;
+    events.forEach(function(e){
+      if(e.side === 0) hs++; else as++;
+      const row = document.createElement('div'); row.className = 'sl-goal-line';
+      const teamIdx = e.side === 0 ? pair[0] : pair[1];
+      if(editing){
+        row.style.gridTemplateColumns = '54px minmax(0,1fr)';
+        const min = document.createElement('input');
+        min.type = 'number'; min.min = 1; min.max = 120; min.className = 'sl-br-in';
+        min.style.cssText = 'width:44px; height:22px;';
+        min.value = e.ev.m || 1;
+        min.title = 'Gol dakikası';
+        min.addEventListener('change', function(){
+          e.ev.m = Math.max(1, Math.min(120, parseInt(min.value) || 1));
+          playerStatsCache = null; scheduleSave();
+          renderGoalList(host, wk, mi, pair, hName, aName);
+        });
+        const sel = document.createElement('div');
+        sel.style.cssText = 'display:flex; align-items:center; gap:5px; min-width:0; flex-wrap:wrap;';
+        sel.appendChild(makeBadge(e.side === 0 ? hName : aName));
+        const mkSel = function(key, placeholder){
+          const s = document.createElement('select');
+          s.className = 'sl-btn'; s.style.cssText = 'height:24px; font-size:11px; max-width:150px;';
+          const none = document.createElement('option'); none.value = ''; none.textContent = placeholder;
+          s.appendChild(none);
+          (state.teams[teamIdx].players || []).slice().sort(function(a, b){ return POS_ORDER[a.pos] - POS_ORDER[b.pos] || b.rating - a.rating; })
+            .forEach(function(p){
+              const o = document.createElement('option'); o.value = p.id; o.textContent = (POS_LABEL[p.pos] || '') + ' ' + p.name;
+              s.appendChild(o);
+            });
+          s.value = e.ev[key] !== null && e.ev[key] !== undefined ? String(e.ev[key]) : '';
+          s.addEventListener('change', function(){
+            e.ev[key] = s.value === '' ? null : parseInt(s.value);
+            playerStatsCache = null; scheduleSave();
+            renderGoalList(host, wk, mi, pair, hName, aName);
+          });
+          return s;
+        };
+        sel.appendChild(mkSel('s', '— golcü —'));
+        sel.appendChild(mkSel('a', '— asist yok —'));
+        row.appendChild(min); row.appendChild(sel);
+      } else {
+        const min = document.createElement('span'); min.className = 'sl-goal-min'; min.textContent = (e.ev.m || '?') + "'";
+        const info = document.createElement('span');
+        info.style.cssText = 'display:flex; align-items:center; gap:6px; min-width:0;' + (e.side === 1 ? ' flex-direction:row-reverse; text-align:right;' : '');
+        const badge = makeBadge(e.side === 0 ? hName : aName);
+        const txt = document.createElement('span');
+        txt.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
+        const scorerName = e.ev.s !== null && e.ev.s !== undefined ? playerNameById(e.ev.s) : 'Bilinmeyen';
+        const assistName = e.ev.a !== null && e.ev.a !== undefined ? playerNameById(e.ev.a) : null;
+        txt.innerHTML = '<b>⚽ ' + scorerName + '</b>' + (assistName ? ' <span style="color:var(--text-tertiary); font-size:11px;">(asist: ' + assistName + ')</span>' : '') +
+          ' <span style="color:var(--text-tertiary); font-size:11px; font-variant-numeric:tabular-nums;">' + hs + '-' + as + '</span>';
+        info.appendChild(badge); info.appendChild(txt);
+        row.appendChild(min); row.appendChild(info);
+      }
+      list.appendChild(row);
+    });
+    host.appendChild(list);
+    if(editing){
+      const tip = document.createElement('div');
+      tip.style.cssText = 'font-size:10px; color:var(--text-tertiary); text-align:center; margin-top:4px;';
+      tip.textContent = 'Dakikayı değiştirdiğinde goller yeniden sıralanır. Golcü değişiklikleri krallık tablosuna da yansır.';
+      host.appendChild(tip);
+    }
   }
 
   /* ============ MAÇ DETAYI (dakikalı gol arşivi) ============ */
@@ -2991,27 +3208,9 @@
       const e = document.createElement('div'); e.className = 'sl-empty-hint'; e.textContent = 'Bu maçta gol atılmadı.';
       modal.appendChild(e);
     } else {
-      const list = document.createElement('div');
-      list.style.cssText = 'border-top:1px solid var(--border-tertiary); padding-top:8px;';
-      let hs = 0, as = 0;
-      events.forEach(function(e){
-        if(e.side === 0) hs++; else as++;
-        const row = document.createElement('div'); row.className = 'sl-goal-line';
-        const min = document.createElement('span'); min.className = 'sl-goal-min'; min.textContent = (e.ev.m || '?') + "'";
-        const info = document.createElement('span');
-        info.style.cssText = 'display:flex; align-items:center; gap:6px; min-width:0;' + (e.side === 1 ? ' flex-direction:row-reverse; text-align:right;' : '');
-        const badge = makeBadge(e.side === 0 ? hName : aName);
-        const txt = document.createElement('span');
-        txt.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
-        const scorerName = e.ev.s !== null && e.ev.s !== undefined ? playerNameById(e.ev.s) : 'Bilinmeyen';
-        const assistName = e.ev.a !== null && e.ev.a !== undefined ? playerNameById(e.ev.a) : null;
-        txt.innerHTML = '<b>⚽ ' + scorerName + '</b>' + (assistName ? ' <span style="color:var(--text-tertiary); font-size:11px;">(asist: ' + assistName + ')</span>' : '') +
-          ' <span style="color:var(--text-tertiary); font-size:11px; font-variant-numeric:tabular-nums;">' + hs + '-' + as + '</span>';
-        info.appendChild(badge); info.appendChild(txt);
-        row.appendChild(min); row.appendChild(info);
-        list.appendChild(row);
-      });
-      modal.appendChild(list);
+      const goalsHost = document.createElement('div');
+      modal.appendChild(goalsHost);
+      renderGoalList(goalsHost, wk, mi, pair, hName, aName);
     }
     renderMatchStats(modal, wk, mi, hName, aName);
     const foot = document.createElement('div');
@@ -3683,14 +3882,14 @@
   function pairUp(idxs){
     const a = shuffleArr(idxs);
     const m = [];
-    for(let i = 0; i + 1 < a.length; i += 2) m.push({h: a[i], a: a[i+1], hg: null, ag: null, pens: null});
+    for(let i = 0; i + 1 < a.length; i += 2) m.push({h: a[i], a: a[i+1], legs: [[null, null]], aet: null, pens: null});
     return m;
   }
   // Güç sırasına göre seri başı eşleşmesi: 1-son, 2-sondan bir önceki...
   function pairSeeded(ids){
     const m = [];
     const n = ids.length;
-    for(let i = 0; i < Math.floor(n / 2); i++) m.push({h: ids[i], a: ids[n - 1 - i], hg: null, ag: null, pens: null});
+    for(let i = 0; i < Math.floor(n / 2); i++) m.push({h: ids[i], a: ids[n - 1 - i], legs: [[null, null]], aet: null, pens: null});
     return shuffleArr(m);
   }
   // Turnuva katılımcı kimliği: id >= 0 → lig takımı (state.teams indexi),
@@ -3739,31 +3938,115 @@
     const seeds = entries.slice(0, T - cut * 2).map(function(e){ return e.id; });
     const low = entries.slice(T - cut * 2).map(function(e){ return e.id; });
     const rounds = [];
-    if(cut > 0) rounds.push({key: 'r32', name: T >= 31 ? 'Son 32' : '1. Tur', week: 2, matches: pairSeeded(low), done: false});
-    rounds.push({key: 'r16', name: 'Son 16', week: 7, matches: [], done: false, seeds: seeds});
-    rounds.push({key: 'qf', name: 'Çeyrek Final', week: 14, matches: [], done: false});
-    rounds.push({key: 'sf', name: 'Yarı Final', week: 23, matches: [], done: false});
-    rounds.push({key: 'f', name: 'Final', week: 33, matches: [], done: false});
+    // Coppa Italia tek maç eleme usulüdür
+    if(cut > 0) rounds.push({key: 'r32', name: T >= 31 ? 'Son 32' : '1. Tur', week: 2, matches: pairSeeded(low), done: false, legs: 1});
+    rounds.push({key: 'r16', name: 'Son 16', week: 7, matches: [], done: false, seeds: seeds, legs: 1});
+    rounds.push({key: 'qf', name: 'Çeyrek Final', week: 14, matches: [], done: false, legs: 1});
+    rounds.push({key: 'sf', name: 'Yarı Final', week: 23, matches: [], done: false, legs: 1});
+    rounds.push({key: 'f', name: 'Final', week: 33, matches: [], done: false, legs: 1});
     return {champion: null, guests: guests, rounds: rounds};
   }
+  /* ---- Eleme eşleşmesi (tek ya da çift maç) ----
+     legs[0] ev sahibi m.h, legs[1] ev sahibi m.a olacak şekilde tutulur.
+     aet ve pens takım yönlüdür: [m.h için, m.a için]. */
+  // Eski kayıtlar tek maçlık {hg, ag} tutuyordu; çift maçlı eşleşme yapısına taşı
+  function migrateTies(){
+    const fix = function(rounds, defLegs){
+      (rounds || []).forEach(function(r){
+        if(r.legs === undefined) r.legs = defLegs(r);
+        (r.matches || []).forEach(function(m){ ensureTie(m, r.legs || 1); });
+      });
+    };
+    if(state.cup) fix(state.cup.rounds, function(){ return 1; });
+    if(state.euro && state.euro.comps){
+      Object.keys(state.euro.comps).forEach(function(k){
+        const c = state.euro.comps[k]; if(!c) return;
+        fix(c.rounds, function(r){ return r.key === 'f' ? 1 : 2; });
+      });
+    }
+  }
+  function ensureTie(m, legCount){
+    if(!m.legs){
+      m.legs = [[m.hg === undefined ? null : m.hg, m.ag === undefined ? null : m.ag]];
+      delete m.hg; delete m.ag;
+    }
+    const want = legCount || 1;
+    while(m.legs.length < want) m.legs.push([null, null]);
+    if(m.legs.length > want) m.legs.length = want;
+    return m;
+  }
+  function tieLegAggregate(m){
+    let ah = 0, aa = 0;
+    (m.legs || []).forEach(function(l, i){
+      if(l[0] === null || l[1] === null) return;
+      if(i === 0){ ah += l[0]; aa += l[1]; } else { ah += l[1]; aa += l[0]; }
+    });
+    return [ah, aa];
+  }
+  function aetSet(m){ return !!(m.aet && m.aet[0] !== null && m.aet[0] !== undefined && m.aet[1] !== null && m.aet[1] !== undefined); }
+  function tieAggregate(m){
+    const a = tieLegAggregate(m);
+    // yarım girilmiş uzatma skoru toplamı bozmasın
+    if(aetSet(m)){ a[0] += m.aet[0]; a[1] += m.aet[1]; }
+    return a;
+  }
+  // Uzatmaya gidilip gidilmeyeceği yalnızca normal süre toplamına bakar
+  function tieLegsLevel(m){ const a = tieLegAggregate(m); return a[0] === a[1]; }
+  function tieLegsComplete(m){ const L = m.legs; return !!(L && L.length) && L.every(function(l){ return l[0] !== null && l[1] !== null; }); }
+  function tieLevel(m){ const a = tieAggregate(m); return a[0] === a[1]; }
+  function tieNeedsAet(m){ return tieLegsComplete(m) && tieLegsLevel(m) && !aetSet(m); }
+  function tieNeedsPens(m){
+    if(!tieLegsComplete(m) || !tieLegsLevel(m)) return false;
+    return aetSet(m) && tieLevel(m);
+  }
+  function cupMatchResolved(m){
+    if(!tieLegsComplete(m)) return false;
+    if(!tieLegsLevel(m)) return true;
+    if(!aetSet(m)) return false;
+    if(!tieLevel(m)) return true;
+    return !!(m.pens && m.pens[0] !== null && m.pens[0] !== undefined && m.pens[1] !== null && m.pens[1] !== undefined && m.pens[0] !== m.pens[1]);
+  }
   function cupWinner(m){
-    if(m.hg === null || m.ag === null) return null;
-    if(m.hg !== m.ag) return m.hg > m.ag ? m.h : m.a;
-    return m.pens && m.pens[0] > m.pens[1] ? m.h : m.a;
+    if(!tieLegsComplete(m)) return null;
+    const agg = tieAggregate(m);
+    if(agg[0] !== agg[1]) return agg[0] > agg[1] ? m.h : m.a;
+    if(m.pens && m.pens[0] !== m.pens[1] && m.pens[0] !== null && m.pens[1] !== null) return m.pens[0] > m.pens[1] ? m.h : m.a;
+    return null;
+  }
+  function tieScoreText(m){
+    const legs = m.legs || [];
+    const parts = legs.filter(function(l){ return l[0] !== null; }).map(function(l){ return l[0] + '-' + l[1]; });
+    if(parts.length === 0) return '—';
+    let s = parts.join(' / ');
+    if(aetSet(m)) s += ' (uzt. ' + m.aet[0] + '-' + m.aet[1] + ')';
+    if(m.pens && m.pens[0] !== null && m.pens[1] !== null) s += ' (pen. ' + m.pens[0] + '-' + m.pens[1] + ')';
+    return s;
   }
   function genPens(m){
     const homeWins = Math.random() < 0.5;
     const wp = randInt(3, 5), lp = Math.max(0, wp - randInt(1, 2));
     m.pens = homeWins ? [wp, lp] : [lp, wp];
   }
-  function playCupRound(r){
-    r.matches.forEach(function(m){
-      if(m.hg === null || m.ag === null){
-        const sc = cupSimScore(m.h, m.a);
-        m.hg = sc[0]; m.ag = sc[1]; m.pens = null;
-      }
-      if(m.hg === m.ag && !m.pens) genPens(m);
+  // Uzatma: 30 dakika, normal tempo beklentisinin üçte biri
+  function genAet(m, guests){
+    const g = entExpGoals(m.h, m.a, guests);
+    m.aet = [Math.min(3, poisson(g.he * 0.34)), Math.min(3, poisson(g.ae * 0.34))];
+  }
+  // Eşleşmenin oynanmamış maçlarını simüle et, gerekirse uzatma ve penaltı
+  function playTie(m, guests, legCount){
+    ensureTie(m, legCount);
+    m.legs.forEach(function(l, i){
+      if(l[0] !== null && l[1] !== null) return;
+      const homeId = i === 0 ? m.h : m.a;
+      const awayId = i === 0 ? m.a : m.h;
+      const sc = entSimScore(homeId, awayId, guests);
+      l[0] = sc[0]; l[1] = sc[1];
     });
+    if(tieLegsLevel(m) && !aetSet(m)) genAet(m, guests);
+    if(tieLegsLevel(m) && tieLevel(m) && !m.pens) genPens(m);
+  }
+  function playCupRound(r){
+    r.matches.forEach(function(m){ playTie(m, state.cup ? state.cup.guests : null, r.legs || 1); });
     r.done = true;
     applyCupFatigue(r);
   }
@@ -3773,6 +4056,7 @@
     if(!next || next.matches.length > 0 || !cur.done) return;
     const winners = cur.matches.map(cupWinner).filter(function(w){ return w !== null; });
     next.matches = pairUp((next.seeds || []).concat(winners));
+    next.matches.forEach(function(m){ ensureTie(m, next.legs || 1); });
   }
   function fullyPlayedWeekCount(){
     let c = 0;
@@ -3781,7 +4065,7 @@
   }
   function cupRoundNews(r){
     const lines = r.matches.map(function(m){
-      return cupTeamName(m.h) + ' ' + m.hg + '-' + m.ag + (m.pens ? ' (pen. ' + m.pens[0] + '-' + m.pens[1] + ')' : '') + ' ' + cupTeamName(m.a);
+      return cupTeamName(m.h) + ' ' + tieScoreText(m) + ' ' + cupTeamName(m.a);
     });
     // Alt lig sürprizi var mı?
     let upset = null;
@@ -3802,7 +4086,7 @@
     state.news = (state.news || []).concat([{
       week: 0, tag: 'Coppa',
       headline: '🏆 ' + name + ' Coppa Italia şampiyonu!',
-      body: 'Sezonun kupa finalinde ' + cupTeamName(finalMatch.h) + ' ile ' + cupTeamName(finalMatch.a) + ' karşı karşıya geldi; maç ' + finalMatch.hg + '-' + finalMatch.ag + (finalMatch.pens ? ' sona erdi, penaltılarda ' + finalMatch.pens[0] + '-' + finalMatch.pens[1] + ' ile kupa sahibini buldu' : ' sona erdi') + '.\n\nBu zaferle ' + name + ', tarihindeki Coppa Italia sayısını ' + total + '\'e çıkardı.',
+      body: 'Sezonun kupa finalinde ' + cupTeamName(finalMatch.h) + ' ile ' + cupTeamName(finalMatch.a) + ' karşı karşıya geldi; maç ' + tieScoreText(finalMatch) + ' sona erdi.\n\nBu zaferle ' + name + ', tarihindeki Coppa Italia sayısını ' + total + '\'e çıkardı.',
       teamName: name
     }]);
   }
@@ -3850,13 +4134,7 @@
     renderCoppaActive(); renderCup();
   }
   // Elle girilen skorlarla tur tamamlandıysa sonuçlandır.
-  // Beraberliklerde penaltı skorunu da kullanıcı girer; penaltılar berabere bitemez.
-  function cupMatchResolved(m){
-    if(m.hg === null || m.ag === null) return false;
-    if(m.hg !== m.ag) return true;
-    return !!(m.pens && m.pens[0] !== null && m.pens[0] !== undefined &&
-      m.pens[1] !== null && m.pens[1] !== undefined && m.pens[0] !== m.pens[1]);
-  }
+  // Beraberliklerde uzatma ve penaltı skorunu da kullanıcı girer; penaltılar berabere bitemez.
   function finalizeCupRoundIfComplete(ri){
     const rounds = state.cup.rounds;
     const r = rounds[ri];
@@ -3908,7 +4186,7 @@
     const card = document.getElementById('coppa-active-card'); if(!card) return;
     card.innerHTML = '';
     const head = document.createElement('div');
-    head.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;';
+    head.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;';
     head.innerHTML = '<p style="font-size:14px; font-weight:500; margin:0;">Coppa Italia <span class="sl-season-pill" style="margin-left:6px;">' + state.season + '</span></p>';
     card.appendChild(head);
     if(!state.cup){ card.innerHTML += '<div class="sl-empty-hint">Bu sezon için kupa kurası henüz çekilmedi.</div>'; return; }
@@ -3940,7 +4218,7 @@
     head.appendChild(status);
     if(r.matches.length === 0) return;
     const info = document.createElement('div');
-    info.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap;';
+    info.style.cssText = 'display:flex; align-items:center; gap:8px; flex-wrap:wrap;';
     const pill = document.createElement('span'); pill.className = 'sl-week-pill'; pill.textContent = r.name;
     info.appendChild(pill);
     const btn = document.createElement('button');
@@ -3952,110 +4230,12 @@
     info.appendChild(btn);
     const hint = document.createElement('span');
     hint.style.cssText = 'font-size:10px; color:var(--text-tertiary);';
-    hint.textContent = due
-      ? 'Skorları elle girebilirsin; beraberlik yazarsan penaltı skorlarını da sen belirlersin. Buton kalan maçları simüle eder.'
-      : 'Sen oynatmazsan tur, lig bir hafta daha ilerleyince otomatik oynanır.';
+    hint.textContent = due ? 'Skorları aşağıdaki turnuva ağacından elle girebilirsin; buton kalan maçları simüle eder.'
+      : 'Sen oynatmazsan, lig bir hafta daha ilerleyince otomatik oynanır.';
     info.appendChild(hint);
     card.appendChild(info);
-    const list = document.createElement('div');
-    list.style.cssText = 'display:flex; flex-direction:column; gap:6px;';
-    r.matches.forEach(function(m){
-      const block = document.createElement('div');
-      block.className = 'sl-match-block';
-      const row = document.createElement('div'); row.className = 'sl-match-row';
-      row.style.gridTemplateColumns = 'minmax(0,1fr) 104px minmax(0,1fr)';
-      const mkSide = function(idx, isHome){
-        const s = document.createElement('div'); s.className = isHome ? 'sl-home-side' : 'sl-away-side';
-        const f = document.createElement('div'); f.className = 'sl-mini-form';
-        if(idx >= 0){ getTeamForm(idx).slice(-3).forEach(function(fm){ f.appendChild(makeFormBox(fm)); }); }
-        else {
-          const tag = document.createElement('span');
-          tag.style.cssText = 'font-size:8px; color:var(--text-tertiary); letter-spacing:0.5px; border:1px solid var(--border-tertiary); border-radius:4px; padding:0 3px;';
-          tag.textContent = 'ALT LİG'; f.appendChild(tag);
-        }
-        const nm = cupTeamName(idx);
-        const ns = document.createElement('span'); ns.className = 'sl-team-name';
-        const nt = document.createElement('span'); nt.textContent = nm;
-        nt.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
-        if(isHome){ ns.appendChild(nt); ns.appendChild(makeBadge(nm)); s.appendChild(f); s.appendChild(ns); }
-        else { ns.appendChild(makeBadge(nm)); ns.appendChild(nt); s.appendChild(ns); s.appendChild(f); }
-        return s;
-      };
-      const sc = document.createElement('div');
-      sc.style.cssText = 'display:flex; align-items:center; justify-content:center; gap:5px;';
-      if(due){
-        const mkInput = function(side){
-          const inp = document.createElement('input');
-          inp.type = 'number'; inp.min = 0; inp.max = 15; inp.className = 'sl-score-input';
-          const val = side === 0 ? m.hg : m.ag;
-          inp.value = val !== null ? val : '';
-          inp.addEventListener('input', function(){
-            const wasDraw = m.hg !== null && m.ag !== null && m.hg === m.ag;
-            const v = inp.value === '' ? null : Math.max(0, Math.min(15, parseInt(inp.value) || 0));
-            if(side === 0) m.hg = v; else m.ag = v;
-            m.pens = null;
-            scheduleSave();
-            const isDraw = m.hg !== null && m.ag !== null && m.hg === m.ag;
-            if(isDraw !== wasDraw) renderCoppaActive(); // penaltı girişini göster/gizle
-            finalizeCupRoundIfComplete(act.ri);
-          });
-          return inp;
-        };
-        const dash = document.createElement('span');
-        dash.style.cssText = 'color:var(--text-tertiary); font-size:11px;'; dash.textContent = '−';
-        sc.appendChild(mkInput(0)); sc.appendChild(dash); sc.appendChild(mkInput(1));
-      } else {
-        const d = document.createElement('span');
-        d.style.cssText = 'color:var(--text-tertiary); font-weight:400;'; d.textContent = '—';
-        sc.appendChild(d);
-      }
-      row.appendChild(mkSide(m.h, true)); row.appendChild(sc); row.appendChild(mkSide(m.a, false));
-      block.appendChild(row);
-      // Beraberlikte penaltı skorlarını kullanıcı belirler
-      if(due && m.hg !== null && m.ag !== null && m.hg === m.ag){
-        const penRow = document.createElement('div');
-        penRow.style.cssText = 'display:flex; align-items:center; justify-content:center; gap:6px; margin-top:6px; font-size:10px; color:var(--text-tertiary);';
-        const lbl = document.createElement('span'); lbl.textContent = '⚽ Penaltılar:';
-        const warn = document.createElement('span'); warn.style.cssText = 'color:#e06464; font-size:9px;';
-        const updWarn = function(){
-          const p = m.pens;
-          if(p && p[0] !== null && p[0] !== undefined && p[1] !== null && p[1] !== undefined && p[0] === p[1]) warn.textContent = 'berabere bitemez!';
-          else if(p && (p[0] !== null && p[0] !== undefined) !== (p[1] !== null && p[1] !== undefined)) warn.textContent = '';
-          else warn.textContent = '';
-        };
-        const mkPen = function(side){
-          const inp = document.createElement('input');
-          inp.type = 'number'; inp.min = 0; inp.max = 30; inp.className = 'sl-score-input';
-          inp.style.cssText = 'width:34px; height:24px; font-size:12px;';
-          const v = m.pens ? m.pens[side] : null;
-          inp.value = v !== null && v !== undefined ? v : '';
-          inp.addEventListener('input', function(){
-            const val = inp.value === '' ? null : Math.max(0, Math.min(30, parseInt(inp.value) || 0));
-            if(!m.pens) m.pens = [null, null];
-            m.pens[side] = val;
-            scheduleSave();
-            updWarn();
-            finalizeCupRoundIfComplete(act.ri);
-          });
-          return inp;
-        };
-        const pdash = document.createElement('span'); pdash.textContent = '−';
-        penRow.appendChild(lbl); penRow.appendChild(mkPen(0)); penRow.appendChild(pdash); penRow.appendChild(mkPen(1)); penRow.appendChild(warn);
-        updWarn();
-        block.appendChild(penRow);
-      }
-      const probs = cupProbabilities(m.h, m.a);
-      const probRow = document.createElement('div'); probRow.className = 'sl-prob-row';
-      const mp = Math.max(probs.home, probs.draw, probs.away);
-      const mk = function(txt, v){ const d = document.createElement('div'); d.className = 'sl-prob-cell' + (v === mp ? ' fav' : ''); d.textContent = txt; return d; };
-      probRow.appendChild(mk(cupTeamName(m.h) + ' %' + probs.home, probs.home));
-      probRow.appendChild(mk('Beraberlik %' + probs.draw, probs.draw));
-      probRow.appendChild(mk(cupTeamName(m.a) + ' %' + probs.away, probs.away));
-      block.appendChild(probRow);
-      list.appendChild(block);
-    });
-    card.appendChild(list);
   }
+
   /* ============ AVRUPA ARAYÜZÜ ============ */
   function renderEuro(){
     renderEuroSubtabs();
@@ -4200,6 +4380,13 @@
       : 'Sen oynatmazsan, lig bir hafta daha ilerleyince otomatik oynanır.';
     info.appendChild(hint);
     card.appendChild(info);
+    if(unit.type !== 'md'){
+      const note = document.createElement('div');
+      note.style.cssText = 'font-size:11px; color:var(--text-tertiary); margin-top:4px;';
+      note.textContent = 'Eşleşmeler ve skor girişi aşağıdaki turnuva ağacında.';
+      card.appendChild(note);
+      return;
+    }
     const list = document.createElement('div');
     list.style.cssText = 'display:flex; flex-direction:column; gap:6px;';
     // Lig aşamasında 18 maç oynanır; İtalyan takımlarının maçları öne alınır
@@ -4210,8 +4397,7 @@
     ordered.forEach(function(m){
       const block = document.createElement('div');
       block.className = 'sl-match-block';
-      const isItalian = function(id){ return id >= 0; };
-      if(isItalian(m.h) || isItalian(m.a)) block.style.boxShadow = 'inset 2px 0 0 ' + def.color;
+      if(m.h >= 0 || m.a >= 0) block.style.boxShadow = 'inset 2px 0 0 ' + def.color;
       const row = document.createElement('div'); row.className = 'sl-match-row';
       row.style.gridTemplateColumns = 'minmax(0,1fr) 104px minmax(0,1fr)';
       const mkSide = function(id, isHome){
@@ -4238,15 +4424,11 @@
           const inp = document.createElement('input');
           inp.type = 'number'; inp.min = 0; inp.max = 15; inp.className = 'sl-score-input';
           const val = side === 0 ? m.hg : m.ag;
-          inp.value = val !== null ? val : '';
+          inp.value = val !== null && val !== undefined ? val : '';
           inp.addEventListener('input', function(){
-            const wasDraw = m.hg !== null && m.ag !== null && m.hg === m.ag;
             const v = inp.value === '' ? null : Math.max(0, Math.min(15, parseInt(inp.value) || 0));
             if(side === 0) m.hg = v; else m.ag = v;
-            m.pens = null;
             scheduleSave();
-            const isDraw = m.hg !== null && m.ag !== null && m.hg === m.ag;
-            if(unit.type === 'ko' && isDraw !== wasDraw) renderEuroActive();
             euroFinalizeIfComplete(def.key);
           });
           return inp;
@@ -4261,36 +4443,6 @@
       }
       row.appendChild(mkSide(m.h, true)); row.appendChild(sc); row.appendChild(mkSide(m.a, false));
       block.appendChild(row);
-      // Lig aşamasında beraberlik geçerlidir; penaltı yalnızca eleme turlarında
-      if(due && unit.type === 'ko' && m.hg !== null && m.ag !== null && m.hg === m.ag){
-        const penRow = document.createElement('div');
-        penRow.style.cssText = 'display:flex; align-items:center; justify-content:center; gap:6px; margin-top:6px; font-size:10px; color:var(--text-tertiary);';
-        const lbl = document.createElement('span'); lbl.textContent = '⚽ Penaltılar:';
-        const warn = document.createElement('span'); warn.style.cssText = 'color:#e06464; font-size:9px;';
-        const updWarn = function(){
-          const p = m.pens;
-          warn.textContent = (p && p[0] !== null && p[0] !== undefined && p[1] !== null && p[1] !== undefined && p[0] === p[1]) ? 'berabere bitemez!' : '';
-        };
-        const mkPen = function(side){
-          const inp = document.createElement('input');
-          inp.type = 'number'; inp.min = 0; inp.max = 30; inp.className = 'sl-score-input';
-          inp.style.cssText = 'width:34px; height:24px; font-size:12px;';
-          const v = m.pens ? m.pens[side] : null;
-          inp.value = v !== null && v !== undefined ? v : '';
-          inp.addEventListener('input', function(){
-            const val = inp.value === '' ? null : Math.max(0, Math.min(30, parseInt(inp.value) || 0));
-            if(!m.pens) m.pens = [null, null];
-            m.pens[side] = val;
-            scheduleSave(); updWarn();
-            euroFinalizeIfComplete(def.key);
-          });
-          return inp;
-        };
-        const pdash = document.createElement('span'); pdash.textContent = '−';
-        penRow.appendChild(lbl); penRow.appendChild(mkPen(0)); penRow.appendChild(pdash); penRow.appendChild(mkPen(1)); penRow.appendChild(warn);
-        updWarn();
-        block.appendChild(penRow);
-      }
       const probs = entProbs(m.h, m.a, c.guests);
       const probRow = document.createElement('div'); probRow.className = 'sl-prob-row';
       const mp = Math.max(probs.home, probs.draw, probs.away);
@@ -4303,6 +4455,7 @@
     });
     card.appendChild(list);
   }
+
   function renderEuroBracket(){
     const card = document.getElementById('euro-bracket-card'); if(!card) return;
     card.innerHTML = '';
@@ -4311,97 +4464,205 @@
     const c = euroComp(def.key); if(!c) return;
     card.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">' +
       '<p style="font-size:14px; font-weight:500; margin:0;">Eleme aşaması</p>' +
-      '<span style="font-size:11px; color:var(--text-tertiary);">Serie A temsilcileri kalın yazıyla gösterilir</span></div>';
+      '<span style="font-size:11px; color:var(--text-tertiary);">Çift maç · toplam skor eşitse uzatma ve penaltı · final tek maç</span></div>';
     if(!euroLeagueDone(c)){
       const e = document.createElement('div'); e.className = 'sl-empty-hint';
       e.textContent = 'Eleme kuraları, 36 takımlı lig aşaması tamamlanınca çekilecek. İlk 8 doğrudan Son 16\'ya, 9-24 arası eleme turuna gider.';
       card.appendChild(e); return;
     }
-    c.rounds.forEach(function(r){
-      const sec = document.createElement('div'); sec.style.marginBottom = '12px';
-      const head = document.createElement('div');
-      head.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:6px;';
-      head.innerHTML = '<span style="font-size:12px; font-weight:600;">' + r.name + '</span>' +
-        '<span style="font-size:10px; color:var(--text-tertiary);">' + (r.done ? '✓ oynandı' : (r.matches.length === 0 ? 'kura bekleniyor' : r.week + '. lig haftası sonrası')) + '</span>';
-      sec.appendChild(head);
-      if(r.matches.length === 0){
-        const e = document.createElement('div'); e.style.cssText = 'font-size:11px; color:var(--text-tertiary); padding:2px 8px;';
-        e.textContent = 'Eşleşmeler önceki tur bitince belli olacak.';
-        sec.appendChild(e);
-      }
-      r.matches.forEach(function(m){
-        const w = cupWinner(m);
-        const row = document.createElement('div');
-        const hasItalian = m.h >= 0 || m.a >= 0;
-        row.style.cssText = 'display:grid; grid-template-columns:minmax(0,1fr) 74px minmax(0,1fr); align-items:center; gap:8px; font-size:12px; padding:5px 8px; border-radius:var(--radius-md); background:var(--bg-secondary); margin-bottom:4px;' +
-          (hasItalian ? ' box-shadow:inset 2px 0 0 ' + def.color + ';' : '');
-        const mkSide = function(id, right){
-          const s = document.createElement('span');
-          s.style.cssText = 'display:flex; align-items:center; gap:6px; min-width:0;' + (right ? '' : ' justify-content:flex-end;');
-          const name = entName(id, c.guests);
-          const nm = document.createElement('span');
-          nm.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;' +
-            (w === id ? ' font-weight:600;' : (w !== null ? ' color:var(--text-tertiary);' : '')) +
-            (id >= 0 ? ' font-weight:700;' : '');
-          nm.textContent = name;
-          if(right){ s.appendChild(makeBadge(name)); s.appendChild(nm); }
-          else { s.appendChild(nm); s.appendChild(makeBadge(name)); }
-          return s;
-        };
-        const sc = document.createElement('span');
-        sc.style.cssText = 'text-align:center; font-weight:600; font-variant-numeric:tabular-nums;';
-        if(m.hg !== null){
-          sc.innerHTML = m.hg + ' - ' + m.ag + (m.pens ? '<div style="font-size:9px; color:var(--text-tertiary); font-weight:400;">pen. ' + m.pens[0] + '-' + m.pens[1] + '</div>' : '');
-        } else { sc.textContent = '—'; sc.style.color = 'var(--text-tertiary)'; sc.style.fontWeight = '400'; }
-        row.appendChild(mkSide(m.h, false)); row.appendChild(sc); row.appendChild(mkSide(m.a, true));
-        sec.appendChild(row);
-      });
-      card.appendChild(sec);
+    const unit = euroNextUnit(c);
+    const done = fullyPlayedWeekCount();
+    renderBracket(card, {
+      rounds: c.rounds,
+      guests: c.guests,
+      color: def.color,
+      emptyText: 'Eleme kuraları henüz çekilmedi.',
+      isDue: function(ri, r){
+        if(!unit || unit.type !== 'ko' || unit.index !== ri) return false;
+        return done >= r.week;
+      },
+      onSave: function(){ scheduleSave(); },
+      onChange: function(){ scheduleSave(); euroFinalizeIfComplete(def.key); }
     });
   }
 
+  /* ============ TURNUVA AĞACI ============ */
+  // Solda 8, sağda 8 maç; final ortada. Her kutucukta takımlar altlı üstlü,
+  // sağlarında skor kutuları; beraberlikte uzatma ve penaltı satırı açılır.
+  function renderBracket(container, opts){
+    const rounds = (opts.rounds || []).filter(function(r){ return r.matches && r.matches.length > 0; });
+    if(rounds.length === 0){
+      const e = document.createElement('div'); e.className = 'sl-empty-hint';
+      e.textContent = opts.emptyText || 'Kura henüz çekilmedi.';
+      container.appendChild(e); return;
+    }
+    const wrap = document.createElement('div'); wrap.className = 'sl-br-wrap';
+    const last = rounds[rounds.length - 1];
+    const hasFinal = last.matches.length === 1;
+    const pre = hasFinal ? rounds.slice(0, rounds.length - 1) : rounds;
+    const col = function(r, ri, from, to){
+      const c = document.createElement('div'); c.className = 'sl-br-col';
+      const t = document.createElement('div'); t.className = 'sl-br-title'; t.textContent = r.name;
+      c.appendChild(t);
+      const body = document.createElement('div'); body.className = 'sl-br-body';
+      for(let i = from; i < to; i++) body.appendChild(buildTieBox(r.matches[i], r, ri, i, opts));
+      c.appendChild(body);
+      return c;
+    };
+    pre.forEach(function(r, ri){
+      const half = Math.ceil(r.matches.length / 2);
+      wrap.appendChild(col(r, ri, 0, half));
+    });
+    if(hasFinal){
+      const fi = rounds.length - 1;
+      const c = document.createElement('div'); c.className = 'sl-br-col';
+      const t = document.createElement('div'); t.className = 'sl-br-title';
+      t.textContent = '🏆 ' + last.name; t.style.color = opts.color || 'var(--accent)';
+      c.appendChild(t);
+      const body = document.createElement('div'); body.className = 'sl-br-body';
+      body.style.justifyContent = 'center';
+      body.appendChild(buildTieBox(last.matches[0], last, fi, 0, opts));
+      c.appendChild(body);
+      wrap.appendChild(c);
+    }
+    pre.slice().reverse().forEach(function(r){
+      const ri = rounds.indexOf(r);
+      const half = Math.ceil(r.matches.length / 2);
+      if(half >= r.matches.length) return; // tek maçlık tur ikiye bölünmez
+      wrap.appendChild(col(r, ri, half, r.matches.length));
+    });
+    container.appendChild(wrap);
+  }
+  function buildTieBox(m, r, roundIdx, matchIdx, opts){
+    const legCount = r.legs || 1;
+    ensureTie(m, legCount);
+    const guests = opts.guests;
+    const due = opts.isDue ? !!opts.isDue(roundIdx, r) : false;
+    const editable = due && !r.done;
+    const box = document.createElement('div');
+    const nameEls = [];
+    const extraHost = document.createElement('div');
+    const footHost = document.createElement('div');
+    // Kutucuk yerinde güncellenir: skor yazarken odak kaybolmasın diye
+    // takım satırları yeniden kurulmaz, sadece uzatma/penaltı ve toplam tazelenir.
+    let extraSig = null;
+    const numIn = function(get, set, ph){
+      const i = document.createElement('input');
+      i.type = 'number'; i.min = 0; i.max = 30; i.className = 'sl-br-in';
+      i.placeholder = ph || '';
+      const v = get();
+      i.value = (v === null || v === undefined) ? '' : v;
+      const apply = function(){
+        const raw = i.value.trim();
+        set(raw === '' ? null : Math.max(0, Math.min(30, parseInt(raw) || 0)));
+        sync();
+        if(opts.onSave) opts.onSave();
+      };
+      i.addEventListener('input', apply);
+      i.addEventListener('change', function(){ apply(); if(opts.onChange) opts.onChange(); });
+      return i;
+    };
+    const buildExtras = function(){
+      extraHost.innerHTML = '';
+      if(!(tieLegsComplete(m) && tieLegsLevel(m))) return;
+      const extra = function(label, key){
+        const d = document.createElement('div'); d.className = 'sl-br-extra';
+        const l = document.createElement('span'); l.textContent = label; d.appendChild(l);
+        if(editable){
+          d.appendChild(numIn(function(){ return m[key] ? m[key][0] : null; },
+            function(v){ if(!m[key]) m[key] = [null, null]; m[key][0] = v; if(key === 'aet' && v === null) m.pens = null; }, '-'));
+          const dash = document.createElement('span'); dash.textContent = '-'; d.appendChild(dash);
+          d.appendChild(numIn(function(){ return m[key] ? m[key][1] : null; },
+            function(v){ if(!m[key]) m[key] = [null, null]; m[key][1] = v; if(key === 'aet' && v === null) m.pens = null; }, '-'));
+        } else {
+          const sp = document.createElement('span');
+          sp.style.fontWeight = '600';
+          sp.textContent = m[key] && m[key][0] !== null && m[key][1] !== null ? m[key][0] + '-' + m[key][1] : '—';
+          d.appendChild(sp);
+        }
+        extraHost.appendChild(d);
+      };
+      extra('Uzatma', 'aet');
+      if(aetSet(m) && tieLevel(m)) extra('Penaltı', 'pens');
+    };
+    const sync = function(){
+      const resolved = cupMatchResolved(m);
+      const winner = resolved ? cupWinner(m) : null;
+      box.className = 'sl-br-tie' + (resolved ? ' done' : (editable ? ' live' : ''));
+      nameEls.forEach(function(o){
+        o.el.className = 'sl-br-name' + (winner !== null ? (winner === o.id ? ' win' : ' out') : '');
+      });
+      const sig = [tieLegsComplete(m) && tieLegsLevel(m), aetSet(m) && tieLevel(m)].join('|');
+      if(sig !== extraSig){ extraSig = sig; buildExtras(); }
+      footHost.innerHTML = '';
+      const agg = tieAggregate(m);
+      const anyScore = m.legs.some(function(l){ return l[0] !== null || l[1] !== null; });
+      let txt = '';
+      if(legCount > 1 && anyScore) txt = 'Toplam ' + agg[0] + '-' + agg[1];
+      if(m.pens && m.pens[0] !== null && m.pens[1] !== null){
+        txt = (txt ? txt + ' · ' : '') + 'Penaltılar ' + m.pens[0] + '-' + m.pens[1];
+      }
+      if(txt){
+        const f = document.createElement('div'); f.className = 'sl-br-foot';
+        f.textContent = txt; footHost.appendChild(f);
+      }
+    };
+    [m.h, m.a].forEach(function(id, side){
+      const isFirst = side === 0;
+      const row = document.createElement('div'); row.className = 'sl-br-row';
+      const nm = document.createElement('span');
+      nm.className = 'sl-br-name';
+      nm.textContent = entName(id, guests);
+      nm.title = nm.textContent;
+      nameEls.push({el: nm, id: id});
+      row.appendChild(nm);
+      for(let li = 0; li < legCount; li++){
+        const idx = ((li === 0) === isFirst) ? 0 : 1;
+        if(editable){
+          row.appendChild(numIn(
+            function(){ return m.legs[li][idx]; },
+            function(v){
+              m.legs[li][idx] = v;
+              if(!tieLegsComplete(m) || !tieLevel(m)){ m.aet = null; m.pens = null; }
+            }, '-'));
+        } else {
+          const sc = document.createElement('span'); sc.className = 'sl-br-sc';
+          const v = m.legs[li][idx];
+          sc.textContent = (v === null || v === undefined) ? '·' : v;
+          row.appendChild(sc);
+        }
+      }
+      box.appendChild(row);
+    });
+    box.appendChild(extraHost);
+    box.appendChild(footHost);
+    sync();
+    return box;
+  }
   function renderCup(){
     const card = document.getElementById('cup-card'); if(!card) return;
     card.innerHTML = '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">' +
       '<p style="font-size:14px; font-weight:500; margin:0;">Turnuva ağacı</p>' +
-      (state.cup && state.cup.champion ? '<span style="font-size:12px; color:#F0C04A; font-weight:600;">🏆 Şampiyon: ' + state.cup.champion + '</span>' : '<span style="font-size:11px; color:var(--text-tertiary);">Turlar lig haftalarıyla birlikte ilerler</span>') + '</div>';
-    if(!state.cup){ card.innerHTML += '<div class="sl-empty-hint">Bu sezon için kupa kurası henüz çekilmedi.</div>'; return; }
-    state.cup.rounds.forEach(function(r){
-      const sec = document.createElement('div'); sec.style.marginBottom = '12px';
-      const head = document.createElement('div');
-      head.style.cssText = 'display:flex; align-items:center; gap:8px; margin-bottom:6px;';
-      head.innerHTML = '<span style="font-size:12px; font-weight:600;">' + r.name + '</span>' +
-        '<span style="font-size:10px; color:var(--text-tertiary);">' + (r.done ? '✓ oynandı' : (r.matches.length === 0 ? 'kura bekleniyor' : r.week + '. lig haftası sonrası')) + '</span>';
-      sec.appendChild(head);
-      if(r.matches.length === 0){
-        const e = document.createElement('div'); e.style.cssText = 'font-size:11px; color:var(--text-tertiary); padding:2px 8px;';
-        e.textContent = 'Eşleşmeler önceki tur bitince belli olacak.';
-        sec.appendChild(e);
+      (state.cup && state.cup.champion ? '<span style="font-size:12px; color:#F0C04A; font-weight:600;">🏆 Şampiyon: ' + state.cup.champion + '</span>'
+        : '<span style="font-size:11px; color:var(--text-tertiary);">Tek maç eleme · beraberlikte uzatma ve penaltı</span>') + '</div>';
+    if(!state.cup) return;
+    const act = activeCupRoundInfo();
+    const done = fullyPlayedWeekCount();
+    renderBracket(card, {
+      rounds: state.cup.rounds,
+      guests: state.cup.guests,
+      color: 'var(--accent)',
+      emptyText: 'Kupa kurası henüz çekilmedi.',
+      isDue: function(ri, r){
+        if(!act || act.ri !== ri) return false;
+        return done >= r.week && (ri === 0 || state.cup.rounds[ri - 1].done);
+      },
+      onSave: function(){ scheduleSave(); },
+      onChange: function(){
+        scheduleSave();
+        if(act) finalizeCupRoundIfComplete(act.ri);
+        else { renderCoppaActive(); renderCup(); }
       }
-      r.matches.forEach(function(m){
-        const w = cupWinner(m);
-        const row = document.createElement('div');
-        row.style.cssText = 'display:grid; grid-template-columns:minmax(0,1fr) 74px minmax(0,1fr); align-items:center; gap:8px; font-size:12px; padding:5px 8px; border-radius:var(--radius-md); background:var(--bg-secondary); margin-bottom:4px;';
-        const mkSide = function(idx, right){
-          const s = document.createElement('span');
-          s.style.cssText = 'display:flex; align-items:center; gap:6px; min-width:0;' + (right ? '' : ' justify-content:flex-end;');
-          const name = cupTeamName(idx);
-          const nm = document.createElement('span');
-          nm.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;' + (w === idx ? ' font-weight:600;' : (w !== null ? ' color:var(--text-tertiary);' : ''));
-          nm.textContent = name;
-          if(right){ s.appendChild(makeBadge(name)); s.appendChild(nm); }
-          else { s.appendChild(nm); s.appendChild(makeBadge(name)); }
-          return s;
-        };
-        const sc = document.createElement('span');
-        sc.style.cssText = 'text-align:center; font-weight:600; font-variant-numeric:tabular-nums;';
-        if(m.hg !== null){
-          sc.innerHTML = m.hg + ' - ' + m.ag + (m.pens ? '<div style="font-size:9px; color:var(--text-tertiary); font-weight:400;">pen. ' + m.pens[0] + '-' + m.pens[1] + '</div>' : '');
-        } else { sc.textContent = '—'; sc.style.color = 'var(--text-tertiary)'; sc.style.fontWeight = '400'; }
-        row.appendChild(mkSide(m.h, false)); row.appendChild(sc); row.appendChild(mkSide(m.a, true));
-        sec.appendChild(row);
-      });
-      card.appendChild(sec);
     });
   }
 
@@ -4496,11 +4757,11 @@
       key: def.key, name: def.name, champion: null, guests: guests,
       league: {ids: ids, matchdays: mds || [], playedMd: 0},
       rounds: [
-        {key: 'po', name: 'Eleme Turu', week: EURO_WEEKS.po, matches: [], done: false},
-        {key: 'r16', name: 'Son 16', week: EURO_WEEKS.r16, matches: [], done: false},
-        {key: 'qf', name: 'Çeyrek Final', week: EURO_WEEKS.qf, matches: [], done: false},
-        {key: 'sf', name: 'Yarı Final', week: EURO_WEEKS.sf, matches: [], done: false},
-        {key: 'f', name: 'Final', week: EURO_WEEKS.f, matches: [], done: false}
+        {key: 'po', name: 'Eleme Turu', week: EURO_WEEKS.po, matches: [], done: false, legs: 2},
+        {key: 'r16', name: 'Son 16', week: EURO_WEEKS.r16, matches: [], done: false, legs: 2},
+        {key: 'qf', name: 'Çeyrek Final', week: EURO_WEEKS.qf, matches: [], done: false, legs: 2},
+        {key: 'sf', name: 'Yarı Final', week: EURO_WEEKS.sf, matches: [], done: false, legs: 2},
+        {key: 'f', name: 'Final', week: EURO_WEEKS.f, matches: [], done: false, legs: 1}
       ]
     };
   }
@@ -4569,7 +4830,7 @@
     const matches = [];
     for(let i = 0; i < poTeams.length / 2; i++){
       // 9-24, 10-23 ... üst sıradaki ikinci maçın ev sahibi olur (rövanş avantajı temsili)
-      matches.push({h: poTeams[poTeams.length - 1 - i], a: poTeams[i], hg: null, ag: null, pens: null});
+      matches.push(ensureTie({h: poTeams[poTeams.length - 1 - i], a: poTeams[i], pens: null}, po.legs || 2));
     }
     po.matches = matches;
     c.koSeeds = table.slice(0, 8).map(function(r){ return r.id; });
@@ -4607,13 +4868,7 @@
     return {type: 'ko', index: act.ri, week: act.r.week, name: act.r.name, matches: act.r.matches, round: act.r};
   }
   function euroPlayRound(c, r){
-    r.matches.forEach(function(m){
-      if(m.hg === null || m.ag === null){
-        const sc = entSimScore(m.h, m.a, c.guests);
-        m.hg = sc[0]; m.ag = sc[1]; m.pens = null;
-      }
-      if(m.hg === m.ag && !m.pens) genPens(m);
-    });
+    r.matches.forEach(function(m){ playTie(m, c.guests, r.legs || 1); });
     r.done = true;
     euroFatigue(r);
   }
@@ -4635,16 +4890,18 @@
       const seeds = shuffleArr((c.koSeeds || []).slice());
       const ws = shuffleArr(winners);
       const ms = [];
-      for(let i = 0; i < seeds.length && i < ws.length; i++) ms.push({h: seeds[i], a: ws[i], hg: null, ag: null, pens: null});
+      // lig aşamasının ilk 8'i rövanşı evinde oynar: eleme turu galibi ilk maçın ev sahibidir
+      for(let i = 0; i < seeds.length && i < ws.length; i++) ms.push(ensureTie({h: ws[i], a: seeds[i], pens: null}, next.legs || 1));
       next.matches = ms;
       return;
     }
     next.matches = pairUp(winners);
+    next.matches.forEach(function(m){ ensureTie(m, next.legs || 1); });
   }
   function euroRoundNews(c, r){
     const def = euroDef(c.key);
     const lines = r.matches.map(function(m){
-      return entName(m.h, c.guests) + ' ' + m.hg + '-' + m.ag + (m.pens ? ' (pen. ' + m.pens[0] + '-' + m.pens[1] + ')' : '') + ' ' + entName(m.a, c.guests);
+      return entName(m.h, c.guests) + ' ' + tieScoreText(m) + ' ' + entName(m.a, c.guests);
     });
     // İtalyan takımlarının akıbeti manşeti belirler
     const outIt = [], onIt = [];
@@ -4674,8 +4931,8 @@
     state.news = (state.news || []).concat([{
       week: 0, tag: def.short,
       headline: '🏆 ' + name + ', ' + def.name + ' şampiyonu!',
-      body: def.name + ' finalinde ' + entName(m.h, c.guests) + ' ile ' + entName(m.a, c.guests) + ' karşılaştı; mücadele ' + m.hg + '-' + m.ag +
-        (m.pens ? ' berabere bitti ve kupa penaltılarda ' + m.pens[0] + '-' + m.pens[1] + ' ile sahibini buldu' : ' sona erdi') + '.' +
+      body: def.name + ' finalinde ' + entName(m.h, c.guests) + ' ile ' + entName(m.a, c.guests) + ' karşılaştı; mücadele ' + tieScoreText(m) +
+        (m.pens ? ' sona erdi ve kupa penaltılarda sahibini buldu' : ' sona erdi') + '.' +
         (isItalian ? '\n\nİtalyan futbolu için tarihi bir gece: kupa Serie A\'ya geliyor.' : '\n\nSerie A temsilcileri bu sezon Avrupa\'nın zirvesine ulaşamadı.') ,
       teamName: name
     }]);
@@ -4848,14 +5105,22 @@
       t.manager.seasons = (t.manager.seasons || 0) + 1;
       t.manager.hiredWeek = undefined;
       const rank = rankMap[t.name];
-      const exp = expMap[t.name] || rank;
-      if(rank && exp && rank - exp >= 6 && Math.random() < 0.5){
+      // Yönetim hedefi varsa ölçüt odur; yoksa güç sıralaması beklentisi kullanılır
+      const goalRank = t.goal ? goalDef(t.goal).rank : null;
+      const exp = goalRank || expMap[t.name] || rank;
+      const miss = rank && exp ? rank - exp : 0;
+      if(miss >= 6 && Math.random() < (goalRank ? 0.62 : 0.5)){
         const oldName = t.manager.name;
         t.manager = makeManager(mUsed);
         events.managerChanges = events.managerChanges || [];
-        events.managerChanges.push({team: t.name, from: oldName, to: t.manager.name});
+        events.managerChanges.push({team: t.name, from: oldName, to: t.manager.name, missed: goalDef(t.goal).short, rank: rank});
+      }
+      if(rank && goalRank){
+        (events.goals = events.goals || []).push({team: t.name, goal: goalDef(t.goal).short, rank: rank, ok: rank <= goalRank});
       }
     });
+    // Yeni sezonun hedefi yeni güç dengesine göre tazelenir; elle belirlenmiş hedef korunur
+    newTeams.forEach(function(t){ if(!t.goalCustom) delete t.goal; });
     // 1b) Sıralama-hedef yakınsaması: bitirdiğin sıra, kadronun ulaşması gereken
     // seviyeyi belirler ve kadro her sezon o hedefe doğru çekilir. Üst üste Avrupa
     // potasında biten bir takım (örn. yükselen Palermo) birkaç sezonda 72-75 bandına
@@ -4941,8 +5206,21 @@
         teamName: big.to
       });
     }
+    if(events.goals && events.goals.length > 0){
+      const hit = events.goals.filter(function(g){ return g.ok; });
+      const miss = events.goals.filter(function(g){ return !g.ok; }).sort(function(a, b){ return a.rank - b.rank; });
+      const line = function(g){ return g.team + ' — hedef: ' + g.goal + ', bitiş: ' + g.rank + '.'; };
+      items.push({
+        week: 0, tag: 'Değerlendirme',
+        headline: 'Yönetim karnesi: ' + hit.length + ' kulüp hedefini tutturdu, ' + miss.length + ' kulüp tutturamadı',
+        body: seasonLabel + ' öncesi kulüpler sezon muhasebesini yaptı.' +
+          (hit.length > 0 ? '\n\nHedefine ulaşanlar: ' + hit.slice(0, 8).map(line).join(' · ') + '.' : '') +
+          (miss.length > 0 ? '\n\nHedefin altında kalanlar: ' + miss.slice(0, 8).map(line).join(' · ') + '.' : ''),
+        teamName: (miss[0] || hit[0]).team
+      });
+    }
     if(events.managerChanges && events.managerChanges.length > 0){
-      const lines = events.managerChanges.map(function(c){ return c.team + ': ' + c.from + ' → ' + c.to; });
+      const lines = events.managerChanges.map(function(c){ return c.team + ': ' + c.from + ' → ' + c.to + (c.missed ? ' (hedef ' + c.missed + ', bitiş ' + c.rank + '.)' : ''); });
       items.push({
         week: 0, tag: 'Teknik Direktör',
         headline: 'Yedek kulübelerinde değişim rüzgârı',
@@ -5786,6 +6064,7 @@
     if(!state.availRolled) state.availRolled = {};
     if(!state.euroPrompted) state.euroPrompted = {};
     if(state.cup && !state.cup.guests) state.cup.guests = [];
+    migrateTies();
     ensureManagers(state.teams);
     // Avrupa kupaları ilk sezonda oynanmaz; sonraki sezonlarda eksikse kurulur
     if(!history || history.length === 0) state.euro = null;
