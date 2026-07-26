@@ -247,16 +247,18 @@
   .sl-poll-opt.voted .sl-poll-label::after { content: ' ✓ oyun'; font-size: 10px; color: var(--accent); font-weight: 600; }
   /* Turnuva ağacı */
   .sl-br-wrap { display: flex; gap: 10px; align-items: stretch; overflow-x: auto; padding-bottom: 6px; }
-  .sl-br-col { display: flex; flex-direction: column; min-width: 168px; flex: 1 0 auto; }
+  .sl-br-col { display: flex; flex-direction: column; min-width: 196px; flex: 1 0 auto; }
   .sl-br-body { display: flex; flex-direction: column; justify-content: space-around; gap: 8px; flex: 1; }
   .sl-br-title { font-size: 10px; font-weight: 700; letter-spacing: 0.6px; color: var(--text-tertiary); text-align: center; margin-bottom: 6px; text-transform: uppercase; white-space: nowrap; }
   .sl-br-tie { background: var(--bg-secondary); border: 1px solid var(--border-tertiary); border-radius: 8px; padding: 5px 6px; position: relative; }
   .sl-br-tie.done { border-color: var(--border-secondary); }
   .sl-br-tie.live { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent-border); }
-  .sl-br-row { display: flex; align-items: center; gap: 5px; padding: 2px 0; font-size: 11px; }
+  .sl-br-row { display: flex; align-items: center; gap: 4px; padding: 2px 0; font-size: 11px; }
+  .sl-br-row .sl-team-badge { flex-shrink: 0; }
   .sl-br-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .sl-br-name.win { font-weight: 700; }
   .sl-br-name.out { color: var(--text-tertiary); }
+  .sl-br-tag { font-size: 7px; letter-spacing: 0.5px; color: var(--text-tertiary); border: 1px solid var(--border-tertiary); border-radius: 3px; padding: 0 2px; line-height: 12px; flex-shrink: 0; }
   .sl-br-sc { width: 20px; text-align: center; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 11px; flex-shrink: 0; }
   .sl-br-in { width: 26px; height: 21px; text-align: center; font-size: 11px; padding: 0; border: 1px solid var(--border-secondary); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-family: inherit; -moz-appearance: textfield; flex-shrink: 0; }
   .sl-br-in::-webkit-outer-spin-button, .sl-br-in::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -4484,6 +4486,7 @@
       rounds: c.rounds,
       guests: c.guests,
       color: def.color,
+      tagFor: function(id){ return id >= 0 ? 'SERIE A' : null; },
       emptyText: 'Eleme kuraları henüz çekilmedi.',
       isDue: function(ri, r){
         if(!unit || unit.type !== 'ko' || unit.index !== ri) return false;
@@ -4618,12 +4621,21 @@
     [m.h, m.a].forEach(function(id, side){
       const isFirst = side === 0;
       const row = document.createElement('div'); row.className = 'sl-br-row';
+      const teamName = entName(id, guests);
+      row.appendChild(makeBadge(teamName));
       const nm = document.createElement('span');
       nm.className = 'sl-br-name';
-      nm.textContent = entName(id, guests);
-      nm.title = nm.textContent;
+      nm.textContent = teamName;
+      nm.title = teamName;
       nameEls.push({el: nm, id: id});
       row.appendChild(nm);
+      // Konuk ekip rozeti: Coppa'da alt lig takımı, Avrupa'da Serie A temsilcisi
+      const tag = opts.tagFor ? opts.tagFor(id) : null;
+      if(tag){
+        const tg = document.createElement('span'); tg.className = 'sl-br-tag';
+        tg.textContent = tag;
+        row.appendChild(tg);
+      }
       for(let li = 0; li < legCount; li++){
         const idx = ((li === 0) === isFirst) ? 0 : 1;
         if(editable){
@@ -4660,6 +4672,7 @@
       rounds: state.cup.rounds,
       guests: state.cup.guests,
       color: 'var(--accent)',
+      tagFor: function(id){ return id < 0 ? 'ALT LİG' : null; },
       emptyText: 'Kupa kurası henüz çekilmedi.',
       isDue: function(ri, r){
         if(!act || act.ri !== ri) return false;
