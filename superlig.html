@@ -1098,11 +1098,66 @@
     for(let i = arr.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp; }
     return arr;
   }
-  function genFixtures(teamCount){
+  /* ---- Derbi takvimi ----
+     Gerçek lig takvimlerinde derbi açılış haftasına konmaz ve bir takım iki
+     derbiyi üst üste oynamaz; aynı haftaya iki derbi yığmaktan da kaçınılır.
+     Ham fikstür bu kurallara göre puanlanır ve ilk devrenin hafta sırası en iyi
+     diziliş bulunana kadar yerel aramayla değiştirilir. İkinci devre aynı sırayı
+     izlediği için rövanşlar da aynı düzeni alır; her derbinin rövanşı zaten
+     yarım sezon sonra gelir. */
+  function derbyTeamsOfRound(round, teams){
+    const set = {};
+    round.forEach(function(m){
+      const h = teams[m[0]], a = teams[m[1]];
+      if(h && a && isDerby(h.name, a.name)){ set[m[0]] = true; set[m[1]] = true; }
+    });
+    return set;
+  }
+  function orderRoundsForDerbies(rounds, teams){
+    const n = rounds.length;
+    const dt = rounds.map(function(r){ return derbyTeamsOfRound(r, teams); });
+    const cnt = dt.map(function(d){ return Object.keys(d).length / 2; });
+    if(cnt.every(function(c){ return c === 0; })) return rounds;
+    // Açılış haftası cezası: 1. hafta ağır, 2-3. hafta hafifler
+    const OPEN = [130, 60, 22];
+    const score = function(order){
+      let p = 0;
+      for(let i = 0; i < n; i++){
+        const k = cnt[order[i]];
+        if(k > 0){
+          if(i < OPEN.length) p += OPEN[i] * k;
+          if(k > 1) p += (k - 1) * 12;      // aynı hafta birden çok derbi
+          if(i > 0 && cnt[order[i-1]] > 0) p += 5; // arka arkaya derbi haftası
+        }
+        if(i > 0){
+          const cur = dt[order[i]], prev = dt[order[i-1]];
+          for(const t in cur){ if(prev[t]) p += 40; } // aynı takım üst üste derbi
+        }
+      }
+      return p;
+    };
+    let best = null, bestScore = Infinity;
+    for(let attempt = 0; attempt < 14 && bestScore > 0; attempt++){
+      const order = attempt === 0 ? Array.from({length:n}, function(_, i){ return i; })
+                                  : shuffleArr(Array.from({length:n}, function(_, i){ return i; }));
+      let cur = score(order);
+      for(let step = 0; step < 900 && cur > 0; step++){
+        const i = randInt(0, n - 1), j = randInt(0, n - 1);
+        if(i === j) continue;
+        const tmp = order[i]; order[i] = order[j]; order[j] = tmp;
+        const s = score(order);
+        if(s <= cur) cur = s;
+        else { const t2 = order[i]; order[i] = order[j]; order[j] = t2; }
+      }
+      if(cur < bestScore){ bestScore = cur; best = order.slice(); }
+    }
+    return best.map(function(i){ return rounds[i]; });
+  }
+  function genFixtures(teamCount, teams){
     const n = teamCount;
     const teamIdx = shuffleArr(Array.from({length:n}, function(_, i){ return i; }));
     const arr = teamIdx.slice();
-    const firstHalf = [];
+    let firstHalf = [];
     for(let r=0; r<n-1; r++){
       const round = [];
       for(let i=0; i<n/2; i++){
@@ -1114,12 +1169,13 @@
       firstHalf.push(shuffleArr(round));
       arr.splice(1, 0, arr.pop());
     }
+    if(teams && teams.length === n) firstHalf = orderRoundsForDerbies(firstHalf, teams);
     const secondHalf = firstHalf.map(function(round){ return shuffleArr(round.map(function(m){ return [m[1], m[0]]; })); });
     return firstHalf.concat(secondHalf);
   }
   function initState(teams, seasonLabel, promotedNamesFromHistory){
     ensureSquads(teams);
-    const fixtures = genFixtures(teams.length);
+    const fixtures = genFixtures(teams.length, teams);
     return {
       teams: teams, season: seasonLabel || '2026-27',
       seasonsCompleted: 0, promotedTeams: promotedNamesFromHistory || [],
