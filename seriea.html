@@ -4845,10 +4845,15 @@
   const EURO_WEEKS = {po: 22, r16: 26, qf: 29, sf: 32, f: 35};
   function euroDef(key){ return EURO_DEFS.find(function(d){ return d.key === key; }); }
   // Lig sıralaması + kupa şampiyonundan Avrupa kotalarını belirler
+  // Avrupa'ya yalnızca yeni sezonda ligde olan takımlar gidebilir: kupayı alt lig
+  // ekibi kazandıysa ya da kupa şampiyonu küme düştüyse kontenjan lige devredilir
+  function euroEligible(name){
+    return !!name && state.teams.some(function(t){ return t.name === name; });
+  }
   function computeEuroQualification(table, coppaWinner){
     const nameAt = function(i){ return table[i] ? table[i].name : null; };
     const used = {};
-    const take = function(n){ if(!n || used[n]) return null; used[n] = true; return n; };
+    const take = function(n){ if(!n || used[n] || !euroEligible(n)) return null; used[n] = true; return n; };
     // Yeni UEFA sisteminde ilk 4 doğrudan ŞL lig aşamasına girer
     const q = {ucl: {direct: [], po: []}, uel: {direct: [], po: []}, uecl: {direct: [], po: []}};
     [0, 1, 2, 3].forEach(function(i){ const n = take(nameAt(i)); if(n) q.ucl.direct.push(n); });

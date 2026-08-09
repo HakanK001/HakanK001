@@ -246,6 +246,18 @@
   .sl-poll-opt.voted { border-color: var(--accent); }
   .sl-poll-opt.voted .sl-poll-label::after { content: ' ✓ oyun'; font-size: 10px; color: var(--accent); font-weight: 600; }
   /* Turnuva ağacı */
+  .sl-quali-route { border: 1px solid var(--border-tertiary); border-radius: 10px; padding: 10px; margin-bottom: 10px; background: var(--bg-secondary); }
+  .sl-quali-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .sl-quali-team { font-size: 13px; font-weight: 600; }
+  .sl-quali-from { font-size: 10px; color: var(--text-tertiary); }
+  .sl-quali-dest { margin-left: auto; font-size: 11px; color: var(--text-secondary); }
+  .sl-quali-dest.in { color: var(--accent); font-weight: 600; }
+  .sl-quali-dest.out { color: #e06464; font-weight: 600; }
+  .sl-quali-note { font-size: 11px; color: var(--text-tertiary); padding: 4px 2px; }
+  .sl-quali-tie { display: grid; grid-template-columns: minmax(0,1fr) 210px; gap: 10px; align-items: center; padding: 6px 0; }
+  .sl-quali-step { display: flex; flex-direction: column; gap: 2px; font-size: 12px; min-width: 0; }
+  .sl-quali-if { font-size: 10px; color: var(--text-tertiary); }
+  @media (max-width: 620px) { .sl-quali-tie { grid-template-columns: 1fr; } }
   .sl-h2h-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
   .sl-h2h-side { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
   .sl-h2h-side.right { justify-content: flex-end; text-align: right; }
@@ -512,6 +524,7 @@
     <div class="sl-card sl-mb12" style="padding:10px 12px;">
       <div id="euro-subtabs" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
     </div>
+    <div class="sl-card sl-mb12" id="euro-quali-card" style="display:none;"></div>
     <div class="sl-card sl-mb12" id="euro-active-card"></div>
     <div class="sl-card sl-mb12" id="euro-league-card"></div>
     <div class="sl-card" id="euro-bracket-card"></div>
@@ -4437,6 +4450,7 @@
 
   /* ============ AVRUPA ARAYÜZÜ ============ */
   function renderEuro(){
+    renderEuroQuali();
     renderEuroSubtabs();
     renderEuroActive();
     renderEuroLeagueTable();
@@ -4530,7 +4544,12 @@
     head.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;';
     head.innerHTML = '<p style="font-size:14px; font-weight:500; margin:0;">' + def.name + ' <span class="sl-season-pill" style="margin-left:6px;">' + state.season + '</span></p>';
     card.appendChild(head);
-    if(!c){ card.innerHTML += '<div class="sl-empty-hint">Bu kupa için kura çekilmedi.</div>'; return; }
+    if(!c){
+      card.innerHTML += '<div class="sl-empty-hint">' + (qualiActive()
+        ? 'Lig aşaması kurası, ön eleme turları tamamlanınca çekilecek.'
+        : 'Bu kupa için kura çekilmedi.') + '</div>';
+      return;
+    }
     if(c.champion){
       const cols = getTeamColors(c.champion);
       const dark = cols[1] === '#FFFFFF' ? cols[0] : (cols[0] === '#FFFFFF' ? cols[1] : cols[0]);
@@ -4910,18 +4929,47 @@
   const EURO_WEEKS = {po: 21, r16: 24, qf: 27, sf: 30, f: 33};
   function euroDef(key){ return EURO_DEFS.find(function(d){ return d.key === key; }); }
   // Lig sıralaması + kupa şampiyonundan Avrupa kotalarını belirler
+  // Avrupa'ya yalnızca yeni sezonda ligde olan takımlar gidebilir: kupayı alt lig
+  // ekibi kazandıysa ya da kupa şampiyonu küme düştüyse kontenjan lige devredilir
+  function euroEligible(name){
+    return !!name && state.teams.some(function(t){ return t.name === name; });
+  }
   function computeEuroQualification(table, coppaWinner){
     const nameAt = function(i){ return table[i] ? table[i].name : null; };
     const used = {};
-    const take = function(n){ if(!n || used[n]) return null; used[n] = true; return n; };
-    // Türkiye UEFA ülke sıralamasında 9. sırada: şampiyon ve 2. ŞL'ye, 3. ile kupa
-    // şampiyonu Avrupa Ligi'ne, 4. Konferans Ligi'ne gider (5 temsilci)
-    const q = {ucl: {direct: [], po: []}, uel: {direct: [], po: []}, uecl: {direct: [], po: []}};
-    [0, 1].forEach(function(i){ const n = take(nameAt(i)); if(n) q.ucl.direct.push(n); });
-    const cw = take(coppaWinner); if(cw) q.uel.direct.push(cw);
-    for(let i = 2; i < table.length && q.uel.direct.length < 2; i++){ const n = take(nameAt(i)); if(n) q.uel.direct.push(n); }
-    for(let i = 2; i < table.length && q.uecl.direct.length < 1; i++){ const n = take(nameAt(i)); if(n) q.uecl.direct.push(n); }
-    return q;
+    /* Türkiye yolu: şampiyon doğrudan ŞL lig aşamasına; 2. ŞL elemelerine;
+       3. AL elemesine; 4. KL play-off'una; kupa şampiyonu AL play-off'una.
+       Kupa şampiyonu ligi ilk 4'te bitirdiyse lig sıraları bir basamak kayar. */
+    /* Slotlar değer sırasıyla dağıtılır ve her kulüp hak ettiği en iyi slotta kalır:
+         A) ŞL lig aşaması        → ligde 1.
+         B) ŞL eleme yolu         → ligde 2.
+         C) AL play-off           → kupa şampiyonu; kupa şampiyonu A ya da B'yi
+                                    zaten aldıysa (yani ligi 1. ya da 2. bitirdiyse)
+                                    slot sıradaki takıma kayar
+         D) AL eleme yolu         → sırada kalan en üst takım
+         E) KL play-off           → sırada kalan en üst takım
+       Böylece kupa şampiyonu ilk 4'teyse alt sıralar birer basamak yukarı çekilir
+       ve 5. sıra da Avrupa'ya açılır. */
+    const cwRank = coppaWinner ? table.findIndex(function(r){ return r.name === coppaWinner; }) + 1 : 0;
+    let i = 0;
+    const nextLeague = function(){
+      while(i < table.length){
+        const n = nameAt(i); const rank = i + 1; i++;
+        if(n && !used[n] && euroEligible(n)){ used[n] = true; return {name: n, rank: rank, viaCup: false}; }
+      }
+      return null;
+    };
+    const champion = nextLeague();
+    const uclQ = nextLeague();
+    let cupPO;
+    if(coppaWinner && !used[coppaWinner] && euroEligible(coppaWinner)){
+      used[coppaWinner] = true;
+      cupPO = {name: coppaWinner, rank: cwRank, viaCup: true};
+    } else {
+      // kupa şampiyonu daha iyi bir slotta ya da ligde değil; kontenjan aşağı kayar
+      cupPO = nextLeague();
+    }
+    return {champion: champion, uclQ: uclQ, uelQ: nextLeague(), ueclPO: nextLeague(), cupPO: cupPO};
   }
   // Her takımın derecesi çift olduğundan Euler yönlendirmesi ev/deplasmanı tam yarı yarıya böler
   function orientEulerian(ids, matches){
@@ -4997,28 +5045,6 @@
       ]
     };
   }
-  function initEuro(qual){
-    // Kulüpler güç seviyesine göre kupalara dağıtılır; her kupa kendi havuzunu kullanır
-    let remaining = shuffleArr(EURO_CLUBS.slice());
-    const comps = {};
-    EURO_DEFS.forEach(function(def){
-      const q = qual[def.key] || {direct: [], po: []};
-      const italians = q.direct.concat(q.po);
-      const need = EURO_SIZE - italians.length;
-      const eligible = remaining.filter(function(c){ return c[1] >= def.minStr; });
-      // Güçlüden zayıfa doğru seçilir, biraz karıştırılarak sezondan sezona çeşitlilik sağlanır
-      eligible.sort(function(a, b){ return b[1] - a[1]; });
-      const pool = shuffleArr(eligible.slice(0, Math.min(eligible.length, need + 8))).slice(0, need);
-      let short = need - pool.length;
-      if(short > 0){
-        const extra = remaining.filter(function(c){ return pool.indexOf(c) === -1; }).slice(0, short);
-        extra.forEach(function(c){ pool.push(c); });
-      }
-      pool.forEach(function(c){ const i = remaining.indexOf(c); if(i >= 0) remaining.splice(i, 1); });
-      comps[def.key] = initEuroComp(def, italians, pool);
-    });
-    return {comps: comps, view: 'ucl'};
-  }
   // Lig aşaması puan tablosu
   function euroLeagueTable(c){
     const rows = {};
@@ -5070,12 +5096,14 @@
   // Avrupa kupaları ilk sezonda oynanmaz: kotalar ancak bir sezon tamamlandığında
   // (Süper Lig sıralaması ve kupa şampiyonu belli olunca) oluşur
   function ensureEuro(){
-    if(state.euro && state.euro.comps) return;
+    if(state.euro && (state.euro.comps || state.euro.quali)) return;
     if(!history || !history[0] || !history[0].fullTable) return;
-    state.euro = initEuro(computeEuroQualification(
+    const qual = computeEuroQualification(
       history[0].fullTable.map(function(r){ return {name: r.name}; }),
       history[0].coppaWinner
-    ));
+    );
+    // Önce ön elemeler kurulur; lig aşaması kadroları elemeler bitince belirlenir
+    state.euro = {quali: euroQualiInit(qual), comps: null, view: 'ucl'};
     if(!state.euroPrompted) state.euroPrompted = {};
   }
   function euroComp(key){ return state.euro && state.euro.comps ? state.euro.comps[key] : null; }
@@ -5172,6 +5200,8 @@
   }
   function euroPlayDue(){
     if(!state.euro) return;
+    euroQualiPlayDue();
+    if(!state.euro.comps) return;
     const done = fullyPlayedWeekCount();
     EURO_DEFS.forEach(function(def){
       const c = euroComp(def.key); if(!c) return;
@@ -5264,6 +5294,23 @@
     if(!state.euro) return false;
     const done = fullyPlayedWeekCount();
     if(!state.euroPrompted) state.euroPrompted = {};
+    // Ön eleme turu sırası geldiyse önce oraya götür
+    const q = state.euro.quali;
+    if(q && !q.done){
+      for(let r = 0; r < q.routes.length; r++){
+        const rt = q.routes[r];
+        if(!rt.step || rt.dest) continue;
+        const st = QUALI_STEPS[rt.step];
+        if(done < st.week) continue;
+        const tag = 'quali:' + rt.team + ':' + rt.step;
+        if(state.euroPrompted[tag]) continue;
+        state.euroPrompted[tag] = true;
+        scheduleSave();
+        switchTab('avrupa');
+        return true;
+      }
+      return false;
+    }
     for(let i = 0; i < EURO_DEFS.length; i++){
       const def = EURO_DEFS[i];
       const c = euroComp(def.key); if(!c || c.champion) continue;
@@ -5473,6 +5520,267 @@
     }
     return items;
   }
+  /* ============ AVRUPA ÖN ELEMELERİ (TÜRKİYE YOLU) ============
+     Şampiyon doğrudan Şampiyonlar Ligi lig aşamasına gider. 2. takım ŞL için iki
+     eleme turu ve bir play-off oynar; 3. takım Avrupa Ligi elemesinden, 4. takım
+     Konferans Ligi play-off'undan, Türkiye Kupası şampiyonu ise Avrupa Ligi
+     play-off'undan başlar. Kupa şampiyonu ligi ilk 4'te bitirdiyse lig sıraları
+     bir basamak kayar, böylece 5. sıra da Avrupa'ya açılır.
+     Elenen takım UEFA'daki gibi bir alt kulvarın sırasındaki turuna düşer; ancak
+     Konferans Ligi play-off'unu kaybeden Avrupa'ya veda eder.
+     Turlar lig başlamadan (0., 1. ve 2. hafta) oynanır; lig aşaması kadroları
+     ancak elemeler bittiğinde belirlenir. */
+  const QUALI_STEPS = {
+    ucl_q2:  {name: 'ŞL 2. Eleme Turu', comp: 'ucl',  week: 0, str: [58, 70], win: 'ucl_q3',  lose: 'uel_q3'},
+    ucl_q3:  {name: 'ŞL 3. Eleme Turu', comp: 'ucl',  week: 1, str: [64, 75], win: 'ucl_po',  lose: 'uel_po'},
+    ucl_po:  {name: 'ŞL Play-off',      comp: 'ucl',  week: 2, str: [68, 79], win: 'IN:ucl',  lose: 'IN:uel'},
+    uel_q3:  {name: 'AL 3. Eleme Turu', comp: 'uel',  week: 1, str: [56, 68], win: 'uel_po',  lose: 'uecl_po'},
+    uel_po:  {name: 'AL Play-off',      comp: 'uel',  week: 2, str: [60, 72], win: 'IN:uel',  lose: 'IN:uecl'},
+    uecl_po: {name: 'KL Play-off',      comp: 'uecl', week: 2, str: [52, 64], win: 'IN:uecl', lose: 'OUT'}
+  };
+  const DEST_LABEL = {'IN:ucl': 'Şampiyonlar Ligi lig aşaması', 'IN:uel': 'Avrupa Ligi lig aşaması',
+    'IN:uecl': 'Konferans Ligi lig aşaması', 'OUT': 'Avrupa\'ya veda'};
+  function destLabel(d){ return DEST_LABEL[d] || (QUALI_STEPS[d] ? QUALI_STEPS[d].name : d); }
+  function euroQualiInit(qual){
+    const q = {routes: [], guests: [], done: false, used: {}};
+    // Etiket, takımın ligi bitirdiği gerçek sırayı gösterir (slot numarasını değil)
+    const rankLabel = function(e){ return e && e.rank ? 'Ligde ' + e.rank + '.' : 'Ligde'; };
+    const add = function(e, step, from){
+      if(!e || !e.name) return;
+      const idx = state.teams.findIndex(function(t){ return t.name === e.name; });
+      if(idx < 0) return;
+      q.routes.push({team: e.name, idx: idx, step: step, from: from, ties: [], dest: null});
+    };
+    if(qual.champion){
+      const ci = state.teams.findIndex(function(t){ return t.name === qual.champion.name; });
+      if(ci >= 0) q.routes.push({team: qual.champion.name, idx: ci, step: null,
+        from: rankLabel(qual.champion) + ' · şampiyon', ties: [], dest: 'IN:ucl'});
+    }
+    add(qual.uclQ, 'ucl_q2', rankLabel(qual.uclQ) + ' · ŞL eleme yolu');
+    add(qual.uelQ, 'uel_q3', rankLabel(qual.uelQ) + ' · AL eleme yolu');
+    add(qual.ueclPO, 'uecl_po', rankLabel(qual.ueclPO) + ' · KL play-off');
+    add(qual.cupPO, 'uel_po', qual.cupPO && qual.cupPO.viaCup
+      ? (CUP_LABEL + ' şampiyonu' + (qual.cupPO.rank ? ' · ligde ' + qual.cupPO.rank + '.' : ''))
+      : (rankLabel(qual.cupPO) + ' · kupa kontenjanı'));
+    return q;
+  }
+  // Eleme rakibi: istenen güç bandına en yakın, henüz kullanılmamış Avrupa kulübü
+  function pickQualiOpponent(q, band){
+    const mid = (band[0] + band[1]) / 2;
+    const cands = EURO_CLUBS.filter(function(c){ return !q.used[c[0]] && c[1] >= band[0] - 6 && c[1] <= band[1] + 6; });
+    const pool = cands.length ? cands : EURO_CLUBS.filter(function(c){ return !q.used[c[0]]; });
+    if(pool.length === 0) return {name: 'Avrupa Ekibi', strength: Math.round(mid)};
+    pool.sort(function(a, b){ return Math.abs(a[1] - mid) - Math.abs(b[1] - mid); });
+    const c = pool[randInt(0, Math.min(7, pool.length - 1))];
+    q.used[c[0]] = true;
+    return {name: c[0], strength: c[1], club: c};
+  }
+  function qualiTieFor(q, route, stepKey){
+    let tie = route.ties.find(function(t){ return t.step === stepKey; });
+    if(tie) return tie;
+    const st = QUALI_STEPS[stepKey];
+    const opp = pickQualiOpponent(q, st.str);
+    q.guests.push({name: opp.name, strength: opp.strength});
+    const gid = -q.guests.length;
+    // Seri başı Türk ekibi rövanşı evinde oynar: ilk maç deplasmanda
+    const m = ensureTie({h: gid, a: route.idx, pens: null}, 2);
+    tie = {step: stepKey, m: m, opp: opp.name, club: opp.club || null};
+    route.ties.push(tie);
+    return tie;
+  }
+  // Sırası gelen turun kurası çekilir (oynanmaz): skorları elle girebilmek için
+  function euroQualiDrawDue(){
+    const q = state.euro && state.euro.quali;
+    if(!q || q.done) return;
+    const done = fullyPlayedWeekCount();
+    q.routes.forEach(function(r){
+      if(!r.step || r.dest) return;
+      if(done < QUALI_STEPS[r.step].week) return;
+      qualiTieFor(q, r, r.step);
+    });
+  }
+  // Tamamlanmış eşleşmelerden sonuç çıkar, takımı bir sonraki tura ya da kulvarına taşı
+  function euroQualiResolve(){
+    const q = state.euro && state.euro.quali;
+    if(!q || q.done) return;
+    q.routes.forEach(function(route){
+      while(route.step && !route.dest){
+        const st = QUALI_STEPS[route.step];
+        const tie = route.ties.find(function(t){ return t.step === route.step; });
+        if(!tie || !cupMatchResolved(tie.m)) return;
+        const w = cupWinner(tie.m);
+        if(w === null) return;
+        tie.won = w === route.idx;
+        const next = tie.won ? st.win : st.lose;
+        if(next.indexOf('IN:') === 0 || next === 'OUT'){ route.dest = next; route.step = null; }
+        else route.step = next;
+      }
+    });
+    euroQualiDrawDue();
+    if(q.routes.every(function(r){ return !!r.dest; })){
+      q.done = true;
+      euroQualiNews(q);
+      euroBuildComps();
+    }
+  }
+  // Sırası gelmiş, oynanmamış eşleşmeleri simüle et
+  function euroQualiPlayDue(){
+    const q = state.euro && state.euro.quali;
+    if(!q || q.done) return;
+    const done = fullyPlayedWeekCount();
+    for(let guard = 0; guard < 8 && !q.done; guard++){
+      euroQualiDrawDue();
+      let played = false;
+      q.routes.forEach(function(route){
+        if(!route.step || route.dest) return;
+        if(done < QUALI_STEPS[route.step].week) return;
+        const tie = route.ties.find(function(t){ return t.step === route.step; });
+        if(!tie || cupMatchResolved(tie.m)) return;
+        playTie(tie.m, q.guests, 2);
+        played = true;
+      });
+      euroQualiResolve();
+      if(!played) break;
+    }
+  }
+  // Elle girilen skorlardan sonra: yalnızca gerçekten bir tur sonuçlandıysa ekranı
+  // yeniden kur, yoksa skor yazarken kutular ayağının altından çekilmiş olur
+  function euroQualiFinalize(){
+    const q = state.euro && state.euro.quali;
+    if(!q) return;
+    const sig = function(){ return q.done + '|' + q.routes.map(function(r){ return r.step + '>' + r.dest; }).join(','); };
+    const before = sig();
+    euroQualiResolve();
+    scheduleSave();
+    if(sig() !== before){ renderEuro(); syncEuroTabVisibility(); }
+  }
+  function euroQualiNews(q){
+    const lines = q.routes.filter(function(r){ return r.ties.length; }).map(function(r){
+      return r.team + ' → ' + destLabel(r.dest);
+    });
+    if(lines.length === 0) return;
+    const out = q.routes.filter(function(r){ return r.dest === 'OUT'; }).map(function(r){ return r.team; });
+    const ucl = q.routes.filter(function(r){ return r.dest === 'IN:ucl'; }).map(function(r){ return r.team; });
+    state.news = (state.news || []).concat([{
+      week: 0, tag: 'Avrupa',
+      headline: out.length ? ('Avrupa elemelerinde hüsran: ' + out.join(', ') + ' veda etti')
+        : (ucl.length > 1 ? ('Şampiyonlar Ligi\'nde ' + ucl.length + ' Türk takımı!') : 'Avrupa elemeleri tamamlandı'),
+      body: 'Ön eleme turları geride kaldı ve temsilcilerimizin hangi kulvarda mücadele edeceği belli oldu.\n\n' +
+        lines.join('\n') + '.',
+      teamName: (ucl[0] || out[0] || q.routes[0].team)
+    }]);
+  }
+  // Elemeler bitince üç kupanın 36'şar takımlık lig aşamaları kurulur
+  function euroBuildComps(){
+    const q = state.euro.quali;
+    const entrants = {ucl: [], uel: [], uecl: []};
+    const forced = {ucl: [], uel: [], uecl: []};
+    q.routes.forEach(function(r){
+      if(r.dest && r.dest.indexOf('IN:') === 0) entrants[r.dest.slice(3)].push(r.team);
+      // Türk ekibini eleyen rakip, o kulvarın lig aşamasına katılır
+      r.ties.forEach(function(t){
+        if(t.won === false && t.club){
+          const st = QUALI_STEPS[t.step];
+          const target = st.win.indexOf('IN:') === 0 ? st.win.slice(3) : QUALI_STEPS[st.win].comp;
+          if(forced[target] && forced[target].indexOf(t.club) < 0) forced[target].push(t.club);
+        }
+      });
+    });
+    const usedForeign = {};
+    q.guests.forEach(function(g){ usedForeign[g.name] = true; });
+    let remaining = shuffleArr(EURO_CLUBS.filter(function(c){ return !usedForeign[c[0]]; }));
+    const comps = {};
+    EURO_DEFS.forEach(function(def){
+      const home = entrants[def.key] || [];
+      const need = EURO_SIZE - home.length;
+      const pool = (forced[def.key] || []).slice(0, need);
+      const eligible = remaining.filter(function(c){ return c[1] >= def.minStr; });
+      eligible.sort(function(a, b){ return b[1] - a[1]; });
+      shuffleArr(eligible.slice(0, Math.min(eligible.length, need + 8))).forEach(function(c){
+        if(pool.length < need && pool.indexOf(c) < 0) pool.push(c);
+      });
+      remaining.forEach(function(c){ if(pool.length < need && pool.indexOf(c) < 0) pool.push(c); });
+      pool.forEach(function(c){ const i = remaining.indexOf(c); if(i >= 0) remaining.splice(i, 1); });
+      comps[def.key] = initEuroComp(def, home, pool);
+    });
+    state.euro.comps = comps;
+    syncEuroTabVisibility();
+  }
+  function qualiActive(){ const q = state.euro && state.euro.quali; return !!(q && !q.done); }
+  function renderEuroQuali(){
+    const card = document.getElementById('euro-quali-card'); if(!card) return;
+    const q = state.euro && state.euro.quali;
+    if(!q){ card.style.display = 'none'; return; }
+    card.style.display = '';
+    card.innerHTML = '';
+    const head = document.createElement('div');
+    head.style.cssText = 'display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;';
+    head.innerHTML = '<p style="font-size:14px; font-weight:500; margin:0;">🛫 Avrupa ön elemeleri <span class="sl-season-pill" style="margin-left:6px;">' + state.season + '</span></p>' +
+      '<span style="font-size:11px; color:var(--text-tertiary);">' +
+      (q.done ? 'Tamamlandı · lig aşaması kadroları belli' : 'Çift maç · lig aşaması kadroları elemeler bitince belirlenir') + '</span>';
+    card.appendChild(head);
+    euroQualiDrawDue();
+    const done = fullyPlayedWeekCount();
+    q.routes.forEach(function(route){
+      const box = document.createElement('div'); box.className = 'sl-quali-route';
+      const rh = document.createElement('div'); rh.className = 'sl-quali-head';
+      rh.appendChild(makeBadge(route.team, 'sl-team-badge-lg'));
+      const nm = document.createElement('div');
+      nm.innerHTML = '<div class="sl-quali-team">' + route.team + '</div><div class="sl-quali-from">' + route.from + '</div>';
+      rh.appendChild(nm);
+      const dest = document.createElement('span'); dest.className = 'sl-quali-dest';
+      if(route.dest){
+        dest.textContent = (route.dest === 'OUT' ? '✗ ' : '✓ ') + destLabel(route.dest);
+        dest.classList.add(route.dest === 'OUT' ? 'out' : 'in');
+      } else if(route.step){
+        dest.textContent = QUALI_STEPS[route.step].name + ' oynanıyor';
+      }
+      rh.appendChild(dest);
+      box.appendChild(rh);
+      if(route.ties.length === 0 && !route.step){
+        const d = document.createElement('div'); d.className = 'sl-quali-note';
+        d.textContent = 'Eleme oynamadan doğrudan lig aşamasına katılır.';
+        box.appendChild(d);
+      }
+      if(route.step && !route.ties.some(function(t){ return t.step === route.step; })){
+        const st = QUALI_STEPS[route.step];
+        const d = document.createElement('div'); d.className = 'sl-quali-note';
+        d.textContent = st.name + ' kurası ' + st.week + '. lig haftası tamamlanınca çekilecek.';
+        box.appendChild(d);
+      }
+      route.ties.forEach(function(tie){
+        const st = QUALI_STEPS[tie.step];
+        const line = document.createElement('div'); line.className = 'sl-quali-tie';
+        const lbl = document.createElement('div'); lbl.className = 'sl-quali-step';
+        lbl.innerHTML = '<span>' + st.name + '</span><span class="sl-quali-if">' +
+          (tie.won === undefined ? ('Kazanırsa: ' + destLabel(st.win) + ' · Kaybederse: ' + destLabel(st.lose))
+            : (tie.won ? '✓ turu geçti' : '✗ elendi → ' + destLabel(st.lose))) + '</span>';
+        line.appendChild(lbl);
+        const pseudo = {legs: 2, name: st.name, done: !!route.dest || tie.won !== undefined};
+        line.appendChild(buildTieBox(tie.m, pseudo, 0, 0, {
+          guests: q.guests,
+          isDue: function(){ return !q.done && tie.won === undefined && done >= st.week; },
+          onSave: function(){ scheduleSave(); },
+          onChange: function(){ euroQualiFinalize(); }
+        }));
+        box.appendChild(line);
+      });
+      card.appendChild(box);
+    });
+    if(!q.done){
+      const foot = document.createElement('div');
+      foot.style.cssText = 'display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap;';
+      const btn = document.createElement('button'); btn.className = 'sl-btn sl-btn-primary';
+      btn.textContent = '▶ Elemeleri oynat';
+      btn.addEventListener('click', function(){ euroQualiPlayDue(); scheduleSave(); renderEuro(); syncEuroTabVisibility(); });
+      foot.appendChild(btn);
+      const hint = document.createElement('span');
+      hint.style.cssText = 'font-size:10px; color:var(--text-tertiary);';
+      hint.textContent = 'Skorları elle de girebilirsin; sen oynatmazsan lig ilerledikçe otomatik oynanır.';
+      foot.appendChild(hint);
+      card.appendChild(foot);
+    }
+  }
   const LEAGUE_LABEL = 'Süper Lig';
   const CUP_LABEL = 'Türkiye Kupası';
   /* ============ KARŞILAŞTIRMA (H2H) ============
@@ -5525,6 +5833,15 @@
     if(state.cup){
       state.cup.rounds.forEach(function(rd){
         (rd.matches || []).forEach(function(m){ pushTieToLog(out, 'kupa', rd.name, m, state.cup.guests); });
+      });
+    }
+    if(state.euro && state.euro.quali){
+      const q = state.euro.quali;
+      q.routes.forEach(function(route){
+        route.ties.forEach(function(tie){
+          const st = QUALI_STEPS[tie.step];
+          pushTieToLog(out, st.comp, st.name, tie.m, q.guests);
+        });
       });
     }
     if(state.euro && state.euro.comps){
@@ -6556,7 +6873,7 @@
   function syncEuroTabVisibility(){
     const t = document.querySelector('.sl-tab[data-tab="avrupa"]');
     if(!t) return;
-    const show = !!(state.euro && state.euro.comps);
+    const show = !!(state.euro && (state.euro.comps || state.euro.quali));
     t.style.display = show ? '' : 'none';
     if(!show && t.classList.contains('active')) switchTab('lig');
   }
