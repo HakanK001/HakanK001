@@ -2402,17 +2402,28 @@
     else { btn.className = 'sl-btn'; btn.innerHTML = '⏩ Sezonu bitir'; }
   }
 
-  function rankClassFor(i, tc){
+  // Sıra numarasının rengi de bölge haritasını izler: Avrupa'ya gitmeyen sıra
+  // hiçbir renk almaz, küme düşme hattı kırmızıdır
+  function rankClassFor(i, tc, zone){
     const c = tc || state.teams.length;
-    if(i <= 3) return 'rank-cl';
-    if(i === 4) return 'rank-el';
-    if(i === 5) return 'rank-conf';
     if(i >= c - 3) return 'rank-rel';
+    if(!zone) return '';
+    if(zone.color === ZONE_UCL) return 'rank-cl';
+    if(zone.color === ZONE_UCLQ) return 'rank-clq';
+    if(zone.color === ZONE_UEL) return 'rank-el';
+    if(zone.color === ZONE_UECL) return 'rank-conf';
     return '';
+  }
+  // Avrupa bölgesinin bittiği sıra: ayırıcı çizgi buranın altına çizilir
+  function lastEuroRank(st, zoneMap){
+    let last = 0;
+    st.forEach(function(r, i){ if(zoneMap && zoneMap[r.name]) last = i + 1; });
+    return last;
   }
   /* Puan tablosundaki Avrupa bölgeleri kotaların dağıtıldığı sırayı izler:
      ilk 4 doğrudan ŞL, Coppa şampiyonu + sıradaki takım AL, sonraki KL. Coppa
      şampiyonu zaten ilk 4'teyse kupa kontenjanı bir alt sıraya kayar. */
+  const ZONE_UCL = '#4f9eea', ZONE_UCLQ = '#7fb4f0', ZONE_UEL = '#d99738', ZONE_UECL = '#3fc99a';
   function euroZoneMap(names, cupWinner){
     const zone = {}, used = {};
     let i = 0;
@@ -2422,15 +2433,15 @@
       return null;
     };
     const put = function(n, color, label){ if(n) zone[n] = {color: color, label: label}; };
-    for(let k = 0; k < 4; k++) put(next(), '#4f9eea', 'Şampiyonlar Ligi lig aşaması');
+    for(let k = 0; k < 4; k++) put(next(), ZONE_UCL, 'Şampiyonlar Ligi lig aşaması');
     if(cupWinner && eligible(cupWinner) && !used[cupWinner]){
       used[cupWinner] = true;
-      put(cupWinner, '#d99738', 'Coppa Italia şampiyonu · Avrupa Ligi');
+      put(cupWinner, ZONE_UEL, 'Coppa Italia şampiyonu · Avrupa Ligi');
     } else if(cupWinner){
-      put(next(), '#d99738', 'Avrupa Ligi (kupa kontenjanı)');
+      put(next(), ZONE_UEL, 'Avrupa Ligi (kupa kontenjanı)');
     }
-    put(next(), '#d99738', 'Avrupa Ligi');
-    put(next(), '#3fc99a', 'Konferans Ligi');
+    put(next(), ZONE_UEL, 'Avrupa Ligi');
+    put(next(), ZONE_UECL, 'Konferans Ligi');
     return zone;
   }
   function zoneInfoFor(i, name, zoneMap, tc){
@@ -2460,20 +2471,21 @@
     const cupCh = state.cup ? state.cup.champion : null;
     const zoneMap = euroZoneMap(st.map(function(r){ return r.name; }), cupCh);
     renderStandingsNote(st, zoneMap, cupCh);
+    const euroCut = lastEuroRank(st, zoneMap);
     st.forEach(function(row, i){
       const gd = row.GF - row.GA;
       const tr = document.createElement('tr');
       tr.className = 'sl-row-click' + (i === 0 ? ' sl-leader-row' : '');
       const c = st.length;
       if(i === 0) tr.style.borderTop = 'none';
-      else if(i === 6 || i === c - 3) tr.style.borderTop = '2px solid var(--border-secondary)';
+      else if(i === euroCut || i === c - 3) tr.style.borderTop = '2px solid var(--border-secondary)';
       else tr.style.borderTop = '1px solid var(--border-tertiary)';
       tr.addEventListener('click', function(){ openTeamDetail(row.idx); });
       const zone = zoneInfoFor(i, row.name, zoneMap);
       const tdR = document.createElement('td');
       tdR.style.cssText = 'padding:7px 2px 7px 12px; font-variant-numeric:tabular-nums;';
       if(zone){ tdR.style.boxShadow = 'inset 3px 0 0 ' + zone.color; tr.title = row.name + ' — ' + zone.label; }
-      tdR.className = rankClassFor(i); tdR.textContent = i+1;
+      tdR.className = rankClassFor(i, null, zone); tdR.textContent = i+1;
       const tdN = document.createElement('td'); tdN.style.cssText='padding:7px 2px 7px 6px; overflow:hidden; white-space:nowrap;';
       const nw = document.createElement('span'); nw.style.cssText='display:inline-flex; align-items:center; gap:6px; min-width:0; max-width:100%;';
       const nt = document.createElement('span'); nt.textContent = (state.favTeam === row.name ? '⭐ ' : '') + row.name; nt.style.cssText='overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
@@ -3997,7 +4009,7 @@
         tr.className = 'sl-row-click' + (i === 0 ? ' sl-leader-row' : '');
         tr.style.borderTop = i === 0 ? 'none' : '1px solid var(--border-tertiary)';
         tr.addEventListener('click', function(){ openHistoryTeamDetail(row.name); });
-        const rc = rankClassFor(i, tcount);
+        const rc = rankClassFor(i, tcount, zoneMap[row.name]);
         const zone = zoneInfoFor(i, row.name, zoneMap, tcount);
         const tdR = document.createElement('td');
         tdR.style.cssText = 'padding:7px 2px 7px 12px; font-variant-numeric:tabular-nums;';
