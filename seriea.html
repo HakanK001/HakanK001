@@ -441,6 +441,7 @@
           </thead>
           <tbody id="standings-body"></tbody>
         </table>
+        <div id="standings-note" style="font-size:10px; color:var(--text-tertiary); margin-top:10px; padding-top:9px; border-top:1px solid var(--border-tertiary); line-height:1.5;"></div>
       </div>
       </div>
     </div>
@@ -2409,18 +2410,56 @@
     if(i >= c - 3) return 'rank-rel';
     return '';
   }
-  function zoneColorFor(i, tc){
+  /* Puan tablosundaki Avrupa bölgeleri kotaların dağıtıldığı sırayı izler:
+     ilk 4 doğrudan ŞL, Coppa şampiyonu + sıradaki takım AL, sonraki KL. Coppa
+     şampiyonu zaten ilk 4'teyse kupa kontenjanı bir alt sıraya kayar. */
+  function euroZoneMap(names, cupWinner){
+    const zone = {}, used = {};
+    let i = 0;
+    const eligible = function(n){ return !!n && state.teams.some(function(t){ return t.name === n; }); };
+    const next = function(){
+      while(i < names.length){ const n = names[i]; i++; if(n && !used[n] && eligible(n)){ used[n] = true; return n; } }
+      return null;
+    };
+    const put = function(n, color, label){ if(n) zone[n] = {color: color, label: label}; };
+    for(let k = 0; k < 4; k++) put(next(), '#4f9eea', 'Şampiyonlar Ligi lig aşaması');
+    if(cupWinner && eligible(cupWinner) && !used[cupWinner]){
+      used[cupWinner] = true;
+      put(cupWinner, '#d99738', 'Coppa Italia şampiyonu · Avrupa Ligi');
+    } else if(cupWinner){
+      put(next(), '#d99738', 'Avrupa Ligi (kupa kontenjanı)');
+    }
+    put(next(), '#d99738', 'Avrupa Ligi');
+    put(next(), '#3fc99a', 'Konferans Ligi');
+    return zone;
+  }
+  function zoneInfoFor(i, name, zoneMap, tc){
     const c = tc || state.teams.length;
-    if(i <= 3) return '#4f9eea';
-    if(i === 4) return '#d99738';
-    if(i === 5) return '#3fc99a';
-    if(i >= c - 3) return '#e06464';
-    return null;
+    if(i >= c - 3) return {color: '#e06464', label: 'Küme düşme hattı'};
+    return (zoneMap && zoneMap[name]) || null;
+  }
+  // Renklerin ne anlama geldiğini sırayla yazan açıklama satırı
+  function renderStandingsNote(st, zoneMap, cupWinner){
+    const el = document.getElementById('standings-note'); if(!el) return;
+    const posOf = function(name){ const i = st.findIndex(function(r){ return r.name === name; }); return i < 0 ? null : i + 1; };
+    const parts = [];
+    Object.keys(zoneMap).forEach(function(name){
+      const p = posOf(name);
+      parts.push({pos: p === null ? 99 : p, name: name, label: zoneMap[name].label, color: zoneMap[name].color});
+    });
+    parts.sort(function(a, b){ return a.pos - b.pos; });
+    el.innerHTML = '<b>Avrupa yolu</b> — ' + parts.map(function(p){
+      return '<span style="color:' + p.color + ';">●</span> ' + p.pos + '. ' + p.name + ': ' + p.label;
+    }).join(' &nbsp;·&nbsp; ') +
+      (cupWinner ? '' : ' &nbsp;·&nbsp; <i>Coppa Italia şampiyonu belli olunca bir kontenjan daha eklenir.</i>');
   }
   function renderStandings(){
     const st = computeStandings();
     const body = document.getElementById('standings-body');
     body.innerHTML = '';
+    const cupCh = state.cup ? state.cup.champion : null;
+    const zoneMap = euroZoneMap(st.map(function(r){ return r.name; }), cupCh);
+    renderStandingsNote(st, zoneMap, cupCh);
     st.forEach(function(row, i){
       const gd = row.GF - row.GA;
       const tr = document.createElement('tr');
@@ -2430,10 +2469,10 @@
       else if(i === 6 || i === c - 3) tr.style.borderTop = '2px solid var(--border-secondary)';
       else tr.style.borderTop = '1px solid var(--border-tertiary)';
       tr.addEventListener('click', function(){ openTeamDetail(row.idx); });
-      const zone = zoneColorFor(i);
+      const zone = zoneInfoFor(i, row.name, zoneMap);
       const tdR = document.createElement('td');
       tdR.style.cssText = 'padding:7px 2px 7px 12px; font-variant-numeric:tabular-nums;';
-      if(zone) tdR.style.boxShadow = 'inset 3px 0 0 ' + zone;
+      if(zone){ tdR.style.boxShadow = 'inset 3px 0 0 ' + zone.color; tr.title = row.name + ' — ' + zone.label; }
       tdR.className = rankClassFor(i); tdR.textContent = i+1;
       const tdN = document.createElement('td'); tdN.style.cssText='padding:7px 2px 7px 6px; overflow:hidden; white-space:nowrap;';
       const nw = document.createElement('span'); nw.style.cssText='display:inline-flex; align-items:center; gap:6px; min-width:0; max-width:100%;';
@@ -3951,6 +3990,7 @@
       tbl.innerHTML = '<thead><tr style="color:var(--text-secondary); text-align:left;"><th style="width:34px; padding:6px 2px 6px 12px; font-weight:400; font-size:11px;">#</th><th style="padding:6px 2px 6px 6px; font-weight:400; font-size:11px;">Takım</th><th style="width:26px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">O</th><th style="width:26px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">G</th><th style="width:26px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">B</th><th style="width:26px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">M</th><th style="width:36px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">AV</th><th style="width:34px; padding:6px 2px; font-weight:400; text-align:right; font-size:11px;">P</th></tr></thead>';
       const tb = document.createElement('tbody');
       const tcount = h.teamCount || h.fullTable.length;
+      const zoneMap = euroZoneMap(h.fullTable.map(function(r){ return r.name; }), h.coppaWinner);
       h.fullTable.forEach(function(row, i){
         const gd = row.GF - row.GA;
         const tr = document.createElement('tr');
@@ -3958,10 +3998,10 @@
         tr.style.borderTop = i === 0 ? 'none' : '1px solid var(--border-tertiary)';
         tr.addEventListener('click', function(){ openHistoryTeamDetail(row.name); });
         const rc = rankClassFor(i, tcount);
-        const zone = zoneColorFor(i, tcount);
+        const zone = zoneInfoFor(i, row.name, zoneMap, tcount);
         const tdR = document.createElement('td');
         tdR.style.cssText = 'padding:7px 2px 7px 12px; font-variant-numeric:tabular-nums;';
-        if(zone) tdR.style.boxShadow = 'inset 3px 0 0 ' + zone;
+        if(zone){ tdR.style.boxShadow = 'inset 3px 0 0 ' + zone.color; tr.title = row.name + ' — ' + zone.label; }
         tdR.className = rc; tdR.textContent = i+1;
         const tdN = document.createElement('td'); tdN.style.cssText='padding:7px 2px 7px 6px; overflow:hidden; white-space:nowrap;';
         const nw = document.createElement('span'); nw.style.cssText='display:inline-flex; align-items:center; gap:6px; min-width:0; max-width:100%;';

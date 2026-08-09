@@ -431,9 +431,10 @@
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:6px;">
           <p style="font-size:14px; font-weight:500; margin:0;">Puan durumu <span style="font-size:10px; color:var(--text-tertiary); font-weight:400; margin-left:4px;">— takıma tıkla</span></p>
           <div style="display:flex; gap:8px; font-size:10px; color:var(--text-secondary); flex-wrap:wrap;">
-            <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#4f9eea;"></span>ŞL</span>
-            <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#d99738;"></span>Avrupa</span>
-            <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#3fc99a;"></span>Konferans</span>
+            <span style="display:inline-flex; align-items:center; gap:4px;" title="Doğrudan Şampiyonlar Ligi lig aşaması"><span style="width:6px;height:6px;border-radius:50%;background:#4f9eea;"></span>ŞL</span>
+            <span style="display:inline-flex; align-items:center; gap:4px;" title="Şampiyonlar Ligi eleme turları"><span style="width:6px;height:6px;border-radius:50%;background:#7fb4f0;"></span>ŞL eleme</span>
+            <span style="display:inline-flex; align-items:center; gap:4px;" title="Avrupa Ligi eleme turu ya da play-off"><span style="width:6px;height:6px;border-radius:50%;background:#d99738;"></span>Avrupa Ligi</span>
+            <span style="display:inline-flex; align-items:center; gap:4px;" title="Konferans Ligi play-off"><span style="width:6px;height:6px;border-radius:50%;background:#3fc99a;"></span>Konferans</span>
             <span style="display:inline-flex; align-items:center; gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#e06464;"></span>Düşme</span>
           </div>
         </div>
@@ -453,6 +454,7 @@
           </thead>
           <tbody id="standings-body"></tbody>
         </table>
+        <div id="standings-note" style="font-size:10px; color:var(--text-tertiary); margin-top:10px; padding-top:9px; border-top:1px solid var(--border-tertiary); line-height:1.5;"></div>
       </div>
       </div>
     </div>
@@ -2486,19 +2488,60 @@
     if(i >= c - 3) return 'rank-rel';
     return '';
   }
-  // Türkiye kotası: ilk 2 Şampiyonlar Ligi, 3. Avrupa Ligi, 4. Konferans Ligi
-  function zoneColorFor(i, tc){
+  /* Puan tablosundaki Avrupa bölgeleri, kotaların gerçekten dağıtıldığı sırayı
+     izler: her sıra hangi turdan başlayacağını gösterir. Kupa şampiyonu belli
+     olduğunda kendi kontenjanını alır ve alt sıralar bir basamak yukarı çekilir;
+     kupa henüz oynanmamışsa yalnızca lig kontenjanları işaretlenir. */
+  const ZONE_UCL = '#4f9eea', ZONE_UCLQ = '#7fb4f0', ZONE_UEL = '#d99738', ZONE_UECL = '#3fc99a';
+  function euroZoneMap(names, cupWinner){
+    const zone = {};
+    const used = {};
+    let i = 0;
+    const eligible = function(n){ return !!n && state.teams.some(function(t){ return t.name === n; }); };
+    const next = function(){
+      while(i < names.length){ const n = names[i]; i++; if(n && !used[n] && eligible(n)){ used[n] = true; return n; } }
+      return null;
+    };
+    const put = function(n, color, label){ if(n) zone[n] = {color: color, label: label}; };
+    put(next(), ZONE_UCL, 'Şampiyonlar Ligi lig aşaması (doğrudan)');
+    put(next(), ZONE_UCLQ, 'Şampiyonlar Ligi 2. eleme turu');
+    if(cupWinner && eligible(cupWinner) && !used[cupWinner]){
+      used[cupWinner] = true;
+      put(cupWinner, ZONE_UEL, CUP_LABEL + ' şampiyonu · Avrupa Ligi play-off');
+    } else if(cupWinner){
+      put(next(), ZONE_UEL, 'Avrupa Ligi play-off (kupa kontenjanı)');
+    }
+    put(next(), ZONE_UEL, 'Avrupa Ligi 3. eleme turu');
+    put(next(), ZONE_UECL, 'Konferans Ligi play-off');
+    return zone;
+  }
+  // Renklerin ne anlama geldiğini sırayla yazan açıklama satırı
+  function renderStandingsNote(st, zoneMap, cupWinner){
+    const el = document.getElementById('standings-note'); if(!el) return;
+    const posOf = function(name){ const i = st.findIndex(function(r){ return r.name === name; }); return i < 0 ? null : i + 1; };
+    const parts = [];
+    Object.keys(zoneMap).forEach(function(name){
+      const p = posOf(name);
+      parts.push({pos: p === null ? 99 : p, name: name, label: zoneMap[name].label, color: zoneMap[name].color});
+    });
+    parts.sort(function(a, b){ return a.pos - b.pos; });
+    el.innerHTML = '<b>Avrupa yolu</b> — ' + parts.map(function(p){
+      return '<span style="color:' + p.color + ';">●</span> ' + p.pos + '. ' + p.name + ': ' + p.label;
+    }).join(' &nbsp;·&nbsp; ') +
+      (cupWinner ? '' : ' &nbsp;·&nbsp; <i>' + CUP_LABEL + ' şampiyonu belli olunca bir kontenjan daha eklenir ve alt sıralar bir basamak yükselir.</i>');
+  }
+  function zoneInfoFor(i, name, zoneMap, tc){
     const c = tc || state.teams.length;
-    if(i <= 1) return '#4f9eea';
-    if(i === 2) return '#d99738';
-    if(i === 3) return '#3fc99a';
-    if(i >= c - 3) return '#e06464';
-    return null;
+    if(i >= c - 3) return {color: '#e06464', label: 'Küme düşme hattı'};
+    return (zoneMap && zoneMap[name]) || null;
   }
   function renderStandings(){
     const st = computeStandings();
     const body = document.getElementById('standings-body');
     body.innerHTML = '';
+    const cupCh = state.cup ? state.cup.champion : null;
+    const zoneMap = euroZoneMap(st.map(function(r){ return r.name; }), cupCh);
+    renderStandingsNote(st, zoneMap, cupCh);
     st.forEach(function(row, i){
       const gd = row.GF - row.GA;
       const tr = document.createElement('tr');
@@ -2508,10 +2551,10 @@
       else if(i === 6 || i === c - 3) tr.style.borderTop = '2px solid var(--border-secondary)';
       else tr.style.borderTop = '1px solid var(--border-tertiary)';
       tr.addEventListener('click', function(){ openTeamDetail(row.idx); });
-      const zone = zoneColorFor(i);
+      const zone = zoneInfoFor(i, row.name, zoneMap);
       const tdR = document.createElement('td');
       tdR.style.cssText = 'padding:7px 2px 7px 12px; font-variant-numeric:tabular-nums;';
-      if(zone) tdR.style.boxShadow = 'inset 3px 0 0 ' + zone;
+      if(zone){ tdR.style.boxShadow = 'inset 3px 0 0 ' + zone.color; tr.title = row.name + ' — ' + zone.label; }
       tdR.className = rankClassFor(i); tdR.textContent = i+1;
       const tdN = document.createElement('td'); tdN.style.cssText='padding:7px 2px 7px 6px; overflow:hidden; white-space:nowrap;';
       const nw = document.createElement('span'); nw.style.cssText='display:inline-flex; align-items:center; gap:6px; min-width:0; max-width:100%;';
@@ -4029,6 +4072,7 @@
       tbl.innerHTML = '<thead><tr style="color:var(--text-secondary); text-align:left;"><th style="width:34px; padding:6px 2px 6px 12px; font-weight:400; font-size:11px;">#</th><th style="padding:6px 2px 6px 6px; font-weight:400; font-size:11px;">Takım</th><th style="width:26px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">O</th><th style="width:26px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">G</th><th style="width:26px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">B</th><th style="width:26px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">M</th><th style="width:36px; padding:6px 2px; font-weight:400; text-align:center; font-size:11px;">AV</th><th style="width:34px; padding:6px 2px; font-weight:400; text-align:right; font-size:11px;">P</th></tr></thead>';
       const tb = document.createElement('tbody');
       const tcount = h.teamCount || h.fullTable.length;
+      const zoneMap = euroZoneMap(h.fullTable.map(function(r){ return r.name; }), h.coppaWinner);
       h.fullTable.forEach(function(row, i){
         const gd = row.GF - row.GA;
         const tr = document.createElement('tr');
@@ -4036,10 +4080,10 @@
         tr.style.borderTop = i === 0 ? 'none' : '1px solid var(--border-tertiary)';
         tr.addEventListener('click', function(){ openHistoryTeamDetail(row.name); });
         const rc = rankClassFor(i, tcount);
-        const zone = zoneColorFor(i, tcount);
+        const zone = zoneInfoFor(i, row.name, zoneMap, tcount);
         const tdR = document.createElement('td');
         tdR.style.cssText = 'padding:7px 2px 7px 12px; font-variant-numeric:tabular-nums;';
-        if(zone) tdR.style.boxShadow = 'inset 3px 0 0 ' + zone;
+        if(zone){ tdR.style.boxShadow = 'inset 3px 0 0 ' + zone.color; tr.title = row.name + ' — ' + zone.label; }
         tdR.className = rc; tdR.textContent = i+1;
         const tdN = document.createElement('td'); tdN.style.cssText='padding:7px 2px 7px 6px; overflow:hidden; white-space:nowrap;';
         const nw = document.createElement('span'); nw.style.cssText='display:inline-flex; align-items:center; gap:6px; min-width:0; max-width:100%;';
