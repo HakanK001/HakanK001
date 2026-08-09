@@ -1,0 +1,14 @@
+{
+  "name": "Süper Lig Simülatörü",
+  "short_name": "Süper Lig Sim",
+  "description": "Trendyol Süper Lig sezon simülatörü: lig, Türkiye Kupası, Avrupa kupaları, transferler ve oyuncular — tamamen çevrimdışı.",
+  "lang": "tr",
+  "start_url": "./superlig.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#080a0e",
+  "theme_color": "#080a0e",
+  "icons": [
+    { "src": "superlig-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
