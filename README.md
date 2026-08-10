@@ -76,20 +76,46 @@ Depoda ayrıca bambaşka bir oyun var: **[`warband.html`](#️-kalradya--warband
 
 ## ⚔️ Kalradya — Warband Simülatörü (`warband.html`)
 
-Depodaki ikinci oyun ailesi: Mount & Blade **Warband** esintili, tek dosyalık bir **Kalradya sandbox'ı**. Futbol simülatörlerinden tamamen bağımsız çalışır, kendi kaydını (`kalradya_save_v1`) tutar. Sen bir lord değil, dünyanın **dışarıdan müdahale eden** eli oluyorsun: haritayı izler, dilediğin an her şeyi değiştirirsin.
+Depodaki ikinci oyun ailesi: Mount & Blade **Warband** esintili, tek dosyalık bir **Kalradya sandbox'ı**. Futbol simülatörlerinden tamamen bağımsız çalışır, kendi kaydını (`kalradya_save_v1`) tutar. Sen bir lord değil, dünyanın **dışarıdan müdahale eden** eli oluyorsun: haritayı izler, dilediğin an her şeyi değiştirir, istersen sıfırdan yeni lordlar, şehirler ve krallıklar kurarsın.
+
+### Harita
 
 - **Tam Kalradya haritası** — el çizimi kıyı çizgisi, biyomlara göre üretilen arazi (kuzeyde karlar, ortada ovalar, güneybatıda dağlar, doğuda bozkır, güneyde çöl), nehirler, dağ sıraları ve ormanlar. Krallık sınırları yerleşimlerin etki alanından hesaplanır, toprak el değiştirdikçe anında yeniden çizilir
-- **144 yerleşim** — **21 şehir** (Praven, Uxkhal, Suno, Dhirim, Reyvadin, Curaw, Khudan, Rivacheg, Sargoth, Tihr, Wercheg, Jelkala, Yalen, Veluca, Shariz, Durquba, Ahmerrad, Tulga, Halmar, Narra, Ichamur), **30 kale** ve **93 köy**. Her şehir/kalenin bağlı köyleri vardır; köy yağmalanınca ana yerleşimin geliri de düşer
-- **Altı krallık** — Swadya (Kral Harlaus), Vaegir (Kral Yaroglek), Kherjit Hanlığı (Sanjar Han), Nord (Kral Ragnar), Rodok (Kral Graveth), Sarranid Sultanlığı (Sultan Hakim) — her biri kendi rengi, unvanları, başkenti ve saldırganlık eğilimiyle. Artı bozkırda, çölde, ormanda türeyen haydut çeteleri
-- **84 lord** — kültürüne göre unvan (Kont / Boyar / Noyan / Jarl / Lord / Emir), şöhret, altın, taktik ve liderlik yetenekleri, sekiz kişilik tipi (Savaşçı, Erdemli, Cimri, Sefih, Kavgacı…), tımarları ve krala bağlılığı. Bağlılığı dibe vuran lord **taraf değiştirir**, tımarlarını da yanında götürür
-- **Birlik ağaçları** — altı kültürün tam terfi zinciri (Swadya Acemisi → Milis → Piyade → Ağır Piyade/Silahşor → Çavuş/Şövalye; Nord Huscarlı, Rodok Keskin Nişancısı, Kherjit Atlı Okçusu, Sarranid Memlüğü…). Ordular zamanla asker toplar, terfi ettirir, maaş öder
-- **Yaşayan simülasyon** — lordlar devriye gezer, köy yağmalar, kuşatmalara koşar, savunmaya gider; meydan savaşları güç/moral/taktik üzerinden çözülür, kaybeden kaçar, lordlar **esir düşer** ve fidye süresi dolunca serbest kalır. Kuşatmalar günlerce sürer, surlar ve erzak hesaba katılır, düşen şehir el değiştirir. Krallıklar hazine toplar, garnizon takviye eder, savaş ilan eder ve barış imzalar; toprağını tamamen kaybeden krallık haritadan silinir
-- **Müdahale konsolu** — asıl mesele bu. Haritadan tıkladığın **her şey düzenlenebilir**: lordun adı, unvanı, krallığı, kişiliği, şöhreti, altını, sadakati, yetenekleri, durumu (sahada/esir/sürgün/ölü); yerleşimin adı, sahibi, tımar sahibi, refahı, surları, erzağı, asker havuzu, hatta **türü** (köyü şehre çevirebilirsin); krallığın adı, rengi, hükümdarı, kültürü, hazinesi. Bir lordu **kral yapabilir**, ordusunu tamamlayabilir, seçkin birlik verebilir, ışınlayabilir, emir verebilir ya da öldürebilirsin
-- **Konsol araçları** — istediğin krallığa istediğin boyutta ordu yarat, haydut çetesi çıkar, hazineye altın bas, tüm lordlara ordu ver, refahı/surları tavana çek, bir krallığın **tüm topraklarını başkasına devret**, yıkılmış krallığı **dirilt**; iki orduyu anında çarpıştırıp savaş raporunu oku, seçili şehri anında düşür; zamanı 1 gün / 1 hafta / 1 ay / 3 ay / 1 yıl ileri sar
-- **Diplomasi tablosu** — krallıklar arası savaş/barış matrisinde hücreye tıklayarak iki krallığı anında savaştır ya da barıştır; ilişki puanlarını gör, "tüm savaşları bitir" veya "herkesi savaştır" ile dünyayı bir tuşla değiştir
-- **Simülasyon ayarları** — savaş ölümcüllüğü, asker toplama hızı, ekonomi çarpanı, krallık saldırganlığı, haydut yoğunluğu kaydırıcıları; yapay zekânın barış yapması, lord ihanetleri, haydut türemesi, kuşatma/savaş ilanında otomatik duraklatma anahtarları
-- **Harita gezinmesi** — tekerlek/pinch ile yakınlaştırma, sürükleyerek kaydırma, katman düğmeleri (köyler, ordular, isimler, sınırlar, yol izleri), krallıkları gizleyip gösteren efsane paneli, 1×–20× arası hız kontrolü ve gün gün ilerleyen vakayiname
-- **Kalıcılık** — localStorage kaydı, JSON dışa/içe aktarma, tohum vererek yeni dünya kurma, açık/koyu tema, PWA desteği (`warband-manifest.webmanifest`, `warband-sw.js`)
+- **Okunur simgeler** — şehirler surlu şehir silueti, kaleler burçlu kule, köyler çatılı ev olarak çizilir; ordular **sancak** taşır, sancağın altında asker sayısı yazar, kralın sancağı ayrı görünür. Kuşatmalarda surların çevresine **çadırlar** dizilir ve kuşatma ilerlemesi halka olarak dolar
+- **Savaş izleri** — bir çarpışma olduğu yerde haritada birkaç gün duran **⚔ işareti** kalır; üstüne tıklayınca o savaşın raporu açılır
+- **İpucu balonu** — imleci bir şehrin ya da ordunun üstüne getirince adı, krallığı, asker sayısı ve ne yaptığı anında görünür
+- **144 yerleşim** — **21 şehir** (Praven, Uxkhal, Suno, Dhirim, Reyvadin, Curaw, Khudan, Rivacheg, Sargoth, Tihr, Wercheg, Jelkala, Yalen, Veluca, Shariz, Durquba, Ahmerrad, Tulga, Halmar, Narra, Ichamur), **30 kale** ve **93 köy**; her şehir/kalenin bağlı köyleri vardır
+
+### Dünya
+
+- **Altı krallık** — Swadya (Kral Harlaus), Vaegir (Kral Yaroglek), Kherjit Hanlığı (Sanjar Han), Nord (Kral Ragnar), Rodok (Kral Graveth), Sarranid Sultanlığı (Sultan Hakim). Artı bozkırda, çölde, ormanda türeyen haydut çeteleri
+- **84 lord** — kültürüne göre unvan (Kont / Boyar / Noyan / Jarl / Lord / Emir), şöhret, altın, taktik ve liderlik, sekiz kişilik tipi, tımarlar ve krala bağlılık. Bağlılığı dibe vuran lord tımarlarıyla birlikte **taraf değiştirir**
+- **Mareşal orduları** — savaş açan krallık bir **mareşal** seçer; lordlar onun sancağı altında toplanıp tek bir büyük ordu hâlinde sefere çıkar. Böylece haritada dağınık noktalar değil, gerçek ordular yürür
+- **Birlik ağaçları** — altı kültürün tam terfi zinciri (Swadya Şövalyesi, Nord Huscarlı, Rodok Keskin Nişancısı, Kherjit Atlı Okçusu, Sarranid Memlüğü…); ordular asker toplar, terfi ettirir, maaş öder
+- **Yaşayan simülasyon** — köy yağmaları, meydan savaşları, esir düşen lordlar, günlerce süren kuşatmalar, sur ve erzak hesabı, krallık hazineleri, garnizon takviyeleri, savaş ilanları ve barış görüşmeleri. Toprağını tamamen kaybeden krallık haritadan silinir. Kışın ordular yavaşlar
+- **Sakin tempo** — 1× hızda bir gün ≈ 4 saniye; 2×, 4× ve 10× ile hızlandırılır, Sandbox'tan gün/hafta/ay/yıl atlanır
+
+### Savaşları görmek
+
+- **Savaş defteri** — her çarpışma kaydedilir: tarihi, yeri (en yakın yerleşime göre "Praven önünde"), iki tarafın komutanı, **savaş öncesi asker sayıları**, kayıplar, kalanlar, esirler ve kazanan
+- **Savaşı canlandırma** — bir savaşa tıklayınca iki ordu tuval üzerinde karşılıklı dizilir; piyade kare, okçu üçgen, süvari oval olarak çizilir ve **tur tur** erirler. Üstte kalan asker sayıları canlı sayar, altta tur göstergesi ilerler, "Tekrar oynat" ile baştan izlenir. Kuşatma saldırılarında savunan tarafın arkasında sur belirir
+- **Büyük savaş bildirimi** — 180 kişiyi aşan bir çarpışma olduğunda haritanın köşesinde uyarı çıkar, tek tuşla savaşa atlarsın; istersen "büyük savaşta duraklat" seçeneğiyle oyun kendini durdurur
+- **Olay şeridi** — ekranın altında tek satırlık akış vardır, üstüne tıklayınca açılır; her savaş satırının yanındaki **izle** etiketi doğrudan raporu açar
+
+### Müdahale ve sandbox
+
+- **Her şey düzenlenebilir** — haritadan tıkladığın birimin özet kartını görürsün, altındaki **✎ Düzenle** bölümünü açınca bütün alanlar karşına gelir: lordun adı, unvanı, krallığı, kişiliği, şöhreti, altını, sadakati, yetenekleri, durumu; yerleşimin adı, sahibi, tımar sahibi, refahı, surları, erzağı, asker havuzu, kuşatma yüzdesi, hatta **türü**; krallığın adı, rengi, hükümdarı, kültürü, hazinesi
+- **Yaratma araçları** — **yeni lord** (isim, krallık, kişilik, yetenekler, ordu büyüklüğü ve kalitesi, istersen doğrudan hükümdar), **yeni yerleşim** (şehir/kale/köy; refah, sur, garnizon), **yeni krallık** (isim, renk, kültür, unvanlar, lord sayısı, hazine, başkent olarak alacağı şehir), **yeni ordu** ve **haydut çetesi**. Hepsinde konumu haritaya tıklayarak seçersin
+- **Taşı, kopyala, sil** — yerleşimleri haritada sürükleyip taşı, kopyasını kur ya da tamamen sil; lordları ışınla, benzerini yarat, öldür; orduları dağıt
+- **Krallık araçları** — hazineye altın bas, tüm orduları tamamla ya da seçkinleştir, refahı ve surları tavana çek, yıkılmış krallığı dirilt, bir krallığın **tüm topraklarını** başkasına devret
+- **Diplomasi tablosu** — savaş/barış matrisinde hücreye tıklayarak iki krallığı anında savaştır ya da barıştır; "tüm savaşları bitir" ve "herkesi savaştır" ile dünyayı tek tuşla değiştir
+- **Savaş oyunu** — istediğin iki orduyu seç, anında çarpıştır ve sonucu canlandırma ekranında izle; seçili şehri "anında düşür" ile kuşatmayı bitir
+- **Simülasyon ayarları** — savaş ölümcüllüğü, asker toplama hızı, ekonomi, saldırganlık, haydut yoğunluğu kaydırıcıları; yapay zekâ barışı, lord ihanetleri, haydut türemesi ve otomatik duraklatma anahtarları
+- **Arama** — üstteki 🔍 (ya da **A**) ile lord, şehir, kale, köy ve krallık adı arayıp doğrudan haritada bulursun
+
+### Arayüz
+
+Dört sekme: **Seçim** (tıkladığın birim ya da hiçbir şey seçili değilken Kalradya panosu), **Krallıklar** (güç sıralaması, savaş durumu, diplomasi tablosu, lord listesi), **Savaşlar** (savaş defteri ve vakayiname), **Sandbox** (yaratma ve müdahale araçları). Kaydetme localStorage'da, JSON dışa/içe aktarma, tohumla yeni dünya kurma, açık/koyu tema, mobilde alttan yükselen panel ve PWA desteği (`warband-manifest.webmanifest`, `warband-sw.js`).
 
 Yerleşim adları ve krallıklar Warband'in Kalradya'sından esinlenmiştir; harita yerleşimi stilize edilmiş bir yeniden yorumdur, birebir kopya değildir.
 
