@@ -84,6 +84,7 @@ Depodaki ikinci oyun ailesi: Mount & Blade **Warband** esintili, tek dosyalık b
 - **Okunur simgeler** — şehirler surlu şehir silueti, kaleler burçlu kule, köyler çatılı ev olarak çizilir; ordular **sancak** taşır, sancağın altında asker sayısı yazar, kralın sancağı ayrı görünür. Kuşatmalarda surların çevresine **çadırlar** dizilir ve kuşatma ilerlemesi halka olarak dolar
 - **Savaş izleri** — bir çarpışma olduğu yerde haritada birkaç gün duran **⚔ işareti** kalır; üstüne tıklayınca o savaşın raporu açılır
 - **İpucu balonu** — imleci bir şehrin ya da ordunun üstüne getirince adı, krallığı, asker sayısı ve ne yaptığı anında görünür
+- **Krallık adları** — sol üstteki *Krallık adı* katmanı, her krallığın adını kendi topraklarının ortasına yazar; yazı bölgenin büyüklüğüne göre büyür, dar bölgelerde kısa ada düşer, sınırlar değiştikçe yeri ve boyu kendiliğinden güncellenir
 - **144 yerleşim** — **21 şehir** (Praven, Uxkhal, Suno, Dhirim, Reyvadin, Curaw, Khudan, Rivacheg, Sargoth, Tihr, Wercheg, Jelkala, Yalen, Veluca, Shariz, Durquba, Ahmerrad, Tulga, Halmar, Narra, Ichamur), **30 kale** ve **93 köy**; her şehir/kalenin bağlı köyleri vardır
 
 ### Dünya

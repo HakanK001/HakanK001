@@ -337,6 +337,12 @@
   .searchbox input { width: 100%; }
   .sres { max-height: 50vh; overflow-y: auto; }
 
+  .realm-label {
+    font-weight: 700; letter-spacing: .14em; text-transform: uppercase; pointer-events: none;
+    paint-order: stroke; stroke: rgba(0,0,0,.55); stroke-linejoin: round;
+  }
+  :root[data-theme="light"] .realm-label { stroke: rgba(255,255,255,.75); }
+
   /* mobil: panel alttan yükselen sayfa, sekme şeridi hep görünür */
   @media (max-width: 900px) {
     #stage { overflow: hidden; }
@@ -390,6 +396,7 @@
         <button class="chip on" data-layer="villages">Köyler</button>
         <button class="chip on" data-layer="parties">Ordular</button>
         <button class="chip on" data-layer="labels">İsimler</button>
+        <button class="chip on" data-layer="realms">Krallık adı</button>
         <button class="chip on" data-layer="borders">Sınırlar</button>
         <button class="chip" data-layer="fog">Rotalar</button>
       </div>
@@ -833,7 +840,7 @@ const S = {
   battles: [],
   sel: null,          // {type:'lord'|'settlement'|'faction'|'party', id}
   alert: null,        // büyük savaş bildirimi
-  layers: { villages: true, parties: true, labels: true, borders: true, fog: false },
+  layers: { villages: true, parties: true, labels: true, borders: true, realms: true, fog: false },
   hidden: {},         // faction id -> true (haritada gizle)
   opts: {
     lethality: 1,
@@ -1144,6 +1151,7 @@ const SVGNS = 'http://www.w3.org/2000/svg';
 
 const view = { x: 0, y: 0, k: 1, minK: 0.4, maxK: 6 };
 let terrainCv = null, territoryCv = null, territoryDirty = true;
+let realmLabels = [];
 let logDirty = true;
 const uiDirty = { sel: true, kra: true, war: true, box: true };
 
@@ -1310,6 +1318,33 @@ function buildTerritory() {
     }
   }
 
+  /* krallık adı etiketleri: bölgenin ağırlık merkezi */
+  const acc = {};
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const f = owners[r * cols + c]; if (!f) continue;
+      const a = acc[f] || (acc[f] = { sx: 0, sy: 0, n: 0 });
+      a.sx += c * CELL + CELL / 2; a.sy += r * CELL + CELL / 2; a.n++;
+    }
+  }
+  realmLabels = [];
+  Object.keys(acc).forEach(f => {
+    const a = acc[f];
+    if (a.n < 30 || !S.factions[f]) return;
+    const cx0 = a.sx / a.n, cy0 = a.sy / a.n;
+    /* ağırlık merkezi bölge dışına düşerse en yakın kendi hücresine kaydır */
+    let bx = cx0, by = cy0, bd = Infinity;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (owners[r * cols + c] !== f) continue;
+        const x = c * CELL + CELL / 2, y = r * CELL + CELL / 2;
+        const d = (x - cx0) * (x - cx0) + (y - cy0) * (y - cy0);
+        if (d < bd) { bd = d; bx = x; by = y; }
+      }
+    }
+    realmLabels.push({ f, x: bx, y: by, area: a.n * CELL * CELL });
+  });
+
   const small = document.createElement('canvas');
   small.width = cols; small.height = rows;
   const sg = small.getContext('2d');
@@ -1383,10 +1418,8 @@ function drawCanvas() {
   cx2.save();
   cx2.translate(view.x, view.y); cx2.scale(view.k, view.k);
   if (terrainCv) cx2.drawImage(terrainCv, 0, 0);
-  if (S.layers.borders) {
-    if (territoryDirty) buildTerritory();
-    if (territoryCv) cx2.drawImage(territoryCv, 0, 0);
-  }
+  if (territoryDirty) buildTerritory();
+  if (S.layers.borders && territoryCv) cx2.drawImage(territoryCv, 0, 0);
   if (S.layers.fog) drawTrails();
   cx2.restore();
 }
@@ -1405,11 +1438,12 @@ function drawTrails() {
 
 /* ---------- SVG katmanları ---------- */
 const svgNodes = { stl: new Map(), party: new Map(), battle: new Map() };
-let gRoot, gStl, gSiege, gParty, gLbl, gBattle, gSel;
+let gRoot, gRealm, gStl, gSiege, gParty, gLbl, gBattle, gSel;
 
 function initSvg() {
   svg.innerHTML = '';
   gRoot = document.createElementNS(SVGNS, 'g'); svg.appendChild(gRoot);
+  gRealm = document.createElementNS(SVGNS, 'g'); gRoot.appendChild(gRealm);
   gStl = document.createElementNS(SVGNS, 'g'); gRoot.appendChild(gStl);
   gSiege = document.createElementNS(SVGNS, 'g'); gRoot.appendChild(gSiege);
   gParty = document.createElementNS(SVGNS, 'g'); gRoot.appendChild(gParty);
@@ -1492,6 +1526,51 @@ function updateSvg() {
       if (isVil) n.lbl.classList.add('vil-label'); else n.lbl.classList.remove('vil-label');
     }
   });
+
+  /* --- krallık adları --- */
+  gRealm.innerHTML = '';
+  if (S.layers.realms && realmLabels.length) {
+    const fitK = view.minK / 0.85;
+    const adj = Math.pow(fitK / k, 0.62);
+    const CHAR = 0.78;               // harf genişliği (aralık dahil, em cinsinden)
+    const items = [];
+    realmLabels.forEach(rl => {
+      const fac = S.factions[rl.f];
+      if (!fac || S.hidden[rl.f]) return;
+      const span = Math.sqrt(rl.area);           // bölgenin kabaca eni
+      let fs = clamp(span * 0.28, 12, 30) * adj;
+      let txt = fac.name.toLocaleUpperCase('tr');
+      if (txt.length * fs * CHAR > span * 1.15) txt = fac.short.toLocaleUpperCase('tr');
+      const maxW = span * 1.2;
+      if (txt.length * fs * CHAR > maxW) fs = Math.max(9 * adj, maxW / (txt.length * CHAR));
+      items.push({ x: rl.x, y: rl.y, w: txt.length * fs * CHAR, h: fs * 1.25, fs, txt, color: fac.color });
+    });
+    /* çakışmaları dikeyde aç */
+    for (let it = 0; it < 8; it++) {
+      let moved = false;
+      for (let i = 0; i < items.length; i++) {
+        for (let j = i + 1; j < items.length; j++) {
+          const a = items[i], b2 = items[j];
+          const ox = (a.w + b2.w) / 2 - Math.abs(a.x - b2.x);
+          const oy = (a.h + b2.h) / 2 + 4 - Math.abs(a.y - b2.y);
+          if (ox <= 0 || oy <= 0) continue;
+          const push = oy / 2 + 0.5;
+          const dir = a.y <= b2.y ? -1 : 1;
+          a.y += dir * push; b2.y -= dir * push;
+          moved = true;
+        }
+      }
+      if (!moved) break;
+    }
+    const op = clamp(1.05 - (k / fitK - 1) * 0.22, 0.32, 0.88);
+    items.forEach(o => {
+      const t = el('text', {
+        class: 'realm-label', x: o.x, y: clamp(o.y, 18, MAP_H - 12), 'text-anchor': 'middle',
+        'font-size': o.fs, 'stroke-width': o.fs * 0.17, fill: o.color, opacity: op
+      }, gRealm);
+      t.textContent = o.txt;
+    });
+  }
 
   /* --- kuşatma kampları --- */
   gSiege.innerHTML = '';
