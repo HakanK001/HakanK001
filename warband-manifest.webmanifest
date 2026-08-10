@@ -1,0 +1,14 @@
+{
+  "name": "Kalradya — Warband Simülatörü",
+  "short_name": "Kalradya",
+  "description": "Mount & Blade Warband esintili Kalradya sandbox'ı: altı krallık, şehirler, kaleler, köyler, lordlar, savaşlar ve her şeye müdahale edebildiğin bir yönetim konsolu.",
+  "lang": "tr",
+  "start_url": "./warband.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d0b08",
+  "theme_color": "#0d0b08",
+  "icons": [
+    { "src": "warband-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

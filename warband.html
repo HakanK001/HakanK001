@@ -1,0 +1,3559 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d0b08">
+<link rel="manifest" href="warband-manifest.webmanifest">
+<link rel="icon" href="warband-icon.svg" type="image/svg+xml">
+<title>Kalradya — Warband Simülatörü</title>
+<style>
+  :root {
+    --bg: #0d0b08;
+    --bg-primary: #17140f;
+    --bg-secondary: #1f1b14;
+    --bg-tertiary: #2a251c;
+    --bg-quaternary: #352f23;
+    --text-primary: #f0e9dc;
+    --text-secondary: #b6a992;
+    --text-tertiary: #7d7261;
+    --border-tertiary: #241f17;
+    --border-secondary: #3a3226;
+    --accent: #d9a441;
+    --accent-dim: #b3832c;
+    --accent-bg: rgba(217,164,65,0.13);
+    --accent-border: rgba(217,164,65,0.42);
+    --danger: #d1503f;
+    --danger-bg: rgba(209,80,63,0.14);
+    --success: #6fa84f;
+    --success-bg: rgba(111,168,79,0.14);
+    --info: #5d97c9;
+    --sea: #16283a;
+    --sea-deep: #101d2b;
+    --card-shadow: 0 1px 2px rgba(0,0,0,0.5), 0 10px 30px rgba(0,0,0,0.4);
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --topbar-h: 56px;
+    --log-h: 132px;
+    --side-w: 424px;
+  }
+  :root[data-theme="light"] {
+    --bg: #e8e0d0;
+    --bg-primary: #fbf6ea;
+    --bg-secondary: #f2ebda;
+    --bg-tertiary: #e6dcc6;
+    --bg-quaternary: #d9ccb0;
+    --text-primary: #241d12;
+    --text-secondary: #5b4f3c;
+    --text-tertiary: #8d8069;
+    --border-tertiary: #ded3bb;
+    --border-secondary: #c4b596;
+    --accent: #9a6b12;
+    --accent-dim: #7d560c;
+    --accent-bg: rgba(154,107,18,0.12);
+    --accent-border: rgba(154,107,18,0.38);
+    --danger: #b03a2b;
+    --danger-bg: rgba(176,58,43,0.12);
+    --success: #4d7a33;
+    --success-bg: rgba(77,122,51,0.12);
+    --info: #2f6b9c;
+    --card-shadow: 0 1px 2px rgba(60,45,20,0.10), 0 8px 22px rgba(60,45,20,0.12);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; color: var(--text-primary); background: var(--bg);
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+    font-size: 14px; line-height: 1.45; overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+  button { cursor: pointer; }
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-thumb { background: var(--bg-quaternary); border-radius: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  /* ---------- layout ---------- */
+  #app { display: flex; flex-direction: column; height: 100dvh; }
+  #topbar {
+    height: var(--topbar-h); flex: none; display: flex; align-items: center; gap: 10px;
+    padding: 0 12px; background: linear-gradient(180deg, var(--bg-secondary), var(--bg-primary));
+    border-bottom: 1px solid var(--border-secondary); z-index: 40;
+  }
+  #stage { flex: 1; display: flex; min-height: 0; }
+  #mapWrap { flex: 1; position: relative; min-width: 0; background: var(--sea-deep); overflow: hidden; }
+  #side {
+    width: var(--side-w); flex: none; display: flex; flex-direction: column; min-height: 0;
+    background: var(--bg-primary); border-left: 1px solid var(--border-secondary);
+  }
+  #chronicle {
+    height: var(--log-h); flex: none; background: var(--bg-primary);
+    border-top: 1px solid var(--border-secondary); overflow-y: auto; padding: 6px 12px;
+    font-size: 12.5px;
+  }
+
+  /* ---------- topbar ---------- */
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: .4px; }
+  .brand-mark { width: 26px; height: 26px; flex: none; }
+  .brand-txt { font-size: 15px; color: var(--accent); white-space: nowrap; }
+  .tb-date { font-variant-numeric: tabular-nums; font-size: 13px; color: var(--text-secondary); white-space: nowrap; }
+  .tb-date b { color: var(--text-primary); font-size: 14px; }
+  .spacer { flex: 1; }
+  .spd { display: flex; gap: 2px; background: var(--bg-tertiary); border: 1px solid var(--border-secondary); border-radius: var(--radius-sm); padding: 2px; }
+  .spd button {
+    background: none; border: 0; color: var(--text-secondary); padding: 4px 9px; border-radius: 4px;
+    font-size: 12px; font-weight: 600; min-width: 34px;
+  }
+  .spd button.on { background: var(--accent); color: #17140f; }
+  .iconbtn {
+    background: var(--bg-tertiary); border: 1px solid var(--border-secondary); color: var(--text-secondary);
+    border-radius: var(--radius-sm); padding: 6px 10px; font-size: 12.5px; white-space: nowrap;
+  }
+  .iconbtn:hover { border-color: var(--accent-border); color: var(--text-primary); }
+  .iconbtn.on { background: var(--accent-bg); border-color: var(--accent-border); color: var(--accent); }
+
+  /* ---------- map ---------- */
+  #mapCanvas, #mapSvg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #mapSvg { touch-action: none; }
+  #mapCanvas { image-rendering: auto; }
+  .mapctl { position: absolute; z-index: 12; display: flex; gap: 6px; flex-wrap: wrap; }
+  .mapctl.tl { top: 10px; left: 10px; max-width: calc(100% - 20px); }
+  .mapctl.bl { bottom: 10px; left: 10px; }
+  .mapctl.tr { top: 10px; right: 10px; }
+  .chip {
+    background: rgba(23,20,15,.86); border: 1px solid var(--border-secondary); color: var(--text-secondary);
+    border-radius: 999px; padding: 5px 11px; font-size: 12px; backdrop-filter: blur(6px);
+  }
+  :root[data-theme="light"] .chip, :root[data-theme="light"] .legend { background: rgba(251,246,234,.9); }
+  .chip.on { color: var(--accent); border-color: var(--accent-border); background: var(--accent-bg); }
+  .legend {
+    background: rgba(23,20,15,.86); border: 1px solid var(--border-secondary); border-radius: var(--radius-md);
+    padding: 8px 10px; font-size: 11.5px; backdrop-filter: blur(6px); max-width: 190px;
+  }
+  .legend .lrow { display: flex; align-items: center; gap: 6px; margin: 2px 0; cursor: pointer; }
+  .legend .lrow.off { opacity: .35; }
+  .swatch { width: 11px; height: 11px; border-radius: 3px; flex: none; border: 1px solid rgba(0,0,0,.4); }
+  .legend .lname { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .legend .lval { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+
+  /* svg map bits */
+  .stl { cursor: pointer; }
+  .stl-label { fill: var(--text-primary); paint-order: stroke; stroke: rgba(0,0,0,.75);
+    stroke-linejoin: round; pointer-events: none; font-weight: 600; }
+  :root[data-theme="light"] .stl-label { stroke: rgba(255,255,255,.85); }
+  .vil-label { fill: var(--text-secondary); font-weight: 400; }
+  .party { cursor: pointer; }
+  .sel-ring { fill: none; stroke: var(--accent); stroke-width: 2; opacity: .9; }
+
+  /* ---------- side panel ---------- */
+  .tabs { display: flex; flex: none; border-bottom: 1px solid var(--border-secondary); background: var(--bg-secondary); overflow-x: auto; }
+  .tabs button {
+    flex: 1 0 auto; background: none; border: 0; border-bottom: 2px solid transparent; color: var(--text-tertiary);
+    padding: 9px 6px; font-size: 11.5px; font-weight: 600; white-space: nowrap; letter-spacing: -.1px;
+  }
+  .tabs button.on { color: var(--accent); border-bottom-color: var(--accent); background: var(--accent-bg); }
+  .panes { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 10px; }
+  .pane { display: none; }
+  .pane.on { display: block; }
+
+  .card { background: var(--bg-secondary); border: 1px solid var(--border-tertiary); border-radius: var(--radius-md); padding: 10px; margin-bottom: 10px; }
+  .card h3 { margin: 0 0 8px; font-size: 13px; letter-spacing: .5px; text-transform: uppercase; color: var(--text-secondary); font-weight: 700; }
+  .card h3 .sub { text-transform: none; letter-spacing: 0; color: var(--text-tertiary); font-weight: 400; font-size: 11.5px; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .row.wrap { flex-wrap: wrap; }
+  .grow { flex: 1; min-width: 0; }
+  .muted { color: var(--text-tertiary); }
+  .small { font-size: 11.5px; }
+  .num { font-variant-numeric: tabular-nums; }
+  .tag { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 700;
+    border: 1px solid var(--border-secondary); color: var(--text-secondary); white-space: nowrap; }
+  .tag.war { background: var(--danger-bg); border-color: rgba(209,80,63,.4); color: var(--danger); }
+  .tag.peace { background: var(--success-bg); border-color: rgba(111,168,79,.4); color: var(--success); }
+  .tag.gold { background: var(--accent-bg); border-color: var(--accent-border); color: var(--accent); }
+
+  .list { display: flex; flex-direction: column; gap: 6px; }
+  .item {
+    display: flex; align-items: center; gap: 8px; padding: 7px 9px; border-radius: var(--radius-sm);
+    background: var(--bg-tertiary); border: 1px solid var(--border-tertiary); cursor: pointer;
+  }
+  .item:hover { border-color: var(--accent-border); }
+  .item.on { border-color: var(--accent); background: var(--accent-bg); }
+  .item .t { font-weight: 600; font-size: 13px; }
+  .item .s { font-size: 11.5px; color: var(--text-tertiary); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; border: 1px solid rgba(0,0,0,.45); }
+
+  label.f { display: block; margin-bottom: 8px; }
+  label.f > span { display: block; font-size: 11.5px; color: var(--text-tertiary); margin-bottom: 3px; }
+  input[type="text"], input[type="number"], select, textarea {
+    width: 100%; background: var(--bg-primary); border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-sm); padding: 6px 8px; outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  input[type="range"] { width: 100%; accent-color: var(--accent); }
+  input[type="color"] { width: 100%; height: 32px; padding: 2px; background: var(--bg-primary); border: 1px solid var(--border-secondary); border-radius: var(--radius-sm); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .btn {
+    background: var(--bg-quaternary); border: 1px solid var(--border-secondary); color: var(--text-primary);
+    border-radius: var(--radius-sm); padding: 7px 11px; font-size: 12.5px; font-weight: 600;
+  }
+  .btn:hover { border-color: var(--accent-border); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #17140f; }
+  .btn.danger { background: var(--danger-bg); border-color: rgba(209,80,63,.45); color: var(--danger); }
+  .btn.ghost { background: transparent; }
+  .btn.sm { padding: 4px 8px; font-size: 11.5px; }
+  .btnrow { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  table.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.tbl th, table.tbl td { padding: 5px 6px; border-bottom: 1px solid var(--border-tertiary); text-align: left; }
+  table.tbl th { color: var(--text-tertiary); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .4px; }
+  table.tbl td.n, table.tbl th.n { text-align: right; font-variant-numeric: tabular-nums; }
+  table.tbl tr.clk { cursor: pointer; }
+  table.tbl tr.clk:hover td { background: var(--bg-tertiary); }
+
+  .bar { height: 6px; border-radius: 3px; background: var(--bg-quaternary); overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: var(--accent); }
+
+  .log-line { padding: 2px 0; border-bottom: 1px dashed var(--border-tertiary); display: flex; gap: 8px; }
+  .log-line .d { color: var(--text-tertiary); flex: none; font-variant-numeric: tabular-nums; font-size: 11px; min-width: 74px; }
+  .log-line.war .m { color: var(--danger); }
+  .log-line.peace .m { color: var(--success); }
+  .log-line.siege .m { color: var(--accent); }
+  .log-line .m { flex: 1; }
+
+  dialog {
+    background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-secondary);
+    border-radius: var(--radius-lg); padding: 0; max-width: min(680px, 94vw); width: 100%; box-shadow: var(--card-shadow);
+  }
+  dialog::backdrop { background: rgba(0,0,0,.6); backdrop-filter: blur(2px); }
+  .dlg-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--border-tertiary); }
+  .dlg-head h2 { margin: 0; font-size: 16px; flex: 1; }
+  .dlg-body { padding: 14px; max-height: 70vh; overflow-y: auto; }
+  .dlg-foot { padding: 10px 14px; border-top: 1px solid var(--border-tertiary); display: flex; gap: 8px; justify-content: flex-end; }
+
+  .toast {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--log-h) + 16px);
+    background: var(--bg-tertiary); border: 1px solid var(--accent-border); color: var(--text-primary);
+    padding: 8px 14px; border-radius: 999px; font-size: 12.5px; z-index: 90; box-shadow: var(--card-shadow);
+    opacity: 0; pointer-events: none; transition: opacity .18s;
+  }
+  .toast.show { opacity: 1; }
+
+  .sheet-toggle { display: none; }
+  @media (max-width: 900px) {
+    :root { --side-w: 100%; --log-h: 96px; }
+    #stage { position: relative; }
+    #side {
+      position: absolute; inset: 0; z-index: 30; border-left: 0; transform: translateY(100%);
+      transition: transform .22s ease; border-top: 1px solid var(--border-secondary);
+    }
+    #side.open { transform: translateY(0); }
+    .sheet-toggle { display: inline-flex; }
+    .brand-txt { display: none; }
+    .legend { max-width: 150px; font-size: 10.5px; }
+  }
+  @media (max-width: 640px) {
+    :root { --topbar-h: 50px; }
+    .tb-date { font-size: 11px; line-height: 1.15; }
+    .tb-date b { font-size: 12px; display: block; }
+    .grid3 { grid-template-columns: 1fr 1fr; }
+    #topbar { gap: 6px; padding: 0 8px; }
+    .spd button { padding: 4px 6px; min-width: 26px; font-size: 11px; }
+    .iconbtn { padding: 5px 8px; font-size: 11.5px; }
+    #btnSave { display: none; }
+    .mapctl.tl .chip { padding: 4px 8px; font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header id="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <path d="M16 2 4 7v9c0 7.2 5 12.3 12 14 7-1.7 12-6.8 12-14V7L16 2z" fill="none" stroke="#d9a441" stroke-width="2"/>
+        <path d="M16 8v14M11 12l5-4 5 4" fill="none" stroke="#d9a441" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="brand-txt">KALRADYA</span>
+    </div>
+    <div class="tb-date"><b id="tbDate">1084 Yaz, 1. gün</b> <span id="tbSeason" class="muted"></span></div>
+    <div class="spd" id="spdCtl">
+      <button data-spd="0" title="Duraklat">❚❚</button>
+      <button data-spd="1" class="on">1×</button>
+      <button data-spd="3">3×</button>
+      <button data-spd="8">8×</button>
+      <button data-spd="20">20×</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="btnTheme" title="Tema">☾</button>
+    <button class="iconbtn" id="btnSave" title="Kaydet">Kaydet</button>
+    <button class="iconbtn" id="btnMenu" title="Menü">☰</button>
+    <button class="iconbtn sheet-toggle" id="btnSheet">Panel</button>
+  </header>
+
+  <main id="stage">
+    <section id="mapWrap">
+      <canvas id="mapCanvas"></canvas>
+      <svg id="mapSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+
+      <div class="mapctl tl">
+        <button class="chip on" data-layer="villages">Köyler</button>
+        <button class="chip on" data-layer="parties">Ordular</button>
+        <button class="chip on" data-layer="labels">İsimler</button>
+        <button class="chip on" data-layer="borders">Sınırlar</button>
+        <button class="chip" data-layer="fog">Yol izleri</button>
+      </div>
+
+      <div class="mapctl tr">
+        <button class="chip" id="btnFit" title="Haritayı sığdır">⤢</button>
+      </div>
+
+      <div class="mapctl bl">
+        <div class="legend" id="legend"></div>
+      </div>
+    </section>
+
+    <aside id="side">
+      <div class="tabs" id="tabs">
+        <button data-tab="sel" class="on">Seçim</button>
+        <button data-tab="ovw">Genel</button>
+        <button data-tab="fac">Krallıklar</button>
+        <button data-tab="lrd">Lordlar</button>
+        <button data-tab="stl">Yerler</button>
+        <button data-tab="dip">Diplomasi</button>
+        <button data-tab="god">Müdahale</button>
+      </div>
+      <div class="panes" id="panes">
+        <div class="pane on" data-pane="sel" id="paneSel"></div>
+        <div class="pane" data-pane="ovw" id="paneOvw"></div>
+        <div class="pane" data-pane="fac" id="paneFac"></div>
+        <div class="pane" data-pane="lrd" id="paneLrd"></div>
+        <div class="pane" data-pane="stl" id="paneStl"></div>
+        <div class="pane" data-pane="dip" id="paneDip"></div>
+        <div class="pane" data-pane="god" id="paneGod"></div>
+      </div>
+    </aside>
+  </main>
+
+  <footer id="chronicle"><div id="logList"></div></footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<dialog id="dlg">
+  <div class="dlg-head"><h2 id="dlgTitle">Başlık</h2><button class="iconbtn" id="dlgX">✕</button></div>
+  <div class="dlg-body" id="dlgBody"></div>
+  <div class="dlg-foot" id="dlgFoot"></div>
+</dialog>
+
+<script>
+"use strict";
+/* =====================================================================
+   KALRADYA — Warband Simülatörü
+   Bölüm 1: Dünya verisi (krallıklar, birlikler, harita, yerleşimler)
+   ===================================================================== */
+
+const MAP_W = 1200, MAP_H = 800;
+
+/* ---------------- Krallıklar ---------------- */
+const FACTION_DEFS = [
+  { id:'swadia',   name:'Swadya Krallığı',    short:'Swadya',   color:'#d9a441', culture:'sw', rulerTitle:'Kral',   lordTitle:'Kont',  capital:'praven',   aggr:0.55, banner:'shield' },
+  { id:'vaegir',   name:'Vaegir Krallığı',    short:'Vaegir',   color:'#c3ced8', culture:'vg', rulerTitle:'Kral',   lordTitle:'Boyar', capital:'reyvadin', aggr:0.55, banner:'star' },
+  { id:'khergit',  name:'Kherjit Hanlığı',    short:'Kherjit',  color:'#d9682f', culture:'kh', rulerTitle:'Han',    lordTitle:'Noyan', capital:'tulga',    aggr:0.70, banner:'horse' },
+  { id:'nord',     name:'Nord Krallığı',      short:'Nord',     color:'#3d6bb5', culture:'nd', rulerTitle:'Kral',   lordTitle:'Jarl',  capital:'sargoth',  aggr:0.65, banner:'axe' },
+  { id:'rhodok',   name:'Rodok Krallığı',     short:'Rodok',    color:'#4f9146', culture:'rh', rulerTitle:'Kral',   lordTitle:'Lord',  capital:'jelkala',  aggr:0.35, banner:'bolt' },
+  { id:'sarranid', name:'Sarranid Sultanlığı',short:'Sarranid', color:'#17a08e', culture:'sr', rulerTitle:'Sultan', lordTitle:'Emir',  capital:'shariz',   aggr:0.50, banner:'moon' }
+];
+const BANDIT_FACTION = { id:'bandit', name:'Haydutlar', short:'Haydut', color:'#8a7a68', culture:'bd', rulerTitle:'Reis', lordTitle:'Reis', aggr:1 };
+
+/* ---------------- Birlik ağaçları ---------------- */
+/* cls: inf (piyade), arch (okçu), cav (süvari)  |  pw: güç  |  up: terfi hedefleri */
+const TROOPS = {};
+function T(id, name, culture, tier, cls, pw, up, wage) {
+  TROOPS[id] = { id, name, culture, tier, cls, pw, up: up || [], wage: wage || (pw * 0.09 + 0.4) };
+}
+/* Swadya */
+T('sw_recruit','Swadya Acemisi','sw',1,'inf',10,['sw_militia']);
+T('sw_militia','Swadya Milisi','sw',2,'inf',18,['sw_footman']);
+T('sw_footman','Swadya Piyadesi','sw',3,'inf',28,['sw_infantry','sw_manatarms']);
+T('sw_infantry','Swadya Ağır Piyadesi','sw',4,'inf',44,['sw_sergeant']);
+T('sw_sergeant','Swadya Çavuşu','sw',5,'inf',64,[]);
+T('sw_manatarms','Swadya Silahşoru','sw',4,'cav',52,['sw_knight']);
+T('sw_knight','Swadya Şövalyesi','sw',5,'cav',82,[]);
+T('sw_skirmisher','Swadya Avcısı','sw',3,'arch',26,['sw_crossbow']);
+T('sw_crossbow','Swadya Arbaletçisi','sw',4,'arch',42,[]);
+/* Vaegir */
+T('vg_recruit','Vaegir Acemisi','vg',1,'inf',10,['vg_footman']);
+T('vg_footman','Vaegir Piyadesi','vg',2,'inf',19,['vg_veteran','vg_archer']);
+T('vg_veteran','Vaegir Kıdemlisi','vg',3,'inf',30,['vg_infantry','vg_horseman']);
+T('vg_infantry','Vaegir Muhafızı','vg',4,'inf',46,['vg_guard']);
+T('vg_guard','Vaegir Seçkin Muhafızı','vg',5,'inf',68,[]);
+T('vg_archer','Vaegir Okçusu','vg',3,'arch',27,['vg_marksman']);
+T('vg_marksman','Vaegir Nişancısı','vg',4,'arch',45,[]);
+T('vg_horseman','Vaegir Süvarisi','vg',4,'cav',48,['vg_knight']);
+T('vg_knight','Vaegir Şövalyesi','vg',5,'cav',76,[]);
+/* Kherjit */
+T('kh_tribesman','Kherjit Kabile Savaşçısı','kh',1,'cav',11,['kh_skirmisher']);
+T('kh_skirmisher','Kherjit Akıncısı','kh',2,'cav',20,['kh_horseman']);
+T('kh_horseman','Kherjit Süvarisi','kh',3,'cav',34,['kh_lancer','kh_horsearcher']);
+T('kh_lancer','Kherjit Mızraklısı','kh',4,'cav',54,['kh_veteran']);
+T('kh_veteran','Kherjit Kıdemli Süvarisi','kh',5,'cav',80,[]);
+T('kh_horsearcher','Kherjit Atlı Okçusu','kh',4,'arch',48,['kh_master']);
+T('kh_master','Kherjit Usta Okçusu','kh',5,'arch',70,[]);
+/* Nord */
+T('nd_recruit','Nord Acemisi','nd',1,'inf',11,['nd_footman']);
+T('nd_footman','Nord Piyadesi','nd',2,'inf',20,['nd_trained','nd_archer']);
+T('nd_trained','Nord Eğitimli Piyadesi','nd',3,'inf',32,['nd_warrior']);
+T('nd_warrior','Nord Savaşçısı','nd',4,'inf',48,['nd_veteran']);
+T('nd_veteran','Nord Kıdemli Savaşçısı','nd',5,'inf',66,['nd_huscarl']);
+T('nd_huscarl','Nord Huscarlı','nd',6,'inf',90,[]);
+T('nd_archer','Nord Okçusu','nd',3,'arch',28,['nd_vetarcher']);
+T('nd_vetarcher','Nord Kıdemli Okçusu','nd',4,'arch',48,[]);
+/* Rodok */
+T('rh_tribesman','Rodok Kabilelisi','rh',1,'inf',10,['rh_spearman','rh_crossbow']);
+T('rh_spearman','Rodok Mızraklısı','rh',2,'inf',20,['rh_trained']);
+T('rh_trained','Rodok Eğitimli Mızraklısı','rh',3,'inf',32,['rh_veteran']);
+T('rh_veteran','Rodok Kıdemli Mızraklısı','rh',4,'inf',48,['rh_sergeant']);
+T('rh_sergeant','Rodok Çavuşu','rh',5,'inf',70,[]);
+T('rh_crossbow','Rodok Arbaletçisi','rh',3,'arch',30,['rh_vetcross']);
+T('rh_vetcross','Rodok Kıdemli Arbaletçisi','rh',4,'arch',50,['rh_sharpshooter']);
+T('rh_sharpshooter','Rodok Keskin Nişancısı','rh',5,'arch',72,[]);
+/* Sarranid */
+T('sr_recruit','Sarranid Acemisi','sr',1,'inf',10,['sr_footman']);
+T('sr_footman','Sarranid Piyadesi','sr',2,'inf',19,['sr_vetfootman','sr_archer']);
+T('sr_vetfootman','Sarranid Kıdemli Piyadesi','sr',3,'inf',33,['sr_guard','sr_horseman']);
+T('sr_guard','Sarranid Muhafızı','sr',4,'inf',56,[]);
+T('sr_archer','Sarranid Okçusu','sr',3,'arch',28,['sr_master']);
+T('sr_master','Sarranid Usta Okçusu','sr',4,'arch',48,[]);
+T('sr_horseman','Sarranid Süvarisi','sr',4,'cav',50,['sr_mamluke']);
+T('sr_mamluke','Sarranid Memlüğü','sr',5,'cav',78,[]);
+/* Haydutlar */
+T('bd_looter','Çapulcu','bd',1,'inf',7,['bd_bandit']);
+T('bd_bandit','Orman Haydudu','bd',2,'arch',18,['bd_brigand']);
+T('bd_brigand','Dağ Haydudu','bd',3,'inf',28,[]);
+T('bd_steppe','Bozkır Haydudu','bd',3,'cav',34,[]);
+T('bd_desert','Çöl Haydudu','bd',3,'cav',32,[]);
+T('bd_sea','Deniz Akıncısı','bd',4,'inf',46,[]);
+/* Köylü / paralı */
+T('mc_peasant','Köylü','mc',1,'inf',8,[]);
+T('mc_merc','Paralı Asker','mc',3,'inf',34,['mc_vet']);
+T('mc_vet','Kıdemli Paralı Asker','mc',4,'inf',52,[]);
+
+const CULTURE_TREE_ROOT = { sw:'sw_recruit', vg:'vg_recruit', kh:'kh_tribesman', nd:'nd_recruit', rh:'rh_tribesman', sr:'sr_recruit', bd:'bd_looter', mc:'mc_peasant' };
+
+/* ---------------- Yerleşimler ---------------- */
+/* type: town | castle ; köyler otomatik türetilir */
+const SETTLEMENT_DEFS = [
+  /* --- Nord (kuzey / kuzeybatı kıyısı) --- */
+  { id:'sargoth', name:'Sargoth', type:'town',   f:'nord', x:300, y:132 },
+  { id:'tihr',    name:'Tihr',    type:'town',   f:'nord', x:196, y:262 },
+  { id:'wercheg', name:'Wercheg', type:'town',   f:'nord', x:527, y:118 },
+  { id:'haringoth', name:'Haringoth Kalesi', type:'castle', f:'nord', x:252, y:196 },
+  { id:'bulugha',   name:'Bulugha Kalesi',   type:'castle', f:'nord', x:404, y:104 },
+  { id:'tevarin',   name:'Tevarin Kalesi',   type:'castle', f:'nord', x:158, y:200 },
+  { id:'nelag',     name:'Nelag Kalesi',     type:'castle', f:'nord', x:466, y:186 },
+
+  /* --- Swadya (orta / batı ovaları) --- */
+  { id:'praven', name:'Praven', type:'town', f:'swadia', x:252, y:392 },
+  { id:'uxkhal', name:'Uxkhal', type:'town', f:'swadia', x:470, y:346 },
+  { id:'suno',   name:'Suno',   type:'town', f:'swadia', x:352, y:474 },
+  { id:'dhirim', name:'Dhirim', type:'town', f:'swadia', x:602, y:334 },
+  { id:'uslum',     name:'Uslum Kalesi',     type:'castle', f:'swadia', x:384, y:300 },
+  { id:'etrosq',    name:'Etrosq Kalesi',    type:'castle', f:'swadia', x:300, y:326 },
+  { id:'tilbaut',   name:'Tilbaut Kalesi',   type:'castle', f:'swadia', x:190, y:448 },
+  { id:'ergellon',  name:'Ergellon Kalesi',  type:'castle', f:'swadia', x:522, y:424 },
+  { id:'culmarr',   name:'Culmarr Kalesi',   type:'castle', f:'swadia', x:432, y:252 },
+  { id:'sungetche', name:'Sungetche Kalesi', type:'castle', f:'swadia', x:566, y:254 },
+
+  /* --- Vaegir (kuzeydoğu / karlı topraklar) --- */
+  { id:'reyvadin', name:'Reyvadin', type:'town', f:'vaegir', x:706, y:224 },
+  { id:'curaw',    name:'Curaw',    type:'town', f:'vaegir', x:836, y:154 },
+  { id:'khudan',   name:'Khudan',   type:'town', f:'vaegir', x:962, y:116 },
+  { id:'rivacheg', name:'Rivacheg', type:'town', f:'vaegir', x:648, y:100 },
+  { id:'rindyar',  name:'Rindyar Kalesi',  type:'castle', f:'vaegir', x:780, y:114 },
+  { id:'malayurg', name:'Malayurg Kalesi', type:'castle', f:'vaegir', x:902, y:206 },
+  { id:'ismirala', name:'Ismirala Kalesi', type:'castle', f:'vaegir', x:724, y:302 },
+  { id:'uhhun',    name:'Uhhun Kalesi',    type:'castle', f:'vaegir', x:1012, y:184 },
+  { id:'slezkh',   name:'Slezkh Kalesi',   type:'castle', f:'vaegir', x:862, y:256 },
+  { id:'vayejeg',  name:'Vayejeg Kalesi',  type:'castle', f:'vaegir', x:760, y:172 },
+
+  /* --- Kherjit (doğu bozkırları) --- */
+  { id:'tulga',    name:'Tulga',    type:'town', f:'khergit', x:1074, y:334 },
+  { id:'halmar',   name:'Halmar',   type:'town', f:'khergit', x:900, y:402 },
+  { id:'narra',    name:'Narra',    type:'town', f:'khergit', x:1000, y:444 },
+  { id:'ichamur',  name:'Ichamur',  type:'town', f:'khergit', x:872, y:322 },
+  { id:'unuzdaq',  name:'Unuzdaq Kalesi', type:'castle', f:'khergit', x:962, y:292 },
+  { id:'distar',   name:'Distar Kalesi',  type:'castle', f:'khergit', x:1052, y:400 },
+  { id:'almerra',  name:'Almerra Kalesi', type:'castle', f:'khergit', x:824, y:432 },
+  { id:'kelredan', name:'Kelredan Kalesi',type:'castle', f:'khergit', x:1112, y:268 },
+
+  /* --- Rodok (güneybatı dağları) --- */
+  { id:'jelkala', name:'Jelkala', type:'town', f:'rhodok', x:204, y:598 },
+  { id:'yalen',   name:'Yalen',   type:'town', f:'rhodok', x:332, y:652 },
+  { id:'veluca',  name:'Veluca',  type:'town', f:'rhodok', x:470, y:572 },
+  { id:'grunwalder', name:'Grunwalder Kalesi', type:'castle', f:'rhodok', x:282, y:540 },
+  { id:'jelbegi',    name:'Jelbegi Kalesi',    type:'castle', f:'rhodok', x:390, y:600 },
+  { id:'maras',      name:'Maras Kalesi',      type:'castle', f:'rhodok', x:252, y:688 },
+  { id:'yaragar',    name:'Yaragar Kalesi',    type:'castle', f:'rhodok', x:432, y:688 },
+  { id:'tehlrog',    name:'Tehlrog Kalesi',    type:'castle', f:'rhodok', x:360, y:530 },
+
+  /* --- Sarranid (güney / güneydoğu çölleri) --- */
+  { id:'shariz',   name:'Shariz',   type:'town', f:'sarranid', x:700, y:648 },
+  { id:'durquba',  name:'Durquba',  type:'town', f:'sarranid', x:852, y:598 },
+  { id:'ahmerrad', name:'Ahmerrad', type:'town', f:'sarranid', x:622, y:540 },
+  { id:'bariyye',  name:'Bariyye Kalesi',  type:'castle', f:'sarranid', x:782, y:558 },
+  { id:'ushkuru',  name:'Ushkuru Kalesi',  type:'castle', f:'sarranid', x:898, y:686 },
+  { id:'weyyah',   name:'Weyyah Kalesi',   type:'castle', f:'sarranid', x:700, y:734 },
+  { id:'jameyyed', name:'Jameyyed Kalesi', type:'castle', f:'sarranid', x:948, y:530 },
+  { id:'chaeza',   name:'Chaeza Kalesi',   type:'castle', f:'sarranid', x:610, y:646 }
+];
+
+/* Köy isim havuzu */
+const VILLAGE_NAMES = ['Rulund','Tosdar','Chelez','Dusturil','Fisdnar','Gisim','Emirin','Ergezra','Ibdeles','Iyindah',
+'Jayek','Kedelke','Kulum','Kwynn','Maragoz','Nomar','Peshmi','Pupelhi','Rebache','Rushdigg',
+'Sarimish','Shapeshte','Sibdez','Tebandra','Tesdai','Tismirr','Udiniad','Ulburban','Veidar','Yalibe',
+'Yarrum','Zagush','Zerdar','Amashke','Ayn Assuad','Azgad','Bazur','Bhulaban','Burglen','Chade',
+'Dashbigha','Derchios','Dirigh Aban','Ferruy','Fradesli','Gerak','Hanun','Haen','Icira','Jamiche',
+'Ledebur','Marakhad','Mechin','Odasan','Pagundur','Qaltar','Reindi','Ribdeth','Sekhtem','Senuzgda',
+'Tahlberl','Vezin','Wulfburg','Yruma','Zendar','Ashbrin','Bardagh','Cezt','Dramug','Elberl',
+'Fenada','Ghoza','Hurgan','Ipsul','Jarnag','Kaltur','Lorbek','Mivda','Nordhal','Ovsk',
+'Puldura','Ranseth','Sirlin','Tarkan','Umnach','Vorlan','Wodren','Xerin','Yagrat','Zorvin',
+'Bulugur','Cerihan','Dranak','Eltrem','Fizgur','Gordun','Hallas','Ivarn','Jurnek','Kolmar'];
+
+/* Lord isim havuzları */
+const LORD_NAMES = {
+  swadia: ['Harlaus','Delinard','Klargus','Grainwad','Meltirr','Matheas','Rafarr','Etrosq','Plais','Alberic',
+           'Tredian','Deglan','Klethi','Ryis','Tresmond','Ulric','Enrik','Despin','Rochebaud','Gunther'],
+  vaegir: ['Yaroglek','Vlan','Meriga','Grimuk','Valdym','Nelag','Tuteg','Ryhelm','Vergaz','Ismir',
+           'Yergen','Slawomir','Boryan','Radoslav','Zdravko','Miroslav','Velimir','Drogo','Gostan','Nevzat'],
+  khergit:['Sanjar','Dustum','Tarkhun','Nazar','Ulugh','Baraq','Temur','Aydar','Ertan','Kaskar',
+           'Alagur','Bolat','Toktar','Sungur','Yaruk','Kutlug','Berke','Ilbey','Orhan','Sencer'],
+  nord:   ['Ragnar','Torbjorn','Ivar','Hakon','Sigmund','Gunnar','Erlend','Bjorn','Knut','Vigfus',
+           'Thorolf','Ulfr','Halvard','Steinar','Egil','Sverre','Roderic','Harald','Leif','Asbjorn'],
+  rhodok: ['Graveth','Tribudan','Kastor','Berthold','Ferentius','Marnid','Cerlus','Damar','Fenio','Rilden',
+           'Tovas','Ubertus','Valdio','Zerrin','Peltro','Gerlan','Ormun','Sandor','Verdan','Lucius'],
+  sarranid:['Hakim','Dashwal','Uqais','Hadwan','Zafar','Malik','Jubair','Salah','Nasir','Rashid',
+            'Tahir','Faris','Qutuz','Ghazi','Idris','Bahram','Mesud','Sinan','Yusuf','Kerim']
+};
+
+const PERSONALITIES = [
+  { id:'martial',   name:'Savaşçı',        desc:'Savaştan kaçmaz, sürekli sefere çıkar.', aggr:1.35, loyal:1.0, greed:0.8 },
+  { id:'upstanding',name:'Erdemli',        desc:'Adil ve güvenilir; sadakati yüksektir.', aggr:1.0,  loyal:1.35, greed:0.7 },
+  { id:'benefactor',name:'Hayırsever',     desc:'Halkını korur, köyleri yağmalamaz.',     aggr:0.85, loyal:1.2, greed:0.6 },
+  { id:'curdgeonly',name:'Cimri',          desc:'Parayı sever, ganimet peşindedir.',      aggr:1.0,  loyal:0.85, greed:1.4 },
+  { id:'debauched', name:'Sefih',          desc:'Zevkine düşkün, güvenilmezdir.',         aggr:0.9,  loyal:0.7, greed:1.3 },
+  { id:'quarrelsome',name:'Kavgacı',       desc:'Herkesle didişir, ihanete yatkındır.',   aggr:1.2,  loyal:0.6, greed:1.1 },
+  { id:'selfright', name:'Kendini Beğenmiş',desc:'Gururlu; hakaret gördüğünde küser.',    aggr:1.1,  loyal:0.75, greed:1.0 },
+  { id:'custodian', name:'Sadık',          desc:'Kralına körü körüne bağlıdır.',          aggr:0.95, loyal:1.5, greed:0.8 }
+];
+
+/* ---------------- Harita coğrafyası ---------------- */
+/* Kalradya ana kara parçasının kıyı çizgisi */
+const COAST = [
+  [58,338],[86,246],[66,174],[136,120],[228,80],[302,58],[334,112],[404,144],[470,120],[520,58],
+  [604,44],[702,38],[822,58],[930,48],[1052,80],[1142,142],[1174,244],[1152,362],[1162,470],[1120,562],
+  [1040,642],[962,730],[850,762],[740,782],[620,758],[520,730],[430,762],[330,742],[240,700],[168,640],
+  [140,540],[92,452]
+];
+
+/* Biyom merkezleri: karların, ovaların, çöllerin, bozkırın etkisi */
+const BIOMES = [
+  { k:'snow',   x:900,  y:90,  r:340 },
+  { k:'snow',   x:700,  y:70,  r:250 },
+  { k:'tundra', x:420,  y:96,  r:260 },
+  { k:'forest', x:250,  y:230, r:230 },
+  { k:'plain',  x:400,  y:390, r:330 },
+  { k:'plain',  x:600,  y:300, r:230 },
+  { k:'forest', x:640,  y:430, r:190 },
+  { k:'hills',  x:330,  y:600, r:250 },
+  { k:'hills',  x:470,  y:560, r:170 },
+  { k:'steppe', x:980,  y:360, r:330 },
+  { k:'steppe', x:820,  y:300, r:190 },
+  { k:'desert', x:790,  y:640, r:330 },
+  { k:'desert', x:640,  y:700, r:210 }
+];
+
+const BIOME_COLORS = {
+  snow:   ['#dfe6ea','#c8d3da'],
+  tundra: ['#b9bfa6','#a4ac92'],
+  forest: ['#4e6b40','#3f5936'],
+  plain:  ['#7d8f4e','#6c7f43'],
+  hills:  ['#8a8663','#767252'],
+  steppe: ['#a89a5c','#96884d'],
+  desert: ['#d7c087','#c7ac6e']
+};
+
+/* Nehirler ve dağ sıraları (dekoratif) */
+const RIVERS = [
+  [[352,152],[380,232],[420,300],[398,372],[430,452],[404,532]],
+  [[700,120],[724,214],[760,300],[738,392],[772,470]],
+  [[930,150],[900,240],[930,330],[980,410]],
+  [[600,470],[652,540],[690,620],[706,700]],
+  [[180,330],[236,404],[214,486],[248,566]]
+];
+const MOUNTAINS = [
+  { x:300,y:548,n:9,w:150 }, { x:400,y:600,n:8,w:140 }, { x:250,y:650,n:7,w:120 },
+  { x:960,y:220,n:8,w:150 }, { x:840,y:250,n:6,w:110 },
+  { x:520,y:200,n:6,w:110 }, { x:1080,y:470,n:6,w:120 }, { x:640,y:500,n:5,w:100 }
+];
+/* =====================================================================
+   Bölüm 2: Yardımcılar, durum ve dünya kurulumu
+   ===================================================================== */
+
+/* ---------------- Yardımcılar ---------------- */
+let RNG_STATE = 20250810;
+function srand(seed) { RNG_STATE = seed >>> 0; }
+function rnd() {
+  RNG_STATE |= 0; RNG_STATE = (RNG_STATE + 0x6D2B79F5) | 0;
+  let t = Math.imul(RNG_STATE ^ (RNG_STATE >>> 15), 1 | RNG_STATE);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+const rf = (a, b) => a + rnd() * (b - a);
+const pick = arr => arr[Math.floor(rnd() * arr.length)];
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+const dist2 = (x1, y1, x2, y2) => Math.hypot(x1 - x2, y1 - y2);
+let UIDN = 0;
+function uid(p) { return `${p}${++UIDN}`; }
+function fmt(n) { return Math.round(n).toLocaleString('tr-TR'); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+function pointInPoly(x, y, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i][0], yi = poly[i][1], xj = poly[j][0], yj = poly[j][1];
+    if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+const isLand = (x, y) => pointInPoly(x, y, COAST);
+
+/* Takvim */
+const MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const SEASONS = ['Kış','Kış','İlkbahar','İlkbahar','İlkbahar','Yaz','Yaz','Yaz','Sonbahar','Sonbahar','Sonbahar','Kış'];
+function calendar(day) {
+  const d = Math.floor(day);
+  const year = 1084 + Math.floor(d / 360);
+  const doy = ((d % 360) + 360) % 360;
+  const mi = Math.floor(doy / 30);
+  return { year, month: MONTHS[mi], season: SEASONS[mi], dayOfMonth: (doy % 30) + 1, mi };
+}
+function dateStr(day) { const c = calendar(day); return `${c.dayOfMonth} ${c.month} ${c.year}`; }
+function shortDate(day) { const c = calendar(day); return `${c.dayOfMonth}.${c.mi + 1}.${c.year}`; }
+
+/* ---------------- Birlik yığını yardımcıları ---------------- */
+function cultureTroops(culture) {
+  return Object.values(TROOPS).filter(t => t.culture === culture).sort((a, b) => a.tier - b.tier);
+}
+function makeStack(culture, size, quality) {
+  const stack = {};
+  if (size <= 0) return stack;
+  const pool = cultureTroops(culture);
+  if (!pool.length) return stack;
+  const maxTier = Math.max(...pool.map(t => t.tier));
+  /* kalite (0..1) yüksek tier ağırlığını kaydırır */
+  const center = 1 + quality * (maxTier - 1);
+  const weights = pool.map(t => {
+    const d = Math.abs(t.tier - center);
+    let w = Math.exp(-(d * d) / 1.1);
+    if (t.cls === 'cav') w *= 0.8;
+    return w;
+  });
+  const total = weights.reduce((a, b) => a + b, 0) || 1;
+  let left = size;
+  pool.forEach((t, i) => {
+    const n = i === pool.length - 1 ? left : Math.min(left, Math.round(size * weights[i] / total));
+    if (n > 0) { stack[t.id] = (stack[t.id] || 0) + n; left -= n; }
+  });
+  if (left > 0) { const r = CULTURE_TREE_ROOT[culture] || pool[0].id; stack[r] = (stack[r] || 0) + left; }
+  for (const k in stack) if (stack[k] <= 0) delete stack[k];
+  return stack;
+}
+function stackCount(st) { let n = 0; for (const k in st) n += st[k]; return n; }
+function stackPower(st) {
+  let p = 0;
+  for (const k in st) { const t = TROOPS[k]; if (t) p += t.pw * st[k]; }
+  return p;
+}
+function stackWage(st) {
+  let w = 0;
+  for (const k in st) { const t = TROOPS[k]; if (t) w += t.wage * st[k]; }
+  return w;
+}
+function stackTop(st, n) {
+  return Object.entries(st).filter(e => e[1] > 0)
+    .sort((a, b) => (TROOPS[b[0]]?.tier || 0) - (TROOPS[a[0]]?.tier || 0)).slice(0, n || 99);
+}
+function stackAvgTier(st) {
+  let s = 0, n = 0;
+  for (const k in st) { const t = TROOPS[k]; if (t) { s += t.tier * st[k]; n += st[k]; } }
+  return n ? s / n : 0;
+}
+function stackMix(st) {
+  const m = { inf:0, arch:0, cav:0 };
+  for (const k in st) { const t = TROOPS[k]; if (t) m[t.cls] += st[k]; }
+  return m;
+}
+/* yığından n adet kayıp düş: önce düşük tier */
+function stackRemove(st, n) {
+  const removed = {};
+  const order = Object.keys(st).filter(k => st[k] > 0)
+    .sort((a, b) => (TROOPS[a] ? TROOPS[a].tier : 0) - (TROOPS[b] ? TROOPS[b].tier : 0));
+  let left = Math.round(n);
+  for (const k of order) {
+    if (left <= 0) break;
+    const take = Math.min(st[k], left);
+    st[k] -= take; left -= take;
+    removed[k] = (removed[k] || 0) + take;
+    if (st[k] <= 0) delete st[k];
+  }
+  return removed;
+}
+function stackMerge(dst, src) { for (const k in src) if (src[k] > 0) dst[k] = (dst[k] || 0) + src[k]; return dst; }
+
+/* ---------------- Durum ---------------- */
+const S = {
+  day: 150,           // 1084 Haziran civarı
+  speed: 1,
+  running: true,
+  factions: {},
+  settlements: {},
+  lords: {},
+  parties: {},
+  order: { settlements: [], lords: [], parties: [] },
+  wars: {},           // "a|b" -> { since }
+  log: [],
+  battles: [],
+  sel: null,          // {type:'lord'|'settlement'|'faction'|'party', id}
+  layers: { villages: true, parties: true, labels: true, borders: true, fog: false },
+  hidden: {},         // faction id -> true (haritada gizle)
+  opts: {
+    lethality: 1,
+    recruitRate: 1,
+    economy: 1,
+    aggression: 1,
+    banditRate: 1,
+    autoPeace: true,
+    lordDefection: true,
+    banditSpawn: true,
+    pauseOnSiege: false,
+    pauseOnWar: false,
+    logLimit: 400
+  },
+  stats: { battles: 0, sieges: 0, days: 0 }
+};
+
+const warKey = (a, b) => a < b ? `${a}|${b}` : `${b}|${a}`;
+const atWar = (a, b) => !!(a && b && a !== b && S.wars[warKey(a, b)]);
+
+function addLog(msg, kind) {
+  S.log.unshift({ d: S.day, m: msg, k: kind || '' });
+  if (S.log.length > S.opts.logLimit) S.log.length = S.opts.logLimit;
+  logDirty = true;
+}
+
+/* ---------------- Dünya kurulumu ---------------- */
+function buildWorld(seed) {
+  srand(seed || 20250810);
+  S.factions = {}; S.settlements = {}; S.lords = {}; S.parties = {};
+  S.wars = {}; S.log = []; S.battles = [];
+  S.order = { settlements: [], lords: [], parties: [] };
+
+  /* --- krallıklar --- */
+  const allFac = FACTION_DEFS.concat([BANDIT_FACTION]);
+  allFac.forEach(d => {
+    S.factions[d.id] = {
+      id: d.id, name: d.name, short: d.short, color: d.color, culture: d.culture,
+      rulerTitle: d.rulerTitle, lordTitle: d.lordTitle, capital: d.capital || null,
+      aggr: d.aggr, kingId: null, treasury: d.id === 'bandit' ? 0 : ri(9000, 26000),
+      rel: {}, warWeariness: {}, target: null, alive: true, isBandit: d.id === 'bandit'
+    };
+  });
+  Object.keys(S.factions).forEach(a => Object.keys(S.factions).forEach(b => { if (a !== b) S.factions[a].rel[b] = ri(-15, 10); }));
+
+  /* --- şehir ve kaleler --- */
+  SETTLEMENT_DEFS.forEach(d => {
+    const isTown = d.type === 'town';
+    const s = {
+      id: d.id, name: d.name, type: d.type, x: d.x, y: d.y,
+      faction: d.f, origFaction: d.f, lordId: null, parentId: null,
+      prosperity: isTown ? ri(45, 72) : ri(30, 55),
+      food: 100, walls: isTown ? ri(55, 80) : ri(45, 75),
+      garrison: {}, prisoners: {}, besiegedBy: null, siegeProgress: 0,
+      raidedUntil: 0, recruits: ri(10, 30), unrest: 0, lastOwnerChange: 0
+    };
+    S.settlements[s.id] = s; S.order.settlements.push(s.id);
+  });
+
+  /* --- köyler --- */
+  let vn = 0;
+  const nameNext = () => VILLAGE_NAMES[(vn++) % VILLAGE_NAMES.length];
+  const placed = SETTLEMENT_DEFS.map(d => ({ x: d.x, y: d.y }));
+  SETTLEMENT_DEFS.forEach((d, di) => {
+    const count = d.type === 'town' ? 3 : 1;
+    for (let i = 0; i < count; i++) {
+      let bx = 0, by = 0, ok = false;
+      for (let tries = 0; tries < 40 && !ok; tries++) {
+        const ang = (di * 1.7 + i * 2.3 + tries * 0.55) % (Math.PI * 2);
+        const rad = 34 + (tries % 5) * 7 + (i * 6);
+        bx = d.x + Math.cos(ang) * rad; by = d.y + Math.sin(ang) * rad * 0.85;
+        if (bx < 40 || bx > MAP_W - 40 || by < 30 || by > MAP_H - 30) continue;
+        if (!isLand(bx, by)) continue;
+        if (placed.some(p => dist2(p.x, p.y, bx, by) < 27)) continue;
+        ok = true;
+      }
+      if (!ok) continue;
+      placed.push({ x: bx, y: by });
+      const id = `v_${d.id}_${i}`;
+      S.settlements[id] = {
+        id, name: nameNext(), type: 'village', x: Math.round(bx), y: Math.round(by),
+        faction: d.f, origFaction: d.f, lordId: null, parentId: d.id,
+        prosperity: ri(35, 65), food: 100, walls: 0,
+        garrison: {}, prisoners: {}, besiegedBy: null, siegeProgress: 0,
+        raidedUntil: 0, recruits: ri(6, 20), unrest: 0, lastOwnerChange: 0
+      };
+      S.order.settlements.push(id);
+    }
+  });
+
+  /* --- lordlar --- */
+  FACTION_DEFS.forEach(fd => {
+    const names = LORD_NAMES[fd.id].slice();
+    const fac = S.factions[fd.id];
+    const n = 14;
+    for (let i = 0; i < n; i++) {
+      const isKing = i === 0;
+      const nm = names[i % names.length];
+      const p = pick(PERSONALITIES);
+      const id = `l_${fd.id}_${i}`;
+      S.lords[id] = {
+        id, name: nm, faction: fd.id,
+        title: isKing ? fd.rulerTitle : fd.lordTitle,
+        isKing, personality: isKing ? 'martial' : p.id,
+        renown: isKing ? ri(700, 900) : ri(80, 520),
+        relKing: isKing ? 100 : ri(-25, 55),
+        gold: isKing ? ri(12000, 24000) : ri(800, 6000),
+        skillTactics: isKing ? ri(4, 7) : ri(1, 6),
+        skillLeadership: isKing ? ri(7, 10) : ri(3, 8),
+        fiefs: [], partyId: null, state: 'active', prisonerOf: null, freeAt: 0,
+        wounded: 0, kills: 0, battlesWon: 0, battlesLost: 0
+      };
+      S.order.lords.push(id);
+      if (isKing) fac.kingId = id;
+    }
+  });
+
+  /* --- tımarların dağıtımı --- */
+  FACTION_DEFS.forEach(fd => {
+    const fac = S.factions[fd.id];
+    const towns = S.order.settlements.map(i => S.settlements[i]).filter(s => s.faction === fd.id && s.type === 'town');
+    const castles = S.order.settlements.map(i => S.settlements[i]).filter(s => s.faction === fd.id && s.type === 'castle');
+    const lords = S.order.lords.map(i => S.lords[i]).filter(l => l.faction === fd.id);
+    const king = lords.find(l => l.isKing);
+    const others = shuffle(lords.filter(l => !l.isKing));
+    const cap = S.settlements[fd.capital];
+    if (cap) grantFief(cap, king);
+    let qi = 0;
+    towns.filter(t => t !== cap).forEach(t => { grantFief(t, others[qi % others.length]); qi++; });
+    castles.forEach(c => { grantFief(c, others[qi % others.length]); qi++; });
+    /* köyler ana yerleşimin sahibine bağlı */
+    S.order.settlements.forEach(id => {
+      const v = S.settlements[id];
+      if (v.type === 'village' && v.parentId) {
+        const par = S.settlements[v.parentId];
+        v.lordId = par ? par.lordId : null;
+        if (v.lordId && S.lords[v.lordId] && !S.lords[v.lordId].fiefs.includes(v.id)) S.lords[v.lordId].fiefs.push(v.id);
+      }
+    });
+    fac.treasury += towns.length * 2000;
+  });
+
+  /* --- ordular --- */
+  S.order.lords.forEach(id => spawnLordParty(S.lords[id]));
+  S.order.settlements.forEach(id => { const s = S.settlements[id]; if (s.type !== 'village') refillGarrison(s, true); });
+
+  /* --- başlangıç savaşları --- */
+  declareWar('swadia', 'rhodok', true);
+  declareWar('vaegir', 'nord', true);
+  declareWar('khergit', 'sarranid', true);
+
+  /* --- haydutlar --- */
+  for (let i = 0; i < 16; i++) spawnBandit();
+
+  S.stats = { battles: 0, sieges: 0, days: 0 };
+  addLog('Kalradya\'da yeni bir çağ başlıyor. Altı krallık, tek bir taht.', 'siege');
+  Object.keys(S.wars).forEach(k => {
+    const [a, b] = k.split('|');
+    addLog(`${S.factions[a].name} ile ${S.factions[b].name} arasında savaş sürüyor.`, 'war');
+  });
+}
+
+function grantFief(s, lord) {
+  if (!s || !lord) return;
+  if (s.lordId && S.lords[s.lordId]) {
+    const old = S.lords[s.lordId];
+    old.fiefs = old.fiefs.filter(f => f !== s.id);
+  }
+  s.lordId = lord.id;
+  if (!lord.fiefs.includes(s.id)) lord.fiefs.push(s.id);
+  /* köyleri de aynı lorda bağla */
+  if (s.type !== 'village') {
+    S.order.settlements.forEach(id => {
+      const v = S.settlements[id];
+      if (v.type === 'village' && v.parentId === s.id) {
+        if (v.lordId && S.lords[v.lordId]) S.lords[v.lordId].fiefs = S.lords[v.lordId].fiefs.filter(f => f !== v.id);
+        v.lordId = lord.id;
+        if (!lord.fiefs.includes(v.id)) lord.fiefs.push(v.id);
+      }
+    });
+  }
+}
+
+function lordPartyCap(l) {
+  return Math.round(34 + l.skillLeadership * 14 + l.renown / 8 + (l.isKing ? 150 : 0));
+}
+
+function spawnLordParty(l) {
+  const fac = S.factions[l.faction];
+  const home = l.fiefs.map(f => S.settlements[f]).find(s => s && s.type !== 'village')
+    || S.settlements[fac.capital]
+    || S.order.settlements.map(i => S.settlements[i]).find(s => s.faction === l.faction);
+  const cap = lordPartyCap(l);
+  const size = Math.round(cap * rf(0.45, 0.85));
+  const q = clamp(0.28 + l.renown / 1400 + (l.isKing ? 0.22 : 0), 0.2, 0.85);
+  const p = {
+    id: uid('p'), type: 'lord', lordId: l.id, faction: l.faction,
+    x: home ? home.x + rf(-14, 14) : 600, y: home ? home.y + rf(-14, 14) : 400,
+    tx: null, ty: null, goal: 'patrol', targetId: null,
+    troops: makeStack(fac.culture, size, q), prisoners: {},
+    morale: ri(60, 90), speed: 1, besieging: null, path: [], lastFight: -99, cooldown: 0
+  };
+  S.parties[p.id] = p; S.order.parties.push(p.id); l.partyId = p.id;
+  return p;
+}
+
+function garrisonTarget(s) {
+  if (!s || s.type === 'village') return 0;
+  return Math.round(s.type === 'town' ? 90 + s.prosperity * 0.8 : 45 + s.prosperity * 0.5);
+}
+function refillGarrison(s, initial) {
+  const fac = S.factions[s.faction]; if (!fac) return;
+  const q = s.type === 'town' ? 0.45 : 0.4;
+  const target = garrisonTarget(s);
+  if (initial) s.garrison = makeStack(fac.culture, Math.round(target * rf(0.8, 1.05)), q);
+  else {
+    const cur = stackCount(s.garrison);
+    if (cur < target) stackMerge(s.garrison, makeStack(fac.culture, Math.min(12, target - cur), q * 0.8));
+  }
+}
+
+const BANDIT_KINDS = [
+  { t:'bd_looter',  name:'Çapulcular',       biome:['plain','forest','hills','steppe','desert','snow','tundra'] },
+  { t:'bd_bandit',  name:'Orman Haydutları', biome:['forest','plain'] },
+  { t:'bd_brigand', name:'Dağ Haydutları',   biome:['hills'] },
+  { t:'bd_steppe',  name:'Bozkır Haydutları',biome:['steppe','tundra'] },
+  { t:'bd_desert',  name:'Çöl Haydutları',   biome:['desert'] },
+  { t:'bd_sea',     name:'Deniz Akıncıları', biome:['snow','tundra'] }
+];
+
+function spawnBandit(x, y) {
+  let px = x, py = y;
+  if (px == null) {
+    for (let i = 0; i < 60; i++) {
+      const cx = rf(80, MAP_W - 80), cy = rf(60, MAP_H - 60);
+      if (!isLand(cx, cy)) continue;
+      const near = S.order.settlements.some(id => { const s = S.settlements[id]; return dist2(s.x, s.y, cx, cy) < 45; });
+      if (near) continue;
+      px = cx; py = cy; break;
+    }
+  }
+  if (px == null) { px = rf(300, 900); py = rf(200, 600); }
+  const bi = biomeAt(px, py);
+  const kinds = BANDIT_KINDS.filter(k => k.biome.includes(bi));
+  const kind = kinds.length ? pick(kinds) : BANDIT_KINDS[0];
+  const size = ri(12, 44);
+  const stack = {}; stack[kind.t] = size;
+  if (rnd() < 0.5) stack['bd_looter'] = (stack['bd_looter'] || 0) + ri(4, 14);
+  const p = {
+    id: uid('p'), type: 'bandit', lordId: null, faction: 'bandit', name: kind.name,
+    x: px, y: py, tx: null, ty: null, goal: 'roam', targetId: null,
+    troops: stack, prisoners: {}, morale: ri(40, 70), speed: 1.05, besieging: null, path: [], lastFight: -99, cooldown: 0
+  };
+  S.parties[p.id] = p; S.order.parties.push(p.id);
+  return p;
+}
+
+/* biyom sorgusu (harita çizimi ve haydut türü için) */
+function biomeAt(x, y) {
+  let best = null, bw = -1;
+  for (const b of BIOMES) {
+    const d = dist2(b.x, b.y, x, y);
+    const w = Math.max(0, 1 - d / b.r);
+    if (w > bw) { bw = w; best = b.k; }
+  }
+  return best || 'plain';
+}
+
+/* ---------------- Savaş ilanı / barış ---------------- */
+function declareWar(a, b, silent) {
+  if (!a || !b || a === b) return;
+  const k = warKey(a, b);
+  if (S.wars[k]) return;
+  S.wars[k] = { since: S.day };
+  if (S.factions[a]) { S.factions[a].rel[b] = Math.min(S.factions[a].rel[b] ?? 0, -40); }
+  if (S.factions[b]) { S.factions[b].rel[a] = Math.min(S.factions[b].rel[a] ?? 0, -40); }
+  if (!silent) {
+    addLog(`⚔ ${S.factions[a].name}, ${S.factions[b].name} krallığına savaş ilan etti!`, 'war');
+    if (S.opts.pauseOnWar) setSpeed(0);
+  }
+  uiDirty.dip = true; uiDirty.ovw = true;
+}
+function makePeace(a, b, silent) {
+  const k = warKey(a, b);
+  if (!S.wars[k]) return;
+  delete S.wars[k];
+  if (S.factions[a]) S.factions[a].rel[b] = Math.max(S.factions[a].rel[b] ?? 0, 5);
+  if (S.factions[b]) S.factions[b].rel[a] = Math.max(S.factions[b].rel[a] ?? 0, 5);
+  /* kuşatmaları kaldır */
+  S.order.parties.forEach(id => {
+    const p = S.parties[id]; if (!p || !p.besieging) return;
+    const s = S.settlements[p.besieging];
+    if (s && ((p.faction === a && s.faction === b) || (p.faction === b && s.faction === a))) liftSiege(p);
+  });
+  if (!silent) addLog(`🕊 ${S.factions[a].name} ile ${S.factions[b].name} arasında barış imzalandı.`, 'peace');
+  uiDirty.dip = true; uiDirty.ovw = true;
+}
+/* =====================================================================
+   Bölüm 3: Harita çizimi (arazi, sınırlar, işaretler, gezinme)
+   ===================================================================== */
+
+const cv = document.getElementById('mapCanvas');
+const cx2 = cv.getContext('2d');
+const svg = document.getElementById('mapSvg');
+const SVGNS = 'http://www.w3.org/2000/svg';
+
+const view = { x: 0, y: 0, k: 1, minK: 0.4, maxK: 6 };
+let terrainCv = null, territoryCv = null, territoryDirty = true;
+let logDirty = true;
+const uiDirty = { sel: true, ovw: true, fac: true, lrd: true, stl: true, dip: true, god: true };
+
+/* ---------- gürültü ---------- */
+function hash2(x, y) {
+  let h = x * 374761393 + y * 668265263;
+  h = (h ^ (h >> 13)) * 1274126177;
+  return ((h ^ (h >> 16)) >>> 0) / 4294967296;
+}
+function vnoise(x, y) {
+  const xi = Math.floor(x), yi = Math.floor(y), xf = x - xi, yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf), v = yf * yf * (3 - 2 * yf);
+  const a = hash2(xi, yi), b = hash2(xi + 1, yi), c = hash2(xi, yi + 1), d = hash2(xi + 1, yi + 1);
+  return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v;
+}
+function fbm(x, y) { return vnoise(x, y) * 0.6 + vnoise(x * 2.1, y * 2.1) * 0.3 + vnoise(x * 4.3, y * 4.3) * 0.1; }
+
+function mixHex(h1, h2, t) {
+  const p = h => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+  const a = p(h1), b = p(h2);
+  return `rgb(${Math.round(a[0] + (b[0] - a[0]) * t)},${Math.round(a[1] + (b[1] - a[1]) * t)},${Math.round(a[2] + (b[2] - a[2]) * t)})`;
+}
+function hexRGBA(h, a) {
+  const r = parseInt(h.slice(1, 3), 16), g = parseInt(h.slice(3, 5), 16), b = parseInt(h.slice(5, 7), 16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/* ---------- arazi (bir kez çizilir) ---------- */
+function buildTerrain() {
+  terrainCv = document.createElement('canvas');
+  terrainCv.width = MAP_W; terrainCv.height = MAP_H;
+  const g = terrainCv.getContext('2d');
+
+  /* deniz */
+  const sg = g.createLinearGradient(0, 0, MAP_W, MAP_H);
+  sg.addColorStop(0, '#12212f'); sg.addColorStop(0.5, '#16283a'); sg.addColorStop(1, '#0f1e2b');
+  g.fillStyle = sg; g.fillRect(0, 0, MAP_W, MAP_H);
+  /* deniz dokusu */
+  g.globalAlpha = 0.06; g.strokeStyle = '#7fb6d8'; g.lineWidth = 1;
+  for (let y = 0; y < MAP_H; y += 14) {
+    g.beginPath();
+    for (let x = 0; x <= MAP_W; x += 16) g.lineTo(x, y + Math.sin((x + y) / 26) * 3);
+    g.stroke();
+  }
+  g.globalAlpha = 1;
+
+  /* kara maskesi */
+  const path = new Path2D();
+  COAST.forEach((p, i) => i ? path.lineTo(p[0], p[1]) : path.moveTo(p[0], p[1]));
+  path.closePath();
+
+  g.save();
+  g.clip(path);
+  const CELL = 4;
+  for (let y = 0; y < MAP_H; y += CELL) {
+    for (let x = 0; x < MAP_W; x += CELL) {
+      let tot = 0; const acc = {};
+      for (const b of BIOMES) {
+        const d = dist2(b.x, b.y, x, y);
+        const w = Math.max(0, 1 - d / b.r);
+        if (w > 0) { acc[b.k] = (acc[b.k] || 0) + w * w; tot += w * w; }
+      }
+      let col;
+      if (!tot) col = BIOME_COLORS.plain[0];
+      else {
+        const sorted = Object.entries(acc).sort((a, b) => b[1] - a[1]);
+        const n = fbm(x / 60, y / 60);
+        const k1 = sorted[0][0], k2 = sorted[1] ? sorted[1][0] : k1;
+        const t = sorted[1] ? clamp(sorted[1][1] / (sorted[0][1] + sorted[1][1]) * 1.6 + (n - 0.5) * 0.5, 0, 1) : 0;
+        const c1 = BIOME_COLORS[k1][n > 0.5 ? 0 : 1];
+        const c2 = BIOME_COLORS[k2][n > 0.5 ? 0 : 1];
+        col = mixHex(c1.length === 7 ? c1 : '#7d8f4e', c2.length === 7 ? c2 : '#7d8f4e', t);
+      }
+      g.fillStyle = col;
+      g.fillRect(x, y, CELL + 1, CELL + 1);
+    }
+  }
+  /* doku lekeleri */
+  g.globalAlpha = 0.10;
+  for (let i = 0; i < 2600; i++) {
+    const x = rnd() * MAP_W, y = rnd() * MAP_H;
+    g.fillStyle = fbm(x / 25, y / 25) > 0.5 ? '#000' : '#fff';
+    g.fillRect(x, y, 2 + rnd() * 3, 2 + rnd() * 3);
+  }
+  g.globalAlpha = 1;
+
+  /* ormanlar */
+  g.globalAlpha = 0.55;
+  for (let i = 0; i < 1500; i++) {
+    const x = rnd() * MAP_W, y = rnd() * MAP_H;
+    const b = biomeAt(x, y);
+    if (b !== 'forest' && !(b === 'plain' && rnd() < 0.18) && !(b === 'hills' && rnd() < 0.12)) continue;
+    if (fbm(x / 40, y / 40) < 0.42) continue;
+    g.fillStyle = '#2f4a28';
+    g.beginPath(); g.moveTo(x, y - 4); g.lineTo(x + 2.6, y + 2); g.lineTo(x - 2.6, y + 2); g.closePath(); g.fill();
+  }
+  g.globalAlpha = 1;
+
+  /* nehirler */
+  g.strokeStyle = 'rgba(90,140,180,.75)'; g.lineWidth = 2.4; g.lineCap = 'round'; g.lineJoin = 'round';
+  RIVERS.forEach(r => {
+    g.beginPath();
+    r.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]));
+    g.stroke();
+  });
+
+  /* dağ sıraları */
+  MOUNTAINS.forEach(m => {
+    for (let i = 0; i < m.n; i++) {
+      const t = i / Math.max(1, m.n - 1);
+      const x = m.x + (t - 0.5) * m.w + rf(-8, 8);
+      const y = m.y + Math.sin(t * 3.1) * 16 + rf(-7, 7);
+      const h = 12 + rnd() * 9, w = h * 0.95;
+      g.fillStyle = '#6a6152';
+      g.beginPath(); g.moveTo(x, y - h); g.lineTo(x + w, y + h * 0.45); g.lineTo(x - w, y + h * 0.45); g.closePath(); g.fill();
+      g.fillStyle = '#efeee8';
+      g.beginPath(); g.moveTo(x, y - h); g.lineTo(x + w * 0.34, y - h * 0.34); g.lineTo(x - w * 0.34, y - h * 0.34); g.closePath(); g.fill();
+      g.fillStyle = 'rgba(0,0,0,.22)';
+      g.beginPath(); g.moveTo(x, y - h); g.lineTo(x + w, y + h * 0.45); g.lineTo(x + w * 0.1, y + h * 0.45); g.closePath(); g.fill();
+    }
+  });
+  g.restore();
+
+  /* kıyı çizgisi */
+  g.strokeStyle = 'rgba(20,32,44,.85)'; g.lineWidth = 2.2; g.stroke(path);
+  g.strokeStyle = 'rgba(255,255,255,.10)'; g.lineWidth = 5; g.stroke(path);
+}
+
+/* ---------- krallık sınırları ---------- */
+function buildTerritory() {
+  if (!territoryCv) {
+    territoryCv = document.createElement('canvas');
+    territoryCv.width = MAP_W; territoryCv.height = MAP_H;
+  }
+  const g = territoryCv.getContext('2d');
+  g.clearRect(0, 0, MAP_W, MAP_H);
+
+  const CELL = 3, cols = Math.ceil(MAP_W / CELL), rows = Math.ceil(MAP_H / CELL);
+  const owners = new Array(cols * rows).fill(null);
+  const best = new Float32Array(cols * rows);
+
+  const stl = S.order.settlements.map(id => S.settlements[id])
+    .filter(s => s && S.factions[s.faction] && !S.factions[s.faction].isBandit);
+  const reach = s => s.type === 'town' ? 175 : s.type === 'castle' ? 120 : 62;
+
+  /* her yerleşim kendi çevresine "etki" saçar (yakın olan kazanır) */
+  stl.forEach(s => {
+    const rr = reach(s);
+    const w = s.type === 'town' ? 1.25 : s.type === 'castle' ? 1.1 : 0.92;
+    const c0 = Math.max(0, Math.floor((s.x - rr) / CELL)), c1 = Math.min(cols - 1, Math.ceil((s.x + rr) / CELL));
+    const r0 = Math.max(0, Math.floor((s.y - rr) / CELL)), r1 = Math.min(rows - 1, Math.ceil((s.y + rr) / CELL));
+    for (let r = r0; r <= r1; r++) {
+      const y = r * CELL + CELL / 2;
+      for (let c = c0; c <= c1; c++) {
+        const x = c * CELL + CELL / 2;
+        const d = Math.hypot(s.x - x, s.y - y);
+        if (d > rr) continue;
+        const sc = (1 - d / rr) * w;
+        const i = r * cols + c;
+        if (sc > best[i]) { best[i] = sc; owners[i] = s.faction; }
+      }
+    }
+  });
+  /* denizi ayıkla */
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const i = r * cols + c;
+      if (owners[i] && !isLand(c * CELL + CELL / 2, r * CELL + CELL / 2)) owners[i] = null;
+    }
+  }
+
+  /* dolgu: düşük çözünürlüklü tampon büyütülerek yumuşatılır */
+  const small = document.createElement('canvas');
+  small.width = cols; small.height = rows;
+  const sg = small.getContext('2d');
+  const img = sg.createImageData(cols, rows);
+  const rgbCache = {};
+  for (let i = 0; i < owners.length; i++) {
+    const f = owners[i]; if (!f) continue;
+    let col = rgbCache[f];
+    if (!col) {
+      const h = S.factions[f].color;
+      col = rgbCache[f] = [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+    }
+    const o = i * 4;
+    img.data[o] = col[0]; img.data[o + 1] = col[1]; img.data[o + 2] = col[2]; img.data[o + 3] = 72;
+  }
+  sg.putImageData(img, 0, 0);
+  g.imageSmoothingEnabled = true;
+  g.drawImage(small, 0, 0, MAP_W, MAP_H);
+
+  /* sınır çizgileri */
+  g.lineWidth = 2.4; g.lineCap = 'round';
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const f = owners[r * cols + c];
+      const rt = c + 1 < cols ? owners[r * cols + c + 1] : null;
+      const dn = r + 1 < rows ? owners[(r + 1) * cols + c] : null;
+      if (f !== rt) {
+        const col = f || rt;
+        if (col) { g.strokeStyle = hexRGBA(S.factions[col].color, 0.8);
+          g.beginPath(); g.moveTo((c + 1) * CELL, r * CELL); g.lineTo((c + 1) * CELL, (r + 1) * CELL); g.stroke(); }
+      }
+      if (f !== dn) {
+        const col = f || dn;
+        if (col) { g.strokeStyle = hexRGBA(S.factions[col].color, 0.8);
+          g.beginPath(); g.moveTo(c * CELL, (r + 1) * CELL); g.lineTo((c + 1) * CELL, (r + 1) * CELL); g.stroke(); }
+      }
+    }
+  }
+  territoryDirty = false;
+}
+
+/* ---------- canvas çizimi ---------- */
+let dpr = Math.min(2, window.devicePixelRatio || 1);
+function resizeCanvas() {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.max(1, Math.round(w * dpr));
+  cv.height = Math.max(1, Math.round(h * dpr));
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+}
+function fitView() {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  const k = Math.min(w / MAP_W, h / MAP_H) * 0.98;
+  view.k = k; view.minK = k * 0.85; view.maxK = k * 8;
+  view.x = (w - MAP_W * k) / 2; view.y = (h - MAP_H * k) / 2;
+}
+function clampView() {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  const mw = MAP_W * view.k, mh = MAP_H * view.k;
+  if (mw <= w) view.x = (w - mw) / 2; else view.x = clamp(view.x, w - mw, 0);
+  if (mh <= h) view.y = (h - mh) / 2; else view.y = clamp(view.y, h - mh, 0);
+}
+const w2s = (x, y) => ({ x: x * view.k + view.x, y: y * view.k + view.y });
+const s2w = (x, y) => ({ x: (x - view.x) / view.k, y: (y - view.y) / view.k });
+
+function drawCanvas() {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  cx2.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cx2.clearRect(0, 0, w, h);
+  cx2.fillStyle = '#0d1a26'; cx2.fillRect(0, 0, w, h);
+  cx2.save();
+  cx2.translate(view.x, view.y); cx2.scale(view.k, view.k);
+  cx2.imageSmoothingEnabled = true;
+  if (terrainCv) cx2.drawImage(terrainCv, 0, 0);
+  if (S.layers.borders) {
+    if (territoryDirty) buildTerritory();
+    if (territoryCv) cx2.drawImage(territoryCv, 0, 0);
+  }
+  if (S.layers.fog) drawTrails();
+  cx2.restore();
+}
+
+function drawTrails() {
+  cx2.lineWidth = 1.2 / view.k;
+  S.order.parties.forEach(id => {
+    const p = S.parties[id];
+    if (!p || !p.tx || S.hidden[p.faction]) return;
+    cx2.strokeStyle = hexRGBA(S.factions[p.faction].color, 0.35);
+    cx2.setLineDash([4 / view.k, 4 / view.k]);
+    cx2.beginPath(); cx2.moveTo(p.x, p.y); cx2.lineTo(p.tx, p.ty); cx2.stroke();
+    cx2.setLineDash([]);
+  });
+}
+
+/* ---------- SVG işaretleri ---------- */
+const svgNodes = { stl: new Map(), party: new Map() };
+let gRoot, gStl, gParty, gLbl, gSel;
+
+function initSvg() {
+  svg.innerHTML = '';
+  gRoot = document.createElementNS(SVGNS, 'g'); svg.appendChild(gRoot);
+  gStl = document.createElementNS(SVGNS, 'g'); gRoot.appendChild(gStl);
+  gParty = document.createElementNS(SVGNS, 'g'); gRoot.appendChild(gParty);
+  gLbl = document.createElementNS(SVGNS, 'g'); gRoot.appendChild(gLbl);
+  gSel = document.createElementNS(SVGNS, 'g'); gRoot.appendChild(gSel);
+  svgNodes.stl.clear(); svgNodes.party.clear();
+  rebuildSettlementNodes();
+}
+
+function el(tag, attrs, parent) {
+  const n = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+
+function rebuildSettlementNodes() {
+  gStl.innerHTML = ''; gLbl.innerHTML = '';
+  svgNodes.stl.clear();
+  S.order.settlements.forEach(id => {
+    const s = S.settlements[id];
+    const g = el('g', { class: 'stl', 'data-id': id }, gStl);
+    const shape = el('path', { d: '' }, g);
+    const inner = el('circle', { r: 2, fill: 'rgba(0,0,0,.55)' }, g);
+    const siege = el('path', { d: '', fill: '#d1503f', opacity: 0 }, g);
+    const lbl = el('text', { class: 'stl-label', 'text-anchor': 'middle' }, gLbl);
+    lbl.textContent = s.name;
+    svgNodes.stl.set(id, { g, shape, inner, siege, lbl });
+  });
+}
+
+function stlPath(type, r) {
+  if (type === 'town') return `M ${-r} ${-r} L ${r} ${-r} L ${r} ${r} L ${-r} ${r} Z`;
+  if (type === 'castle') return `M 0 ${-r * 1.3} L ${r * 1.15} 0 L 0 ${r * 1.3} L ${-r * 1.15} 0 Z`;
+  return `M 0 ${-r} A ${r} ${r} 0 1 0 0.01 ${-r} Z`;
+}
+
+function updateSvg() {
+  const k = view.k;
+  gRoot.setAttribute('transform', `translate(${view.x},${view.y}) scale(${k})`);
+  const inv = 1 / k;
+
+  /* yerleşimler */
+  S.order.settlements.forEach(id => {
+    const s = S.settlements[id];
+    const n = svgNodes.stl.get(id); if (!n) return;
+    const isVil = s.type === 'village';
+    const hidden = (isVil && !S.layers.villages) || S.hidden[s.faction];
+    n.g.style.display = hidden ? 'none' : '';
+    n.lbl.style.display = hidden || !S.layers.labels ? 'none' : '';
+    if (hidden) return;
+    const base = s.type === 'town' ? 7 : s.type === 'castle' ? 5.6 : 3.2;
+    const r = base * Math.min(1.35, Math.max(0.55, inv * 0.9 + 0.35));
+    const col = S.factions[s.faction] ? S.factions[s.faction].color : '#888';
+    n.g.setAttribute('transform', `translate(${s.x},${s.y})`);
+    n.shape.setAttribute('d', stlPath(s.type, r));
+    n.shape.setAttribute('fill', col);
+    n.shape.setAttribute('stroke', s.besiegedBy ? '#d1503f' : 'rgba(0,0,0,.75)');
+    n.shape.setAttribute('stroke-width', (s.besiegedBy ? 2.2 : 1.2) * inv * 0.8 + 0.3);
+    n.inner.setAttribute('r', isVil ? 0 : r * 0.28);
+    n.siege.setAttribute('opacity', s.besiegedBy ? 1 : 0);
+    if (s.besiegedBy) n.siege.setAttribute('d', `M ${-r * 1.9} ${-r * 1.9} l ${r * 1.1} 0 l 0 ${r * 0.5} l ${-r * 1.1} 0 Z`);
+    /* etiket */
+    const showLbl = S.layers.labels && (s.type === 'town' || (s.type === 'castle' && k > 0.75) || (isVil && k > 1.5));
+    n.lbl.style.display = showLbl ? '' : 'none';
+    if (showLbl) {
+      const fs = (s.type === 'town' ? 12 : s.type === 'castle' ? 10 : 8) * inv;
+      n.lbl.setAttribute('x', s.x);
+      n.lbl.setAttribute('y', s.y - r - 3 * inv);
+      n.lbl.setAttribute('font-size', fs);
+      n.lbl.setAttribute('stroke-width', 3 * inv);
+      if (isVil) n.lbl.classList.add('vil-label'); else n.lbl.classList.remove('vil-label');
+    }
+  });
+
+  /* ordular */
+  const seen = new Set();
+  S.order.parties.forEach(id => {
+    const p = S.parties[id]; if (!p) return;
+    seen.add(id);
+    let n = svgNodes.party.get(id);
+    if (!n) {
+      const g = el('g', { class: 'party', 'data-pid': id }, gParty);
+      const body = el('path', { d: '' }, g);
+      const flag = el('rect', { width: 0, height: 0, opacity: 0 }, g);
+      n = { g, body, flag }; svgNodes.party.set(id, n);
+    }
+    const hidden = !S.layers.parties || S.hidden[p.faction];
+    n.g.style.display = hidden ? 'none' : '';
+    if (hidden) return;
+    const cnt = stackCount(p.troops);
+    const sz = clamp(3.2 + Math.sqrt(cnt) * 0.55, 3.2, 11) * Math.min(1.3, Math.max(0.6, inv * 0.9 + 0.35));
+    const col = S.factions[p.faction] ? S.factions[p.faction].color : '#999';
+    n.g.setAttribute('transform', `translate(${p.x},${p.y})`);
+    const lord = p.lordId ? S.lords[p.lordId] : null;
+    if (lord && lord.isKing) n.body.setAttribute('d', `M 0 ${-sz * 1.35} L ${sz * 0.42} ${-sz * 0.42} L ${sz * 1.35} ${-sz * 0.42} L ${sz * 0.62} ${sz * 0.3} L ${sz * 0.9} ${sz * 1.25} L 0 ${sz * 0.65} L ${-sz * 0.9} ${sz * 1.25} L ${-sz * 0.62} ${sz * 0.3} L ${-sz * 1.35} ${-sz * 0.42} L ${-sz * 0.42} ${-sz * 0.42} Z`);
+    else if (p.type === 'bandit') n.body.setAttribute('d', `M ${-sz} ${-sz * 0.7} L ${sz} ${-sz * 0.7} L ${sz * 0.6} ${sz * 0.9} L ${-sz * 0.6} ${sz * 0.9} Z`);
+    else n.body.setAttribute('d', `M 0 ${-sz * 1.15} L ${sz} ${sz * 0.85} L 0 ${sz * 0.35} L ${-sz} ${sz * 0.85} Z`);
+    n.body.setAttribute('fill', col);
+    n.body.setAttribute('stroke', p.besieging ? '#ffdd88' : 'rgba(0,0,0,.7)');
+    n.body.setAttribute('stroke-width', (p.besieging ? 1.6 : 0.9) * inv * 0.9 + 0.2);
+  });
+  svgNodes.party.forEach((n, id) => { if (!seen.has(id)) { n.g.remove(); svgNodes.party.delete(id); } });
+
+  /* seçim halkası */
+  gSel.innerHTML = '';
+  const target = selectedPoint();
+  if (target) {
+    el('circle', { class: 'sel-ring', cx: target.x, cy: target.y, r: 15 * inv, 'stroke-width': 2 * inv }, gSel);
+    el('circle', { class: 'sel-ring', cx: target.x, cy: target.y, r: 20 * inv, 'stroke-width': 1 * inv, opacity: .45 }, gSel);
+  }
+}
+
+function selectedPoint() {
+  if (!S.sel) return null;
+  if (S.sel.type === 'settlement') { const s = S.settlements[S.sel.id]; return s ? { x: s.x, y: s.y } : null; }
+  if (S.sel.type === 'party') { const p = S.parties[S.sel.id]; return p ? { x: p.x, y: p.y } : null; }
+  if (S.sel.type === 'lord') {
+    const l = S.lords[S.sel.id]; if (!l) return null;
+    const p = l.partyId ? S.parties[l.partyId] : null;
+    if (p) return { x: p.x, y: p.y };
+    const f = l.fiefs.map(f => S.settlements[f]).find(Boolean);
+    return f ? { x: f.x, y: f.y } : null;
+  }
+  return null;
+}
+
+/* ---------- gezinme ---------- */
+let dragging = false, dragMoved = false, lastPt = null, pinchDist = 0;
+function onPointerDown(e) {
+  dragging = true; dragMoved = false;
+  lastPt = { x: e.clientX, y: e.clientY };
+  svg.setPointerCapture && e.pointerId != null && svg.setPointerCapture(e.pointerId);
+}
+function onPointerMove(e) {
+  if (!dragging || !lastPt) return;
+  const dx = e.clientX - lastPt.x, dy = e.clientY - lastPt.y;
+  if (Math.abs(dx) + Math.abs(dy) > 3) dragMoved = true;
+  view.x += dx; view.y += dy; lastPt = { x: e.clientX, y: e.clientY };
+  clampView(); requestDraw();
+}
+function onPointerUp(e) {
+  if (dragging && !dragMoved) handleMapClick(e);
+  dragging = false; lastPt = null;
+}
+function zoomAt(sx, sy, factor) {
+  const before = s2w(sx, sy);
+  view.k = clamp(view.k * factor, view.minK, view.maxK);
+  const after = s2w(sx, sy);
+  view.x += (after.x - before.x) * view.k;
+  view.y += (after.y - before.y) * view.k;
+  clampView(); requestDraw();
+}
+function handleMapClick(e) {
+  const rect = svg.getBoundingClientRect();
+  const p = s2w(e.clientX - rect.left, e.clientY - rect.top);
+  const tol = 14 / view.k;
+  let best = null, bestD = 1e9;
+  S.order.parties.forEach(id => {
+    const q = S.parties[id]; if (!q || !S.layers.parties || S.hidden[q.faction]) return;
+    const d = dist2(q.x, q.y, p.x, p.y);
+    if (d < tol && d < bestD) { bestD = d; best = { type: 'party', id }; }
+  });
+  S.order.settlements.forEach(id => {
+    const s = S.settlements[id]; if (!s || S.hidden[s.faction]) return;
+    if (s.type === 'village' && !S.layers.villages) return;
+    const d = dist2(s.x, s.y, p.x, p.y);
+    const t = s.type === 'village' ? tol * 0.7 : tol;
+    if (d < t && d < bestD * 1.2) { bestD = d; best = { type: 'settlement', id }; }
+  });
+  select(best);
+}
+
+function select(sel) {
+  if (sel && sel.type === 'party') {
+    const p = S.parties[sel.id];
+    if (p && p.lordId) sel = { type: 'lord', id: p.lordId };
+  }
+  S.sel = sel;
+  uiDirty.sel = true;
+  if (sel) setTab('sel');
+  requestDraw(); renderUI();
+}
+
+function focusOn(x, y, k) {
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (k) view.k = clamp(k, view.minK, view.maxK);
+  view.x = w / 2 - x * view.k; view.y = h / 2 - y * view.k;
+  clampView(); requestDraw();
+}
+function focusSel() {
+  const p = selectedPoint();
+  if (p) focusOn(p.x, p.y, Math.max(view.k, 1.6));
+}
+
+let drawQueued = false;
+function requestDraw() {
+  if (drawQueued) return;
+  drawQueued = true;
+  requestAnimationFrame(() => { drawQueued = false; drawCanvas(); updateSvg(); });
+}
+/* =====================================================================
+   Bölüm 4: Simülasyon — ordular, savaşlar, kuşatmalar, ekonomi, diplomasi
+   ===================================================================== */
+
+const BASE_SPEED = 26;      // gün başına harita birimi
+const ENCOUNTER_R = 9;      // karşılaşma yarıçapı
+const SIEGE_R = 12;
+
+function partySpeed(p) {
+  const n = stackCount(p.troops);
+  const mix = stackMix(p.troops);
+  const cavRatio = n ? mix.cav / n : 0;
+  let s = BASE_SPEED * (1 + cavRatio * 0.35);
+  s *= 1 / (1 + n / 320);
+  if (p.type === 'bandit') s *= 1.12;
+  if (p.morale < 35) s *= 0.9;
+  return s;
+}
+function partyPower(p) {
+  const lord = p.lordId ? S.lords[p.lordId] : null;
+  let pw = stackPower(p.troops);
+  if (lord) pw *= (1 + lord.skillTactics * 0.035);
+  pw *= 0.6 + p.morale / 140;
+  return pw;
+}
+function settlementDefPower(s) {
+  let pw = stackPower(s.garrison) * (1 + (s.walls / 100) * (s.type === 'town' ? 0.95 : 0.75));
+  S.order.parties.forEach(id => {
+    const p = S.parties[id];
+    if (p && p.goal === 'garrison' && p.targetId === s.id && p.faction === s.faction) pw += partyPower(p);
+  });
+  return pw;
+}
+
+function setSpeed(v) {
+  S.speed = v; S.running = v > 0;
+  document.querySelectorAll('#spdCtl button').forEach(b => b.classList.toggle('on', +b.dataset.spd === v));
+}
+
+/* ---------------- ana adım ---------------- */
+function stepWorld(dt) {
+  const before = Math.floor(S.day);
+  S.day += dt;
+  const after = Math.floor(S.day);
+
+  moveParties(dt);
+  checkEncounters();
+  progressSieges(dt);
+
+  for (let d = before; d < after; d++) dailyTick();
+  if (after !== before) { uiDirty.ovw = true; uiDirty.lrd = true; uiDirty.stl = true; uiDirty.sel = true; }
+}
+
+/* ---------------- hareket ve hedefler ---------------- */
+function moveParties(dt) {
+  S.order.parties.forEach(id => {
+    const p = S.parties[id]; if (!p) return;
+    if (p.cooldown > 0) p.cooldown -= dt;
+    if (p.besieging) return;
+    if (p.tx == null || p.goal === 'idle') { decideGoal(p); }
+    if (p.tx == null) return;
+    const d = dist2(p.x, p.y, p.tx, p.ty);
+    const step = partySpeed(p) * dt;
+    if (d <= step) {
+      p.x = p.tx; p.y = p.ty;
+      arriveAtTarget(p);
+    } else {
+      p.x += (p.tx - p.x) / d * step;
+      p.y += (p.ty - p.y) / d * step;
+    }
+  });
+}
+
+function ownSettlements(f) { return S.order.settlements.map(i => S.settlements[i]).filter(s => s.faction === f); }
+function enemyFactions(f) {
+  return Object.keys(S.factions).filter(o => o !== f && atWar(f, o) && S.factions[o].alive);
+}
+
+function decideGoal(p) {
+  if (p.type === 'bandit') return banditGoal(p);
+  const lord = S.lords[p.lordId]; if (!lord) { p.goal = 'idle'; p.tx = null; return; }
+  const fac = S.factions[p.faction]; if (!fac) return;
+  const pers = PERSONALITIES.find(x => x.id === lord.personality) || PERSONALITIES[0];
+  const cnt = stackCount(p.troops);
+  const cap = lordPartyCap(lord);
+
+  /* 1) zayıf veya moralsizse tımara dön */
+  if (cnt < cap * 0.32 || p.morale < 30) {
+    const home = homeSettlement(lord);
+    if (home) return setGoal(p, 'return', home);
+  }
+  /* 2) kendi topraklarında kuşatma varsa savun */
+  const besieged = ownSettlements(p.faction).filter(s => s.besiegedBy);
+  if (besieged.length) {
+    besieged.sort((a, b) => dist2(a.x, a.y, p.x, p.y) - dist2(b.x, b.y, p.x, p.y));
+    const t = besieged[0];
+    if (dist2(t.x, t.y, p.x, p.y) < 320 && partyPower(p) > 0) return setGoal(p, 'defend', t);
+  }
+  /* 3) müttefik bir kuşatma sürüyorsa oraya koş */
+  const enemies = enemyFactions(p.faction);
+  if (enemies.length && cnt > cap * 0.3) {
+    const ongoing = S.order.settlements.map(i => S.settlements[i]).filter(s =>
+      s.besiegedBy && S.parties[s.besiegedBy] && S.parties[s.besiegedBy].faction === p.faction && atWar(p.faction, s.faction));
+    if (ongoing.length && rnd() < 0.9) {
+      ongoing.sort((a, b) => dist2(a.x, a.y, p.x, p.y) - dist2(b.x, b.y, p.x, p.y));
+      return setGoal(p, 'siege', ongoing[0]);
+    }
+  }
+  if (enemies.length) {
+    const wantWar = rnd() < clamp(0.42 * pers.aggr * fac.aggr * S.opts.aggression + (lord.isKing ? 0.15 : 0), 0.05, 0.95);
+    if (wantWar && cnt > cap * 0.5) {
+      const target = fac.target && S.settlements[fac.target] && enemies.includes(S.settlements[fac.target].faction)
+        ? S.settlements[fac.target] : pickCampaignTarget(p.faction, enemies);
+      if (target) {
+        /* güçlü ordular kuşatır, zayıflar köy yağmalar */
+        const myPw = partyPower(p);
+        if (target.type !== 'village' && myPw > settlementDefPower(target) * 0.45) return setGoal(p, 'siege', target);
+        const vil = pickRaidTarget(p, enemies);
+        if (vil && pers.greed > 0.65) return setGoal(p, 'raid', vil);
+        return setGoal(p, 'siege', target);
+      }
+    }
+    const vil = pickRaidTarget(p, enemies);
+    if (vil && rnd() < 0.5) return setGoal(p, 'raid', vil);
+  }
+  /* 4) barışta: devriye / asker topla */
+  if (cnt < cap * 0.85 && rnd() < 0.7) {
+    const home = homeSettlement(lord) || nearestOwn(p);
+    if (home) return setGoal(p, 'return', home);
+  }
+  const own = ownSettlements(p.faction).filter(s => s.type !== 'village');
+  if (own.length) return setGoal(p, 'patrol', pick(own));
+  p.goal = 'idle'; p.tx = null;
+}
+
+function homeSettlement(lord) {
+  const f = lord.fiefs.map(x => S.settlements[x]).filter(s => s && s.faction === lord.faction);
+  return f.find(s => s.type === 'town') || f.find(s => s.type === 'castle') || f[0]
+    || S.settlements[S.factions[lord.faction] && S.factions[lord.faction].capital]
+    || ownSettlements(lord.faction)[0];
+}
+function nearestOwn(p) {
+  const own = ownSettlements(p.faction).filter(s => s.type !== 'village');
+  if (!own.length) return null;
+  return own.reduce((a, b) => dist2(a.x, a.y, p.x, p.y) < dist2(b.x, b.y, p.x, p.y) ? a : b);
+}
+function pickCampaignTarget(f, enemies) {
+  const cands = S.order.settlements.map(i => S.settlements[i])
+    .filter(s => enemies.includes(s.faction) && s.type !== 'village');
+  if (!cands.length) return null;
+  const mine = ownSettlements(f);
+  if (!mine.length) return pick(cands);
+  let best = null, bestScore = -1e9;
+  cands.forEach(s => {
+    const near = mine.reduce((m, o) => Math.min(m, dist2(o.x, o.y, s.x, s.y)), 1e9);
+    const score = -near * 1.1 - stackCount(s.garrison) * 1.6 - s.walls * 1.2 + (s.type === 'castle' ? 60 : 0);
+    if (score > bestScore) { bestScore = score; best = s; }
+  });
+  return best;
+}
+function pickRaidTarget(p, enemies) {
+  const vils = S.order.settlements.map(i => S.settlements[i])
+    .filter(s => s.type === 'village' && enemies.includes(s.faction) && s.raidedUntil < S.day);
+  if (!vils.length) return null;
+  vils.sort((a, b) => dist2(a.x, a.y, p.x, p.y) - dist2(b.x, b.y, p.x, p.y));
+  return vils[Math.min(vils.length - 1, ri(0, 2))];
+}
+function banditGoal(p) {
+  const vils = S.order.settlements.map(i => S.settlements[i])
+    .filter(s => s.type === 'village' && s.raidedUntil < S.day);
+  if (rnd() < 0.55 && vils.length) {
+    vils.sort((a, b) => dist2(a.x, a.y, p.x, p.y) - dist2(b.x, b.y, p.x, p.y));
+    const t = vils[Math.min(vils.length - 1, ri(0, 4))];
+    return setGoal(p, 'raid', t);
+  }
+  for (let i = 0; i < 30; i++) {
+    const a = rnd() * Math.PI * 2, r = rf(40, 180);
+    const x = clamp(p.x + Math.cos(a) * r, 40, MAP_W - 40), y = clamp(p.y + Math.sin(a) * r, 40, MAP_H - 40);
+    if (isLand(x, y)) { p.goal = 'roam'; p.targetId = null; p.tx = x; p.ty = y; return; }
+  }
+  p.goal = 'idle'; p.tx = null;
+}
+function setGoal(p, goal, target) {
+  p.goal = goal; p.targetId = target ? target.id : null;
+  p.tx = target ? target.x : null; p.ty = target ? target.y : null;
+}
+
+function arriveAtTarget(p) {
+  const t = p.targetId ? S.settlements[p.targetId] : null;
+  if (!t) { p.goal = 'idle'; p.tx = null; return; }
+  if (p.goal === 'raid' && t.type === 'village' && (p.type === 'bandit' || atWar(p.faction, t.faction))) {
+    raidVillage(p, t); p.goal = 'idle'; p.tx = null; return;
+  }
+  if (p.goal === 'siege' && atWar(p.faction, t.faction) && t.type !== 'village') {
+    startSiege(p, t); return;
+  }
+  if (p.goal === 'return' || p.goal === 'patrol' || p.goal === 'defend') {
+    if (t.faction === p.faction) {
+      p.restUntil = S.day + (p.goal === 'defend' ? 1 : rf(2, 5));
+      p.goal = 'garrison'; p.tx = null;
+      return;
+    }
+  }
+  p.goal = 'idle'; p.tx = null;
+}
+
+/* ---------------- karşılaşmalar ---------------- */
+function checkEncounters() {
+  const list = S.order.parties.map(id => S.parties[id]).filter(Boolean);
+  for (let i = 0; i < list.length; i++) {
+    const a = list[i]; if (!S.parties[a.id]) continue;
+    for (let j = i + 1; j < list.length; j++) {
+      const b = list[j]; if (!S.parties[b.id] || !S.parties[a.id]) continue;
+      if (a.faction === b.faction) continue;
+      const hostile = a.faction === 'bandit' || b.faction === 'bandit' || atWar(a.faction, b.faction);
+      if (!hostile) continue;
+      if (a.cooldown > 0 || b.cooldown > 0) continue;
+      if (dist2(a.x, a.y, b.x, b.y) > ENCOUNTER_R) continue;
+      /* zayıf taraf kaçmaya çalışır */
+      const pa = partyPower(a), pb = partyPower(b);
+      const weak = pa < pb ? a : b, strong = pa < pb ? b : a;
+      const ratio = Math.min(pa, pb) / Math.max(1, Math.max(pa, pb));
+      if (ratio < 0.45 && partySpeed(weak) > partySpeed(strong) * 0.98 && rnd() < 0.65) {
+        fleeFrom(weak, strong); weak.cooldown = 0.8; strong.cooldown = 0.4; continue;
+      }
+      resolveBattle(a, b, 'field');
+    }
+  }
+}
+function fleeFrom(weak, strong) {
+  const dx = weak.x - strong.x, dy = weak.y - strong.y;
+  const d = Math.hypot(dx, dy) || 1;
+  let nx = clamp(weak.x + dx / d * 90, 30, MAP_W - 30), ny = clamp(weak.y + dy / d * 90, 30, MAP_H - 30);
+  if (!isLand(nx, ny)) { nx = clamp(weak.x - dx / d * 40, 30, MAP_W - 30); ny = clamp(weak.y - dy / d * 40, 30, MAP_H - 30); }
+  weak.goal = 'flee'; weak.targetId = null; weak.tx = nx; weak.ty = ny;
+  weak.morale = clamp(weak.morale - 4, 0, 100);
+}
+
+/* ---------------- savaş çözümü ---------------- */
+function partyLabel(p) {
+  if (!p) return '—';
+  if (p.lordId && S.lords[p.lordId]) { const l = S.lords[p.lordId]; return `${l.title} ${l.name}`; }
+  return p.name || (S.factions[p.faction] ? S.factions[p.faction].short + ' ordusu' : 'Ordu');
+}
+function factionName(f) { return S.factions[f] ? S.factions[f].name : '—'; }
+
+/* iki birlik yığını arasında çarpışma; sonuç {winner:'a'|'b', lossA, lossB} */
+function fightStacks(stA, stB, modA, modB) {
+  const A = JSON.parse(JSON.stringify(stA)), B = JSON.parse(JSON.stringify(stB));
+  const start = { a: stackCount(A), b: stackCount(B) };
+  let rounds = 0;
+  const leth = 0.055 * S.opts.lethality;
+  while (rounds++ < 120) {
+    const ca = stackCount(A), cb = stackCount(B);
+    if (ca <= 0 || cb <= 0) break;
+    const pa = stackPower(A) * modA * rf(0.9, 1.1);
+    const pb = stackPower(B) * modB * rf(0.9, 1.1);
+    if (pa <= 0 || pb <= 0) break;
+    const avgA = stackPower(A) / ca, avgB = stackPower(B) / cb;
+    const killB = Math.max(1, (pa * leth) / Math.max(1, avgB) * 0.35);
+    const killA = Math.max(1, (pb * leth) / Math.max(1, avgA) * 0.35);
+    stackRemove(B, Math.min(cb, killB));
+    stackRemove(A, Math.min(ca, killA));
+    /* kırılma noktası */
+    const ra = stackCount(A) / start.a, rb = stackCount(B) / start.b;
+    if (ra < 0.22 || rb < 0.22) break;
+  }
+  const endA = stackCount(A), endB = stackCount(B);
+  const winner = (endA / Math.max(1, start.a)) >= (endB / Math.max(1, start.b)) ? 'a' : 'b';
+  return { A, B, winner, lossA: start.a - endA, lossB: start.b - endB, startA: start.a, startB: start.b };
+}
+
+function resolveBattle(a, b, kind) {
+  const lordA = a.lordId ? S.lords[a.lordId] : null;
+  const lordB = b.lordId ? S.lords[b.lordId] : null;
+  const modA = (1 + (lordA ? lordA.skillTactics * 0.035 : 0)) * (0.65 + a.morale / 150);
+  const modB = (1 + (lordB ? lordB.skillTactics * 0.035 : 0)) * (0.65 + b.morale / 150);
+  const r = fightStacks(a.troops, b.troops, modA, modB);
+  a.troops = r.A; b.troops = r.B;
+  const win = r.winner === 'a' ? a : b, lose = r.winner === 'a' ? b : a;
+  const winLord = r.winner === 'a' ? lordA : lordB, loseLord = r.winner === 'a' ? lordB : lordA;
+  const loseLoss = r.winner === 'a' ? r.lossB : r.lossA;
+  const winLoss = r.winner === 'a' ? r.lossA : r.lossB;
+
+  /* kaçış sırasında ek kayıp ve esirler */
+  const extra = stackRemove(lose.troops, stackCount(lose.troops) * rf(0.12, 0.3));
+  const capt = {};
+  Object.entries(extra).forEach(([k, v]) => { const n = Math.round(v * 0.6); if (n > 0) capt[k] = n; });
+  if (win.type !== 'bandit') stackMerge(win.prisoners, capt);
+
+  win.morale = clamp(win.morale + 7, 0, 100);
+  lose.morale = clamp(lose.morale - 16, 0, 100);
+  win.cooldown = 1.0; lose.cooldown = 1.2;
+  if (winLord) { winLord.renown += Math.round(3 + loseLoss / 6); winLord.battlesWon++; winLord.kills += loseLoss; }
+  if (loseLord) { loseLord.renown = Math.max(0, loseLord.renown - 4); loseLord.battlesLost++; }
+
+  S.stats.battles++;
+  const wiped = stackCount(lose.troops) <= 2;
+  addLog(`⚔ ${partyLabel(win)} (${factionName(win.faction)}), ${partyLabel(lose)} ordusunu ${kind === 'siege' ? 'kuşatmada' : 'meydan savaşında'} yendi. Kayıplar: ${fmt(loseLoss + stackCount(extra))} / ${fmt(winLoss)}.`, 'war');
+
+  if (wiped) destroyParty(lose, win);
+  else {
+    fleeFrom(lose, win);
+    if (loseLord && rnd() < 0.12) capturePrisoner(loseLord, win);
+  }
+  if (win.faction !== 'bandit' && S.factions[win.faction]) S.factions[win.faction].treasury += Math.round(loseLoss * rf(4, 12));
+  uiDirty.ovw = true; uiDirty.lrd = true;
+  return { win, lose };
+}
+
+function destroyParty(p, winner) {
+  const lord = p.lordId ? S.lords[p.lordId] : null;
+  if (lord) {
+    lord.partyId = null;
+    if (rnd() < 0.55 && winner && winner.faction !== 'bandit') capturePrisoner(lord, winner);
+    else {
+      lord.state = 'regroup'; lord.freeAt = S.day + rf(4, 10);
+      addLog(`${lord.title} ${lord.name} ordusunu kaybetti, dağılan adamlarını topluyor.`, '');
+    }
+  } else if (p.type === 'bandit') {
+    addLog(`${p.name} yok edildi.`, '');
+  }
+  removeParty(p.id);
+}
+function removeParty(id) {
+  const p = S.parties[id]; if (!p) return;
+  if (p.lordId && S.lords[p.lordId] && S.lords[p.lordId].partyId === id) S.lords[p.lordId].partyId = null;
+  delete S.parties[id];
+  S.order.parties = S.order.parties.filter(x => x !== id);
+  if (S.sel && S.sel.type === 'party' && S.sel.id === id) S.sel = null;
+}
+function capturePrisoner(lord, winner) {
+  lord.state = 'prisoner';
+  lord.prisonerOf = winner.faction;
+  lord.freeAt = S.day + rf(10, 35);
+  if (lord.partyId) removeParty(lord.partyId);
+  lord.partyId = null;
+  addLog(`🔒 ${lord.title} ${lord.name} esir alındı! (${factionName(winner.faction)})`, 'war');
+  uiDirty.lrd = true;
+}
+function releaseLord(lord) {
+  lord.state = 'regroup'; lord.prisonerOf = null; lord.freeAt = S.day + rf(1, 3);
+  addLog(`${lord.title} ${lord.name} esaretten kurtuldu.`, '');
+}
+
+/* ---------------- yağma ---------------- */
+function raidVillage(p, v) {
+  const loot = Math.round(v.prosperity * rf(6, 16));
+  v.prosperity = clamp(v.prosperity - rf(7, 17), 5, 100);
+  v.raidedUntil = S.day + rf(12, 25);
+  v.recruits = Math.max(0, v.recruits - ri(5, 15));
+  if (p.faction !== 'bandit' && S.factions[p.faction]) S.factions[p.faction].treasury += loot;
+  if (p.lordId && S.lords[p.lordId]) S.lords[p.lordId].gold += Math.round(loot * 0.4);
+  p.morale = clamp(p.morale + 3, 0, 100);
+  const owner = S.factions[v.faction];
+  if (owner && !owner.isBandit && p.faction !== 'bandit') {
+    owner.rel[p.faction] = clamp((owner.rel[p.faction] || 0) - 2, -100, 100);
+  }
+  addLog(`🔥 ${partyLabel(p)}, ${v.name} köyünü yağmaladı (${fmt(loot)} dinar).`, 'siege');
+  uiDirty.stl = true;
+}
+
+/* ---------------- kuşatma ---------------- */
+function startSiege(p, s) {
+  if (!atWar(p.faction, s.faction)) { p.goal = 'idle'; p.tx = null; return; }
+  if (s.besiegedBy && S.parties[s.besiegedBy] && S.parties[s.besiegedBy].faction !== p.faction) {
+    /* düşman kuşatmasını kır */
+    resolveBattle(p, S.parties[s.besiegedBy], 'siege'); return;
+  }
+  p.besieging = s.id; p.goal = 'siege'; p.tx = null;
+  p.x = s.x + rf(-10, 10); p.y = s.y + rf(-10, 10);
+  if (!s.besiegedBy) {
+    s.besiegedBy = p.id; s.siegeProgress = 0;
+    S.stats.sieges++;
+    addLog(`🏰 ${partyLabel(p)}, ${s.name} yerleşimini kuşattı.`, 'siege');
+    if (S.opts.pauseOnSiege) setSpeed(0);
+  }
+  uiDirty.stl = true;
+}
+function liftSiege(p) {
+  if (!p || !p.besieging) return;
+  const s = S.settlements[p.besieging];
+  if (s && s.besiegedBy === p.id) {
+    const other = S.order.parties.map(i => S.parties[i]).find(q => q && q.besieging === s.id && q.id !== p.id && q.faction === p.faction);
+    s.besiegedBy = other ? other.id : null;
+    if (!other) s.siegeProgress = 0;
+  }
+  p.besieging = null; p.goal = 'idle'; p.tx = null;
+}
+function progressSieges(dt) {
+  S.order.settlements.forEach(id => {
+    const s = S.settlements[id];
+    if (!s.besiegedBy) return;
+    const lead = S.parties[s.besiegedBy];
+    if (!lead) { s.besiegedBy = null; s.siegeProgress = 0; return; }
+    if (!atWar(lead.faction, s.faction)) { liftSiege(lead); return; }
+    const attackers = S.order.parties.map(i => S.parties[i]).filter(q => q && q.besieging === s.id && q.faction === lead.faction);
+    const atkPw = attackers.reduce((a, q) => a + partyPower(q), 0);
+    const defPw = settlementDefPower(s);
+    s.food = clamp(s.food - dt * 4, 0, 100);
+    const ratio = atkPw / Math.max(1, defPw);
+    const rate = ratio < 0.3 ? 0.25
+      : clamp(ratio * 15 * (1 - s.walls / 260) + (s.food < 25 ? 5 : 0), 0.5, 60);
+    s.siegeProgress += rate * dt;
+    s.prosperity = clamp(s.prosperity - dt * 0.5, 5, 100);
+    if (s.siegeProgress >= 100) assault(s, attackers);
+  });
+}
+function assault(s, attackers) {
+  if (!attackers.length) { s.besiegedBy = null; s.siegeProgress = 0; return; }
+  const atkStack = {};
+  attackers.forEach(q => stackMerge(atkStack, q.troops));
+  const defStack = JSON.parse(JSON.stringify(s.garrison));
+  const helpers = S.order.parties.map(i => S.parties[i]).filter(q => q && q.goal === 'garrison' && q.targetId === s.id && q.faction === s.faction);
+  helpers.forEach(q => stackMerge(defStack, q.troops));
+  const wallMod = 1 + (s.walls / 100) * (s.type === 'town' ? 0.85 : 0.7);
+  const r = fightStacks(atkStack, defStack, 1, wallMod);
+
+  /* kayıpları kuşatanlara dağıt */
+  const lossRatioA = r.startA ? (r.startA - stackCount(r.A)) / r.startA : 0;
+  attackers.forEach(q => { stackRemove(q.troops, stackCount(q.troops) * lossRatioA); q.morale = clamp(q.morale + (r.winner === 'a' ? 8 : -18), 0, 100); });
+  const lossRatioB = r.startB ? (r.startB - stackCount(r.B)) / r.startB : 0;
+  stackRemove(s.garrison, stackCount(s.garrison) * lossRatioB);
+  helpers.forEach(q => stackRemove(q.troops, stackCount(q.troops) * lossRatioB));
+
+  const attackerName = partyLabel(attackers[0]);
+  if (r.winner === 'a') {
+    const cap = attackers[0];
+    addLog(`🏳 ${s.name} düştü! ${attackerName} şehri ele geçirdi. (Saldıran kaybı ${fmt(r.startA - stackCount(r.A))}, savunan ${fmt(r.startB - stackCount(r.B))})`, 'siege');
+    helpers.forEach(q => { if (stackCount(q.troops) <= 2) destroyParty(q, cap); else fleeFrom(q, cap); });
+    captureSettlement(s, cap);
+  } else {
+    addLog(`🛡 ${s.name} kuşatmayı püskürttü. ${attackerName} geri çekiliyor.`, 'siege');
+    attackers.forEach(q => {
+      if (stackCount(q.troops) <= 2) destroyParty(q, { faction: s.faction, type: 'lord' });
+      else { liftSiege(q); q.cooldown = 2; const home = q.lordId && S.lords[q.lordId] ? homeSettlement(S.lords[q.lordId]) : null; if (home) setGoal(q, 'return', home); }
+    });
+    s.siegeProgress = 0; s.besiegedBy = null;
+  }
+  uiDirty.stl = true; uiDirty.ovw = true;
+}
+
+function captureSettlement(s, cap) {
+  const oldF = s.faction;
+  const newF = cap.faction;
+  /* garnizon: kuşatan ordudan asker bırak */
+  const leave = Math.min(stackCount(cap.troops) - 8, Math.round(stackCount(cap.troops) * 0.35));
+  s.garrison = {};
+  if (leave > 0) { const g = stackRemove(cap.troops, leave); stackMerge(s.garrison, g); }
+  if (stackCount(s.garrison) < 10) stackMerge(s.garrison, makeStack(S.factions[newF].culture, 20, 0.35));
+  changeOwner(s, newF, cap.lordId ? S.lords[cap.lordId] : null);
+  s.siegeProgress = 0; s.besiegedBy = null; s.walls = clamp(s.walls - 15, 20, 100);
+  s.prosperity = clamp(s.prosperity - 10, 5, 100); s.food = 60; s.unrest = 45;
+  /* kuşatan ordu içeri girer */
+  S.order.parties.forEach(i => { const q = S.parties[i]; if (q && q.besieging === s.id) { q.besieging = null; q.goal = 'garrison'; q.targetId = s.id; q.tx = null; q.restUntil = S.day + 2; } });
+  if (S.factions[oldF]) S.factions[oldF].rel[newF] = clamp((S.factions[oldF].rel[newF] || 0) - 12, -100, 100);
+  checkFactionAlive(oldF);
+  territoryDirty = true; uiDirty.fac = true; uiDirty.stl = true; uiDirty.ovw = true;
+}
+
+function changeOwner(s, newF, lord) {
+  const old = s.faction;
+  s.faction = newF; s.lastOwnerChange = S.day;
+  if (s.lordId && S.lords[s.lordId]) S.lords[s.lordId].fiefs = S.lords[s.lordId].fiefs.filter(f => f !== s.id);
+  s.lordId = null;
+  if (lord && lord.faction === newF) grantFief(s, lord);
+  else {
+    const cands = S.order.lords.map(i => S.lords[i]).filter(l => l.faction === newF && l.state !== 'dead');
+    if (cands.length) {
+      cands.sort((a, b) => a.fiefs.length - b.fiefs.length || b.renown - a.renown);
+      grantFief(s, cands[0]);
+    }
+  }
+  /* köyleri de devral */
+  if (s.type !== 'village') {
+    S.order.settlements.forEach(id => {
+      const v = S.settlements[id];
+      if (v.type === 'village' && v.parentId === s.id) { v.faction = newF; v.lordId = s.lordId; }
+    });
+  }
+  territoryDirty = true;
+  return old;
+}
+
+function checkFactionAlive(f) {
+  const fac = S.factions[f]; if (!fac || fac.isBandit) return;
+  const own = ownSettlements(f);
+  if (own.length === 0 && fac.alive) {
+    fac.alive = false;
+    addLog(`💀 ${fac.name} haritadan silindi!`, 'war');
+    Object.keys(S.wars).forEach(k => { if (k.includes(f)) delete S.wars[k]; });
+    S.order.lords.forEach(id => {
+      const l = S.lords[id];
+      if (l.faction === f && l.state !== 'dead') {
+        l.state = 'exile';
+        if (l.partyId) removeParty(l.partyId);
+        l.partyId = null;
+      }
+    });
+    uiDirty.fac = true; uiDirty.dip = true;
+  }
+}
+
+/* ---------------- günlük olaylar ---------------- */
+function dailyTick() {
+  S.stats.days++;
+  const day = Math.floor(S.day);
+
+  /* yerleşimler */
+  S.order.settlements.forEach(id => {
+    const s = S.settlements[id];
+    const raided = s.raidedUntil > S.day;
+    const target = raided ? 25 : (s.besiegedBy ? 30 : (s.type === 'town' ? 85 : s.type === 'castle' ? 60 : 70));
+    s.prosperity += (target - s.prosperity) * 0.03 * S.opts.economy;
+    s.prosperity = clamp(s.prosperity, 3, 100);
+    if (!s.besiegedBy) s.food = clamp(s.food + 3, 0, 100);
+    s.unrest = clamp(s.unrest - 0.6, 0, 100);
+    const regen = s.type === 'town' ? 5.5 : s.type === 'castle' ? 2.6 : 4;
+    const capR = s.type === 'town' ? 90 : s.type === 'castle' ? 45 : 55;
+    s.recruits = clamp(s.recruits + (raided ? 0.25 : 1) * regen * (0.5 + s.prosperity / 120) * S.opts.recruitRate, 0, capR);
+    if (s.type !== 'village' && !s.besiegedBy && day % 3 === 0) refillGarrison(s, false);
+    if (s.walls < 100 && !s.besiegedBy && s.type !== 'village') s.walls = clamp(s.walls + 0.12, 0, 100);
+  });
+
+  /* krallık ekonomisi */
+  Object.values(S.factions).forEach(fac => {
+    if (fac.isBandit || !fac.alive) return;
+    let inc = 0;
+    const mine = ownSettlements(fac.id);
+    mine.forEach(s => { inc += settlementIncome(s); });
+    inc *= S.opts.economy;
+    let wages = 0;
+    S.order.parties.forEach(i => { const p = S.parties[i]; if (p && p.faction === fac.id) wages += stackWage(p.troops) * 0.3; });
+    mine.forEach(s => { wages += stackWage(s.garrison) * 0.2; });
+    S.order.lords.forEach(i => { const l = S.lords[i]; if (l.faction === fac.id && l.state === 'active' && !l.fiefs.length) { wages += 140; l.gold += 140; } });
+    fac.treasury += Math.round(inc - wages);
+
+    /* hazine harcaması: savunma takviyesi ve lord maaşları */
+    if (fac.treasury > 12000) {
+      const budget = fac.treasury * 0.05;
+      let spent = 0;
+      const forts = mine.filter(s => s.type !== 'village');
+      const threatened = forts.filter(s => s.besiegedBy || S.order.parties.some(i => {
+        const q = S.parties[i]; return q && atWar(q.faction, fac.id) && dist2(q.x, q.y, s.x, s.y) < 130;
+      }));
+      const pool = (threatened.length ? threatened : forts)
+        .filter(s => stackCount(s.garrison) < garrisonTarget(s) * (s.besiegedBy ? 1.5 : 1.1));
+      for (let i = 0; i < 3 && spent < budget && pool.length; i++) {
+        const s = pick(pool);
+        const room = Math.round(garrisonTarget(s) * 1.4 - stackCount(s.garrison));
+        const n = Math.min(30, room, Math.floor((budget - spent) / 90));
+        if (n < 4) break;
+        stackMerge(s.garrison, makeStack(fac.culture, n, 0.55));
+        spent += n * 90;
+      }
+      const poorLords = S.order.lords.map(i => S.lords[i])
+        .filter(l => l.faction === fac.id && l.state === 'active' && l.gold < 2500);
+      if (poorLords.length && spent < budget) {
+        const each = Math.min(1500, Math.floor((budget - spent) / poorLords.length));
+        if (each > 50) { poorLords.forEach(l => { l.gold += each; }); spent += each * poorLords.length; }
+      }
+      fac.treasury -= Math.round(spent);
+    }
+
+    if (fac.treasury < 0) {
+      fac.treasury = 0;
+      /* maaş ödenemezse firar */
+      S.order.parties.forEach(i => {
+        const p = S.parties[i];
+        if (p && p.faction === fac.id && rnd() < 0.15) { stackRemove(p.troops, stackCount(p.troops) * 0.02); p.morale = clamp(p.morale - 2, 0, 100); }
+      });
+    }
+  });
+
+  /* ordular: dinlenme, asker toplama, terfi, moral */
+  S.order.parties.forEach(id => {
+    const p = S.parties[id]; if (!p) return;
+    const lord = p.lordId ? S.lords[p.lordId] : null;
+    if (p.type === 'bandit') {
+      p.morale = clamp(p.morale + 0.4, 0, 100);
+      if (rnd() < 0.02) stackMerge(p.troops, { bd_looter: ri(2, 6) });
+      if (p.goal === 'idle' || p.tx == null) banditGoal(p);
+      return;
+    }
+    if (!lord) return;
+    const cap = lordPartyCap(lord);
+    const cnt = stackCount(p.troops);
+    if (p.goal === 'garrison' && p.targetId) {
+      const s = S.settlements[p.targetId];
+      if (s && s.faction === p.faction) {
+        /* asker topla: yerleşimin ve bağlı köylerinin havuzundan */
+        let want = Math.min(cap - cnt, 30 * S.opts.recruitRate);
+        if (want > 0) {
+          const pools = [s].concat(S.order.settlements.map(i => S.settlements[i])
+            .filter(v => v.type === 'village' && v.parentId === s.id && v.faction === s.faction));
+          let took = 0;
+          for (const src of pools) {
+            if (want <= 0) break;
+            const take = Math.min(Math.floor(src.recruits), want);
+            if (take > 0) { src.recruits -= take; want -= take; took += take; }
+          }
+          if (took > 0) {
+            stackMerge(p.troops, makeStack(S.factions[p.faction].culture, took, 0.12));
+            lord.gold -= took * 10;
+          }
+        }
+        p.morale = clamp(p.morale + 3.5, 0, 100);
+        /* esirleri hapse at */
+        if (stackCount(p.prisoners) > 0) { stackMerge(s.prisoners, p.prisoners); p.prisoners = {}; }
+        if (S.day > (p.restUntil || 0) && (cnt >= cap * 0.9 || S.day > (p.restUntil || 0) + 4)) { p.goal = 'idle'; p.tx = null; }
+      } else { p.goal = 'idle'; p.tx = null; }
+    } else {
+      p.morale = clamp(p.morale + (p.besieging ? -0.8 : 0.6), 0, 100);
+    }
+    /* terfi */
+    for (let u = 0; u < 3; u++) if (rnd() < 0.55 * S.opts.recruitRate) upgradeStack(p.troops, lord);
+    /* gelir */
+    lord.gold += Math.round(lord.fiefs.reduce((a, f) => {
+      const s = S.settlements[f]; if (!s || s.faction !== lord.faction) return a;
+      const mult = s.raidedUntil > S.day ? 0.2 : 1;
+      return a + (s.type === 'town' ? 200 : s.type === 'castle' ? 70 : 40) * (s.prosperity / 70) * mult;
+    }, 0));
+    lord.gold -= Math.round(stackWage(p.troops) * 0.3);
+    if (lord.gold > 6000 && S.factions[lord.faction]) {
+      const tax = Math.round((lord.gold - 6000) * 0.12);
+      lord.gold -= tax; S.factions[lord.faction].treasury += tax;
+    }
+    if (lord.gold < 0) { lord.gold = 0; if (rnd() < 0.3) stackRemove(p.troops, Math.max(1, cnt * 0.03)); }
+    if (p.goal === 'idle' || (p.tx == null && !p.besieging && p.goal !== 'garrison')) decideGoal(p);
+  });
+
+  /* lord durumları */
+  S.order.lords.forEach(id => {
+    const l = S.lords[id];
+    if (l.state === 'prisoner' && S.day >= l.freeAt) releaseLord(l);
+    else if (l.state === 'regroup' && S.day >= l.freeAt) {
+      const own = ownSettlements(l.faction);
+      if (own.length) { l.state = 'active'; spawnLordParty(l); }
+      else l.freeAt = S.day + 5;
+    }
+    if (l.state === 'exile' && rnd() < 0.02) tryExileJoin(l);
+  });
+
+  /* diplomasi */
+  if (day % 6 === 0) diplomacyTick();
+  /* haydutlar */
+  if (S.opts.banditSpawn && rnd() < 0.35 * S.opts.banditRate) {
+    const bandits = S.order.parties.filter(i => S.parties[i] && S.parties[i].type === 'bandit').length;
+    if (bandits < 26 * S.opts.banditRate) spawnBandit();
+  }
+  /* lord memnuniyeti / firar */
+  if (S.opts.lordDefection && day % 10 === 0) defectionTick();
+}
+
+function upgradeStack(st, lord) {
+  const keys = Object.keys(st).filter(k => TROOPS[k] && TROOPS[k].up.length && st[k] > 0);
+  if (!keys.length) return;
+  const k = pick(keys);
+  const t = TROOPS[k];
+  const n = Math.max(1, Math.round(st[k] * rf(0.05, 0.16)));
+  const cost = n * (t.tier * 22);
+  if (lord && lord.gold < cost) return;
+  if (lord) lord.gold -= cost;
+  const to = pick(t.up);
+  st[k] -= n; if (st[k] <= 0) delete st[k];
+  st[to] = (st[to] || 0) + n;
+}
+
+function settlementIncome(s) {
+  const raided = s.raidedUntil > S.day ? 0.15 : 1;
+  const base = s.type === 'town' ? 100 + s.prosperity * 6
+    : s.type === 'castle' ? 30 + s.prosperity * 1.5
+    : 12 + s.prosperity * 1.5;
+  return base * raided * (s.besiegedBy ? 0.3 : 1);
+}
+
+function factionStrength(f) {
+  let pw = 0;
+  S.order.parties.forEach(i => { const p = S.parties[i]; if (p && p.faction === f) pw += stackPower(p.troops); });
+  ownSettlements(f).forEach(s => { pw += stackPower(s.garrison) * 0.6; });
+  return pw;
+}
+
+function diplomacyTick() {
+  const live = Object.values(S.factions).filter(f => !f.isBandit && f.alive);
+  live.forEach(fac => {
+    const wars = live.filter(o => o.id !== fac.id && atWar(fac.id, o.id));
+    /* barış arayışı */
+    if (S.opts.autoPeace && wars.length) {
+      wars.forEach(o => {
+        const k = warKey(fac.id, o.id);
+        const dur = S.day - (S.wars[k] ? S.wars[k].since : S.day);
+        const my = factionStrength(fac.id), his = factionStrength(o.id);
+        const desperate = my < his * 0.5 || ownSettlements(fac.id).filter(s => s.type === 'town').length <= 1;
+        const losing = my < his * 0.75;
+        const chance = clamp((dur - 30) / 350 + (losing ? 0.12 : 0) + (desperate ? 0.35 : 0) + (wars.length > 1 ? 0.1 : 0), 0, 0.75);
+        if (dur > 15 && rnd() < chance) makePeace(fac.id, o.id);
+      });
+    }
+    /* savaş ilanı */
+    if (wars.length < 2 && rnd() < 0.16 * fac.aggr * S.opts.aggression) {
+      const cands = live.filter(o => o.id !== fac.id && !atWar(fac.id, o.id));
+      if (cands.length) {
+        const my = factionStrength(fac.id);
+        cands.sort((a, b) => (factionStrength(a.id) + (fac.rel[a.id] || 0) * 30) - (factionStrength(b.id) + (fac.rel[b.id] || 0) * 30));
+        const t = cands[0];
+        const theirWars = live.filter(o => o.id !== t.id && atWar(t.id, o.id)).length;
+        if (theirWars < 2 && factionStrength(t.id) < my * 1.25 && (fac.rel[t.id] || 0) < 25) declareWar(fac.id, t.id);
+      }
+    }
+    /* sefer hedefi güncelle */
+    const en = enemyFactions(fac.id);
+    if (en.length) {
+      const t = pickCampaignTarget(fac.id, en);
+      fac.target = t ? t.id : null;
+    } else fac.target = null;
+  });
+  uiDirty.dip = true;
+}
+
+function defectionTick() {
+  S.order.lords.forEach(id => {
+    const l = S.lords[id];
+    if (l.isKing || l.state === 'dead' || l.state === 'exile') return;
+    const pers = PERSONALITIES.find(p => p.id === l.personality) || PERSONALITIES[0];
+    l.relKing += (l.fiefs.length ? 1.2 : -1.4) * pers.loyal * 0.6 + rf(-1.5, 1.5);
+    l.relKing = clamp(l.relKing, -100, 100);
+    if (l.relKing < -45 && rnd() < 0.1) {
+      const others = Object.values(S.factions).filter(f => !f.isBandit && f.alive && f.id !== l.faction && !atWar(f.id, l.faction));
+      if (!others.length) return;
+      const to = pick(others);
+      defect(l, to.id);
+    }
+  });
+  uiDirty.lrd = true;
+}
+
+function defect(l, toFaction) {
+  const from = l.faction;
+  const fiefs = l.fiefs.slice();
+  l.faction = toFaction; l.relKing = ri(-5, 25);
+  l.title = S.factions[toFaction].lordTitle;
+  if (l.partyId && S.parties[l.partyId]) S.parties[l.partyId].faction = toFaction;
+  fiefs.forEach(f => { const s = S.settlements[f]; if (s) { s.faction = toFaction; } });
+  addLog(`🕊 ${l.title} ${l.name}, ${factionName(from)} krallığından ayrılıp ${factionName(toFaction)} saflarına geçti!`, 'peace');
+  territoryDirty = true; checkFactionAlive(from);
+  uiDirty.lrd = true; uiDirty.fac = true;
+}
+
+function tryExileJoin(l) {
+  const others = Object.values(S.factions).filter(f => !f.isBandit && f.alive);
+  if (!others.length) return;
+  const to = pick(others);
+  l.faction = to.id; l.state = 'regroup'; l.freeAt = S.day + 2; l.relKing = ri(0, 20);
+  l.title = to.lordTitle; l.fiefs = [];
+  addLog(`${l.title} ${l.name} sürgünden dönüp ${to.name} hizmetine girdi.`, '');
+}
+/* =====================================================================
+   Bölüm 5: Arayüz — paneller, listeler, seçim ekranı
+   ===================================================================== */
+
+const ui = {
+  tab: 'sel',
+  lordSort: 'renown', lordQuery: '', lordFac: '', lordState: '',
+  stlType: '', stlFac: '', stlQuery: '',
+  troopEdit: null
+};
+
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+let booted = false;
+function setTab(t) {
+  ui.tab = t;
+  $$('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  $$('.pane').forEach(p => p.classList.toggle('on', p.dataset.pane === t));
+  uiDirty[t] = true; renderUI();
+  if (booted && window.innerWidth <= 900) $('#side').classList.add('open');
+}
+
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+/* ---------- küçük parçalar ---------- */
+function facDot(f) { const c = S.factions[f] ? S.factions[f].color : '#888'; return `<span class="dot" style="background:${c}"></span>`; }
+function facName(f) { return S.factions[f] ? S.factions[f].name : '—'; }
+function bar(v, max, color) {
+  const p = clamp(v / (max || 100) * 100, 0, 100);
+  return `<div class="bar"><i style="width:${p}%;background:${color || 'var(--accent)'}"></i></div>`;
+}
+function troopLines(st, limit) {
+  const e = Object.entries(st).filter(x => x[1] > 0)
+    .sort((a, b) => (TROOPS[b[0]]?.tier || 0) - (TROOPS[a[0]]?.tier || 0));
+  if (!e.length) return '<div class="small muted">Asker yok</div>';
+  const list = limit ? e.slice(0, limit) : e;
+  return `<table class="tbl">${list.map(([k, v]) => {
+    const t = TROOPS[k];
+    return `<tr><td>${esc(t ? t.name : k)}</td><td class="small muted">T${t ? t.tier : '?'}</td><td class="n">${fmt(v)}</td></tr>`;
+  }).join('')}${limit && e.length > limit ? `<tr><td colspan="3" class="small muted">+${e.length - limit} tür daha</td></tr>` : ''}</table>`;
+}
+function stateLabel(l) {
+  return { active:'Sahada', prisoner:'Esir', regroup:'Toparlanıyor', dead:'Ölü', exile:'Sürgün' }[l.state] || l.state;
+}
+function goalLabel(p) {
+  if (p.besieging) { const s = S.settlements[p.besieging]; return `${s ? s.name : '?'} kuşatmasında`; }
+  const t = p.targetId ? S.settlements[p.targetId] : null;
+  const m = {
+    patrol:'Devriyede', raid:'Yağma seferinde', siege:'Kuşatmaya gidiyor', defend:'Savunmaya koşuyor',
+    return:'Tımarına dönüyor', garrison:'Yerleşimde konaklıyor', flee:'Çekiliyor', roam:'Dolaşıyor', idle:'Bekliyor'
+  };
+  return (m[p.goal] || p.goal) + (t ? ` — ${t.name}` : '');
+}
+
+/* ---------- düzenleme alanları ---------- */
+function fNum(label, kind, id, key, min, max, step) {
+  const obj = getEnt(kind, id); if (!obj) return '';
+  return `<label class="f"><span>${esc(label)}</span><input type="number" value="${Math.round((obj[key] ?? 0) * 100) / 100}" min="${min}" max="${max}" step="${step || 1}" data-edit="${kind}|${id}|${key}|num"></label>`;
+}
+function fText(label, kind, id, key) {
+  const obj = getEnt(kind, id); if (!obj) return '';
+  return `<label class="f"><span>${esc(label)}</span><input type="text" value="${esc(obj[key] ?? '')}" data-edit="${kind}|${id}|${key}|text"></label>`;
+}
+function fSel(label, kind, id, key, opts) {
+  const obj = getEnt(kind, id); if (!obj) return '';
+  const cur = obj[key];
+  return `<label class="f"><span>${esc(label)}</span><select data-edit="${kind}|${id}|${key}|sel">${
+    opts.map(o => `<option value="${esc(o.v)}" ${String(o.v) === String(cur) ? 'selected' : ''}>${esc(o.t)}</option>`).join('')
+  }</select></label>`;
+}
+function getEnt(kind, id) {
+  return kind === 'lord' ? S.lords[id] : kind === 'settlement' ? S.settlements[id]
+    : kind === 'faction' ? S.factions[id] : kind === 'party' ? S.parties[id]
+    : kind === 'opts' ? S.opts : null;
+}
+const facOpts = (incBandit) => Object.values(S.factions).filter(f => incBandit || !f.isBandit).map(f => ({ v: f.id, t: f.name }));
+
+/* ---------- ana render ---------- */
+let lastUiRender = 0;
+function renderUI(force) {
+  const now = performance.now();
+  if (!force && now - lastUiRender < 220) return;
+  lastUiRender = now;
+  const pane = ui.tab;
+  const act = document.activeElement;
+  const inPane = act && act.closest && act.closest('.panes') && (act.tagName === 'INPUT' || act.tagName === 'SELECT' || act.tagName === 'TEXTAREA');
+  if (inPane && !force) { renderLog(); renderTop(); return; }
+  if (pane === 'sel' && (uiDirty.sel || force)) { renderSel(); uiDirty.sel = false; }
+  if (pane === 'ovw' && (uiDirty.ovw || force)) { renderOvw(); uiDirty.ovw = false; }
+  if (pane === 'fac' && (uiDirty.fac || force)) { renderFac(); uiDirty.fac = false; }
+  if (pane === 'lrd' && (uiDirty.lrd || force)) { renderLrd(); uiDirty.lrd = false; }
+  if (pane === 'stl' && (uiDirty.stl || force)) { renderStl(); uiDirty.stl = false; }
+  if (pane === 'dip' && (uiDirty.dip || force)) { renderDip(); uiDirty.dip = false; }
+  if (pane === 'god' && (uiDirty.god || force)) { renderGod(); uiDirty.god = false; }
+  renderTop(); renderLog(); renderLegend();
+}
+
+function renderTop() {
+  const c = calendar(S.day);
+  $('#tbDate').textContent = `${c.dayOfMonth} ${c.month} ${c.year}`;
+  $('#tbSeason').textContent = `· ${c.season}`;
+}
+
+let lastLogLen = -1;
+function renderLog() {
+  if (!logDirty && S.log.length === lastLogLen) return;
+  logDirty = false; lastLogLen = S.log.length;
+  $('#logList').innerHTML = S.log.slice(0, 60).map(l =>
+    `<div class="log-line ${l.k}"><span class="d">${shortDate(l.d)}</span><span class="m">${esc(l.m)}</span></div>`).join('');
+}
+
+function renderLegend() {
+  const box = $('#legend');
+  const rows = Object.values(S.factions).filter(f => !f.isBandit).map(f => {
+    const own = ownSettlements(f.id).length;
+    return `<div class="lrow ${S.hidden[f.id] ? 'off' : ''}" data-act="toggleFac" data-id="${f.id}">
+      <span class="swatch" style="background:${f.color}"></span>
+      <span class="lname">${esc(f.short)}</span><span class="lval">${own}</span></div>`;
+  }).join('');
+  const html = rows + `<div class="lrow ${S.hidden.bandit ? 'off' : ''}" data-act="toggleFac" data-id="bandit">
+      <span class="swatch" style="background:${BANDIT_FACTION.color}"></span><span class="lname">Haydutlar</span>
+      <span class="lval">${S.order.parties.filter(i => S.parties[i] && S.parties[i].type === 'bandit').length}</span></div>`;
+  if (box.dataset.h !== html) { box.innerHTML = html; box.dataset.h = html; }
+}
+
+/* ---------- SEÇİM ---------- */
+function renderSel() {
+  const box = $('#paneSel');
+  if (!S.sel) {
+    box.innerHTML = `<div class="card"><h3>Seçim yok</h3>
+      <div class="small muted">Haritadan bir şehir, kale, köy ya da ordu seç. Buradan o birimin her özelliğini değiştirebilirsin.
+      Krallıkların tamamını düzenlemek için <b>Müdahale</b> sekmesine bak.</div></div>`;
+    return;
+  }
+  if (S.sel.type === 'lord') box.innerHTML = selLord(S.lords[S.sel.id]);
+  else if (S.sel.type === 'settlement') box.innerHTML = selSettlement(S.settlements[S.sel.id]);
+  else if (S.sel.type === 'faction') box.innerHTML = selFaction(S.factions[S.sel.id]);
+  else if (S.sel.type === 'party') box.innerHTML = selParty(S.parties[S.sel.id]);
+  else box.innerHTML = '';
+}
+
+function selLord(l) {
+  if (!l) return '<div class="card">Lord bulunamadı.</div>';
+  const fac = S.factions[l.faction];
+  const p = l.partyId ? S.parties[l.partyId] : null;
+  const pers = PERSONALITIES.find(x => x.id === l.personality) || PERSONALITIES[0];
+  const cap = lordPartyCap(l);
+  const cnt = p ? stackCount(p.troops) : 0;
+  return `
+  <div class="card">
+    <h3>${facDot(l.faction)} ${esc(l.title)} ${esc(l.name)} <span class="sub">— ${esc(fac ? fac.name : '')}</span></h3>
+    <div class="row wrap" style="gap:6px;margin-bottom:8px">
+      <span class="tag ${l.isKing ? 'gold' : ''}">${l.isKing ? 'Hükümdar' : 'Vassal'}</span>
+      <span class="tag">${esc(stateLabel(l))}</span>
+      <span class="tag">${esc(pers.name)}</span>
+      <span class="tag gold">${fmt(l.gold)} dinar</span>
+    </div>
+    <table class="tbl">
+      <tr><td>Şöhret</td><td class="n">${fmt(l.renown)}</td><td style="width:40%">${bar(l.renown, 1000)}</td></tr>
+      <tr><td>Krala bağlılık</td><td class="n">${Math.round(l.relKing)}</td><td>${bar(l.relKing + 100, 200, l.relKing < 0 ? 'var(--danger)' : 'var(--success)')}</td></tr>
+      <tr><td>Taktik / Liderlik</td><td class="n">${l.skillTactics} / ${l.skillLeadership}</td><td class="small muted">Ordu üst sınırı ${cap}</td></tr>
+      <tr><td>Zafer / Yenilgi</td><td class="n">${l.battlesWon} / ${l.battlesLost}</td><td class="small muted">${fmt(l.kills)} düşman kaybı</td></tr>
+    </table>
+    <div class="btnrow" style="margin-top:8px">
+      <button class="btn sm" data-act="focus">Haritada göster</button>
+      <button class="btn sm" data-act="lordHeal" data-id="${l.id}">Orduyu tamamla</button>
+      <button class="btn sm" data-act="lordElite" data-id="${l.id}">Seçkin birlik ver</button>
+      ${l.state === 'prisoner' ? `<button class="btn sm" data-act="lordFree" data-id="${l.id}">Serbest bırak</button>` : ''}
+      ${!l.isKing ? `<button class="btn sm" data-act="makeKing" data-id="${l.id}">Kral yap</button>` : ''}
+      <button class="btn sm danger" data-act="lordKill" data-id="${l.id}">Öldür</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Ordusu <span class="sub">${p ? `${fmt(cnt)} / ${cap} asker` : 'sahada değil'}</span></h3>
+    ${p ? `<div class="small muted" style="margin-bottom:6px">${esc(goalLabel(p))} · Moral ${Math.round(p.morale)} · Güç ${fmt(partyPower(p))}</div>
+      ${troopLines(p.troops)}
+      <div class="btnrow" style="margin-top:8px">
+        <button class="btn sm" data-act="troopEditor" data-kind="party" data-id="${p.id}">Askerleri düzenle</button>
+        <button class="btn sm" data-act="teleport" data-id="${p.id}">Işınla</button>
+        <button class="btn sm" data-act="orderParty" data-id="${p.id}">Emir ver</button>
+      </div>
+      ${stackCount(p.prisoners) ? `<div class="small muted" style="margin-top:8px">Esirler: ${fmt(stackCount(p.prisoners))}</div>` : ''}`
+    : `<div class="small muted">Bu lordun sahada ordusu yok.</div>
+       <div class="btnrow" style="margin-top:6px"><button class="btn sm primary" data-act="lordSpawn" data-id="${l.id}">Ordu kur</button></div>`}
+  </div>
+
+  <div class="card">
+    <h3>Tımarları <span class="sub">${l.fiefs.length} yerleşim</span></h3>
+    <div class="list">
+      ${l.fiefs.map(f => S.settlements[f]).filter(Boolean).map(s => `
+        <div class="item" data-act="selStl" data-id="${s.id}">
+          ${facDot(s.faction)}<div class="grow"><div class="t">${esc(s.name)}</div>
+          <div class="s">${s.type === 'town' ? 'Şehir' : s.type === 'castle' ? 'Kale' : 'Köy'} · Refah ${Math.round(s.prosperity)}</div></div>
+        </div>`).join('') || '<div class="small muted">Tımarı yok.</div>'}
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Düzenle</h3>
+    ${fText('İsim', 'lord', l.id, 'name')}
+    ${fText('Unvan', 'lord', l.id, 'title')}
+    ${fSel('Krallık', 'lord', l.id, 'faction', facOpts(false))}
+    ${fSel('Kişilik', 'lord', l.id, 'personality', PERSONALITIES.map(p => ({ v: p.id, t: `${p.name} — ${p.desc}` })))}
+    <div class="grid2">
+      ${fNum('Şöhret', 'lord', l.id, 'renown', 0, 3000, 10)}
+      ${fNum('Altın', 'lord', l.id, 'gold', 0, 9999999, 100)}
+      ${fNum('Krala bağlılık', 'lord', l.id, 'relKing', -100, 100, 1)}
+      ${fNum('Taktik', 'lord', l.id, 'skillTactics', 0, 10, 1)}
+      ${fNum('Liderlik', 'lord', l.id, 'skillLeadership', 0, 10, 1)}
+      ${fSel('Durum', 'lord', l.id, 'state', [
+        { v:'active', t:'Sahada' }, { v:'regroup', t:'Toparlanıyor' }, { v:'prisoner', t:'Esir' },
+        { v:'exile', t:'Sürgün' }, { v:'dead', t:'Ölü' }])}
+    </div>
+  </div>`;
+}
+
+function selParty(p) {
+  if (!p) return '<div class="card">Ordu bulunamadı.</div>';
+  return `<div class="card">
+    <h3>${facDot(p.faction)} ${esc(partyLabel(p))}</h3>
+    <div class="small muted" style="margin-bottom:6px">${esc(goalLabel(p))} · ${fmt(stackCount(p.troops))} asker · Moral ${Math.round(p.morale)}</div>
+    ${troopLines(p.troops)}
+    <div class="btnrow" style="margin-top:8px">
+      <button class="btn sm" data-act="focus">Haritada göster</button>
+      <button class="btn sm" data-act="troopEditor" data-kind="party" data-id="${p.id}">Askerleri düzenle</button>
+      <button class="btn sm" data-act="teleport" data-id="${p.id}">Işınla</button>
+      <button class="btn sm danger" data-act="killParty" data-id="${p.id}">Dağıt</button>
+    </div>
+  </div>`;
+}
+
+function selSettlement(s) {
+  if (!s) return '<div class="card">Yerleşim bulunamadı.</div>';
+  const owner = s.lordId ? S.lords[s.lordId] : null;
+  const kids = S.order.settlements.map(i => S.settlements[i]).filter(v => v.parentId === s.id);
+  const typeName = s.type === 'town' ? 'Şehir' : s.type === 'castle' ? 'Kale' : 'Köy';
+  const nearby = S.order.parties.map(i => S.parties[i]).filter(p => p && dist2(p.x, p.y, s.x, s.y) < 45);
+  return `
+  <div class="card">
+    <h3>${facDot(s.faction)} ${esc(s.name)} <span class="sub">— ${typeName}</span></h3>
+    <div class="row wrap" style="gap:6px;margin-bottom:8px">
+      <span class="tag">${esc(facName(s.faction))}</span>
+      ${owner ? `<span class="tag">${esc(owner.title)} ${esc(owner.name)}</span>` : '<span class="tag">Sahipsiz</span>'}
+      ${s.besiegedBy ? `<span class="tag war">Kuşatma altında %${Math.round(s.siegeProgress)}</span>` : ''}
+      ${s.raidedUntil > S.day ? '<span class="tag war">Yağmalanmış</span>' : ''}
+    </div>
+    <table class="tbl">
+      <tr><td>Refah</td><td class="n">${Math.round(s.prosperity)}</td><td style="width:45%">${bar(s.prosperity, 100, 'var(--success)')}</td></tr>
+      ${s.type !== 'village' ? `<tr><td>Surlar</td><td class="n">${Math.round(s.walls)}</td><td>${bar(s.walls, 100, 'var(--info)')}</td></tr>
+      <tr><td>Erzak</td><td class="n">${Math.round(s.food)}</td><td>${bar(s.food, 100, 'var(--accent)')}</td></tr>` : ''}
+      <tr><td>Toplanabilir asker</td><td class="n">${Math.round(s.recruits)}</td><td class="small muted">Huzursuzluk ${Math.round(s.unrest)}</td></tr>
+      <tr><td>Günlük gelir</td><td class="n">${fmt((s.type === 'town' ? 45 + s.prosperity * 2.4 : s.type === 'castle' ? 12 + s.prosperity * 0.5 : 6 + s.prosperity * 0.55) * S.opts.economy)}</td><td class="small muted">dinar</td></tr>
+    </table>
+    <div class="btnrow" style="margin-top:8px">
+      <button class="btn sm" data-act="focus">Haritada göster</button>
+      ${s.type !== 'village' ? `<button class="btn sm" data-act="troopEditor" data-kind="settlement" data-id="${s.id}">Garnizonu düzenle</button>
+      <button class="btn sm" data-act="reinforce" data-id="${s.id}">Garnizon takviyesi</button>` : ''}
+      ${s.besiegedBy ? `<button class="btn sm" data-act="breakSiege" data-id="${s.id}">Kuşatmayı kaldır</button>` : ''}
+      <button class="btn sm" data-act="giveFief" data-id="${s.id}">Tımar ver</button>
+    </div>
+  </div>
+
+  ${s.type !== 'village' ? `<div class="card"><h3>Garnizon <span class="sub">${fmt(stackCount(s.garrison))} asker · savunma gücü ${fmt(settlementDefPower(s))}</span></h3>
+    ${troopLines(s.garrison, 8)}
+    ${stackCount(s.prisoners) ? `<div class="small muted" style="margin-top:6px">Zindanda ${fmt(stackCount(s.prisoners))} esir</div>` : ''}
+  </div>` : ''}
+
+  ${kids.length ? `<div class="card"><h3>Bağlı köyler</h3><div class="list">
+    ${kids.map(v => `<div class="item" data-act="selStl" data-id="${v.id}">${facDot(v.faction)}
+      <div class="grow"><div class="t">${esc(v.name)}</div><div class="s">Refah ${Math.round(v.prosperity)}${v.raidedUntil > S.day ? ' · yağmalandı' : ''}</div></div></div>`).join('')}
+  </div></div>` : ''}
+
+  ${nearby.length ? `<div class="card"><h3>Yakındaki ordular</h3><div class="list">
+    ${nearby.slice(0, 8).map(p => `<div class="item" data-act="selParty" data-id="${p.id}">${facDot(p.faction)}
+      <div class="grow"><div class="t">${esc(partyLabel(p))}</div><div class="s">${fmt(stackCount(p.troops))} asker · ${esc(goalLabel(p))}</div></div></div>`).join('')}
+  </div></div>` : ''}
+
+  <div class="card">
+    <h3>Düzenle</h3>
+    ${fText('İsim', 'settlement', s.id, 'name')}
+    ${fSel('Sahip krallık', 'settlement', s.id, 'faction', facOpts(false))}
+    ${fSel('Tımar sahibi', 'settlement', s.id, 'lordId', [{ v:'', t:'— sahipsiz —' }].concat(
+      S.order.lords.map(i => S.lords[i]).filter(l => l.faction === s.faction && l.state !== 'dead').map(l => ({ v: l.id, t: `${l.title} ${l.name}` }))))}
+    <div class="grid2">
+      ${fNum('Refah', 'settlement', s.id, 'prosperity', 0, 100, 1)}
+      ${s.type !== 'village' ? fNum('Surlar', 'settlement', s.id, 'walls', 0, 100, 1) : ''}
+      ${s.type !== 'village' ? fNum('Erzak', 'settlement', s.id, 'food', 0, 100, 1) : ''}
+      ${fNum('Asker havuzu', 'settlement', s.id, 'recruits', 0, 200, 1)}
+      ${fNum('Huzursuzluk', 'settlement', s.id, 'unrest', 0, 100, 1)}
+      ${fSel('Tür', 'settlement', s.id, 'type', [{ v:'town', t:'Şehir' }, { v:'castle', t:'Kale' }, { v:'village', t:'Köy' }])}
+    </div>
+  </div>`;
+}
+
+function selFaction(f) {
+  if (!f) return '<div class="card">Krallık bulunamadı.</div>';
+  const king = f.kingId ? S.lords[f.kingId] : null;
+  const own = ownSettlements(f.id);
+  const lords = S.order.lords.map(i => S.lords[i]).filter(l => l.faction === f.id && l.state !== 'dead');
+  const troops = S.order.parties.map(i => S.parties[i]).filter(p => p && p.faction === f.id).reduce((a, p) => a + stackCount(p.troops), 0);
+  const wars = Object.keys(S.factions).filter(o => atWar(f.id, o));
+  return `
+  <div class="card">
+    <h3>${facDot(f.id)} ${esc(f.name)}</h3>
+    <div class="row wrap" style="gap:6px;margin-bottom:8px">
+      ${king ? `<span class="tag gold" data-act="selLord" data-id="${king.id}" style="cursor:pointer">${esc(king.title)} ${esc(king.name)}</span>` : '<span class="tag war">Hükümdarsız</span>'}
+      <span class="tag">${own.filter(s => s.type === 'town').length} şehir</span>
+      <span class="tag">${own.filter(s => s.type === 'castle').length} kale</span>
+      <span class="tag">${own.filter(s => s.type === 'village').length} köy</span>
+      ${f.alive ? '' : '<span class="tag war">Yıkıldı</span>'}
+    </div>
+    <table class="tbl">
+      <tr><td>Hazine</td><td class="n">${fmt(f.treasury)} dinar</td></tr>
+      <tr><td>Sahadaki asker</td><td class="n">${fmt(troops)}</td></tr>
+      <tr><td>Askerî güç</td><td class="n">${fmt(factionStrength(f.id))}</td></tr>
+      <tr><td>Lordlar</td><td class="n">${lords.length}</td></tr>
+      <tr><td>Savaşta</td><td>${wars.length ? wars.map(w => `<span class="tag war">${esc(S.factions[w].short)}</span>`).join(' ') : '<span class="tag peace">Barış</span>'}</td></tr>
+    </table>
+  </div>
+  <div class="card"><h3>Düzenle</h3>
+    ${fText('Krallık adı', 'faction', f.id, 'name')}
+    ${fText('Kısa ad', 'faction', f.id, 'short')}
+    ${fText('Hükümdar unvanı', 'faction', f.id, 'rulerTitle')}
+    ${fText('Lord unvanı', 'faction', f.id, 'lordTitle')}
+    ${fSel('Hükümdar', 'faction', f.id, 'kingId', lords.map(l => ({ v: l.id, t: `${l.title} ${l.name}` })))}
+    ${fSel('Kültür (birlik ağacı)', 'faction', f.id, 'culture', [
+      { v:'sw', t:'Swadya' }, { v:'vg', t:'Vaegir' }, { v:'kh', t:'Kherjit' },
+      { v:'nd', t:'Nord' }, { v:'rh', t:'Rodok' }, { v:'sr', t:'Sarranid' }])}
+    <div class="grid2">
+      ${fNum('Hazine', 'faction', f.id, 'treasury', 0, 99999999, 500)}
+      ${fNum('Saldırganlık (0-1.5)', 'faction', f.id, 'aggr', 0, 1.5, 0.05)}
+    </div>
+    <label class="f"><span>Renk</span><input type="color" value="${f.color}" data-edit="faction|${f.id}|color|color"></label>
+    <div class="btnrow">
+      <button class="btn sm" data-act="facLords" data-id="${f.id}">Lordlarını listele</button>
+      <button class="btn sm" data-act="facTreasury" data-id="${f.id}">Hazineye 50.000 ekle</button>
+      <button class="btn sm danger" data-act="facDestroy" data-id="${f.id}">Krallığı yık</button>
+    </div>
+  </div>`;
+}
+
+/* ---------- GENEL ---------- */
+function renderOvw() {
+  const live = Object.values(S.factions).filter(f => !f.isBandit);
+  const rows = live.map(f => {
+    const own = ownSettlements(f.id);
+    const troops = S.order.parties.map(i => S.parties[i]).filter(p => p && p.faction === f.id).reduce((a, p) => a + stackCount(p.troops), 0);
+    return { f, towns: own.filter(s => s.type === 'town').length, castles: own.filter(s => s.type === 'castle').length,
+      vil: own.filter(s => s.type === 'village').length, troops, str: factionStrength(f.id), gold: f.treasury };
+  }).sort((a, b) => b.str - a.str);
+  const maxStr = Math.max(1, ...rows.map(r => r.str));
+  const sieges = S.order.settlements.map(i => S.settlements[i]).filter(s => s.besiegedBy);
+  const wars = Object.keys(S.wars);
+
+  $('#paneOvw').innerHTML = `
+  <div class="card">
+    <h3>Kalradya <span class="sub">${dateStr(S.day)}</span></h3>
+    <div class="grid3 small">
+      <div><div class="muted">Savaşlar</div><b>${wars.length}</b></div>
+      <div><div class="muted">Kuşatmalar</div><b>${sieges.length}</b></div>
+      <div><div class="muted">Meydan savaşı</div><b>${fmt(S.stats.battles)}</b></div>
+      <div><div class="muted">Ordular</div><b>${S.order.parties.length}</b></div>
+      <div><div class="muted">Lordlar</div><b>${S.order.lords.filter(i => S.lords[i].state !== 'dead').length}</b></div>
+      <div><div class="muted">Geçen gün</div><b>${fmt(S.stats.days)}</b></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Güç dengesi</h3>
+    <table class="tbl">
+      <tr><th>Krallık</th><th class="n">Şehir</th><th class="n">Kale</th><th class="n">Asker</th><th style="width:26%">Güç</th></tr>
+      ${rows.map(r => `<tr class="clk" data-act="selFac" data-id="${r.f.id}">
+        <td>${facDot(r.f.id)} ${esc(r.f.short)}${r.f.alive ? '' : ' <span class="tag war">yıkıldı</span>'}</td>
+        <td class="n">${r.towns}</td><td class="n">${r.castles}</td><td class="n">${fmt(r.troops)}</td>
+        <td>${bar(r.str, maxStr, r.f.color)}</td></tr>`).join('')}
+    </table>
+  </div>
+
+  ${sieges.length ? `<div class="card"><h3>Süren kuşatmalar</h3><div class="list">
+    ${sieges.map(s => { const p = S.parties[s.besiegedBy]; return `<div class="item" data-act="selStl" data-id="${s.id}">
+      ${facDot(s.faction)}<div class="grow"><div class="t">${esc(s.name)}</div>
+      <div class="s">${p ? esc(partyLabel(p)) + ' — ' + esc(facName(p.faction)) : '?'} · %${Math.round(s.siegeProgress)}</div></div></div>`; }).join('')}
+  </div></div>` : ''}
+
+  <div class="card"><h3>En güçlü ordular</h3><div class="list">
+    ${S.order.parties.map(i => S.parties[i]).filter(p => p && p.type === 'lord')
+      .sort((a, b) => stackCount(b.troops) - stackCount(a.troops)).slice(0, 8)
+      .map(p => `<div class="item" data-act="selParty" data-id="${p.id}">${facDot(p.faction)}
+        <div class="grow"><div class="t">${esc(partyLabel(p))}</div><div class="s">${esc(goalLabel(p))}</div></div>
+        <div class="num">${fmt(stackCount(p.troops))}</div></div>`).join('')}
+  </div></div>`;
+}
+
+/* ---------- KRALLIKLAR ---------- */
+function renderFac() {
+  const live = Object.values(S.factions).filter(f => !f.isBandit);
+  $('#paneFac').innerHTML = live.map(f => {
+    const king = f.kingId ? S.lords[f.kingId] : null;
+    const own = ownSettlements(f.id);
+    const wars = Object.keys(S.factions).filter(o => atWar(f.id, o));
+    const lords = S.order.lords.map(i => S.lords[i]).filter(l => l.faction === f.id && l.state !== 'dead');
+    return `<div class="card">
+      <h3>${facDot(f.id)} ${esc(f.name)} ${f.alive ? '' : '<span class="tag war">yıkıldı</span>'}</h3>
+      <div class="small muted" style="margin-bottom:6px">
+        ${king ? `${esc(king.title)} ${esc(king.name)}` : 'Hükümdarsız'} · ${lords.length} lord · ${fmt(f.treasury)} dinar
+      </div>
+      <div class="row wrap" style="gap:4px;margin-bottom:8px">
+        <span class="tag">${own.filter(s => s.type === 'town').length} şehir</span>
+        <span class="tag">${own.filter(s => s.type === 'castle').length} kale</span>
+        <span class="tag">${own.filter(s => s.type === 'village').length} köy</span>
+        ${wars.length ? wars.map(w => `<span class="tag war">⚔ ${esc(S.factions[w].short)}</span>`).join('') : '<span class="tag peace">Barış</span>'}
+      </div>
+      <div class="btnrow">
+        <button class="btn sm" data-act="selFac" data-id="${f.id}">Aç ve düzenle</button>
+        <button class="btn sm" data-act="facLords" data-id="${f.id}">Lordlar</button>
+        <button class="btn sm" data-act="facFocus" data-id="${f.id}">Haritada</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- LORDLAR ---------- */
+function renderLrd() {
+  let list = S.order.lords.map(i => S.lords[i]);
+  if (ui.lordFac) list = list.filter(l => l.faction === ui.lordFac);
+  if (ui.lordState) list = list.filter(l => l.state === ui.lordState);
+  if (ui.lordQuery) { const q = ui.lordQuery.toLowerCase(); list = list.filter(l => l.name.toLowerCase().includes(q)); }
+  const key = ui.lordSort;
+  list.sort((a, b) => {
+    if (key === 'name') return a.name.localeCompare(b.name, 'tr');
+    if (key === 'fiefs') return b.fiefs.length - a.fiefs.length;
+    if (key === 'troops') return partyTroops(b) - partyTroops(a);
+    if (key === 'relKing') return a.relKing - b.relKing;
+    return b.renown - a.renown;
+  });
+  $('#paneLrd').innerHTML = `
+  <div class="card">
+    <div class="grid2">
+      <label class="f"><span>Ara</span><input type="text" id="lrdQ" value="${esc(ui.lordQuery)}" placeholder="Lord adı"></label>
+      <label class="f"><span>Sırala</span><select id="lrdSort">
+        ${[['renown','Şöhret'],['name','İsim'],['fiefs','Tımar sayısı'],['troops','Asker'],['relKing','Krala bağlılık']]
+          .map(o => `<option value="${o[0]}" ${ui.lordSort === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}
+      </select></label>
+      <label class="f"><span>Krallık</span><select id="lrdFac">
+        <option value="">Hepsi</option>${Object.values(S.factions).filter(f => !f.isBandit).map(f => `<option value="${f.id}" ${ui.lordFac === f.id ? 'selected' : ''}>${esc(f.short)}</option>`).join('')}
+      </select></label>
+      <label class="f"><span>Durum</span><select id="lrdState">
+        <option value="">Hepsi</option>
+        ${[['active','Sahada'],['prisoner','Esir'],['regroup','Toparlanıyor'],['exile','Sürgün'],['dead','Ölü']]
+          .map(o => `<option value="${o[0]}" ${ui.lordState === o[0] ? 'selected' : ''}>${o[1]}</option>`).join('')}
+      </select></label>
+    </div>
+    <div class="small muted">${list.length} lord listeleniyor</div>
+  </div>
+  <div class="list">
+    ${list.slice(0, 120).map(l => `<div class="item" data-act="selLord" data-id="${l.id}">
+      ${facDot(l.faction)}
+      <div class="grow"><div class="t">${l.isKing ? '👑 ' : ''}${esc(l.title)} ${esc(l.name)}</div>
+      <div class="s">${esc(stateLabel(l))} · ${l.fiefs.length} tımar · şöhret ${fmt(l.renown)}</div></div>
+      <div class="num small">${fmt(partyTroops(l))}</div>
+    </div>`).join('')}
+  </div>`;
+  const q = $('#lrdQ');
+  if (q) q.oninput = e => { ui.lordQuery = e.target.value; uiDirty.lrd = true; renderUI(true); $('#lrdQ').focus(); };
+  const bindSel = (id, prop) => { const el2 = $('#' + id); if (el2) el2.onchange = e => { ui[prop] = e.target.value; uiDirty.lrd = true; renderUI(true); }; };
+  bindSel('lrdSort', 'lordSort'); bindSel('lrdFac', 'lordFac'); bindSel('lrdState', 'lordState');
+}
+function partyTroops(l) { const p = l.partyId ? S.parties[l.partyId] : null; return p ? stackCount(p.troops) : 0; }
+
+/* ---------- YERLEŞİMLER ---------- */
+function renderStl() {
+  let list = S.order.settlements.map(i => S.settlements[i]);
+  if (ui.stlType) list = list.filter(s => s.type === ui.stlType);
+  if (ui.stlFac) list = list.filter(s => s.faction === ui.stlFac);
+  if (ui.stlQuery) { const q = ui.stlQuery.toLowerCase(); list = list.filter(s => s.name.toLowerCase().includes(q)); }
+  const order = { town: 0, castle: 1, village: 2 };
+  list.sort((a, b) => order[a.type] - order[b.type] || a.name.localeCompare(b.name, 'tr'));
+  $('#paneStl').innerHTML = `
+  <div class="card">
+    <div class="grid2">
+      <label class="f"><span>Ara</span><input type="text" id="stlQ" value="${esc(ui.stlQuery)}" placeholder="Yerleşim adı"></label>
+      <label class="f"><span>Tür</span><select id="stlType">
+        <option value="">Hepsi</option><option value="town" ${ui.stlType === 'town' ? 'selected' : ''}>Şehirler</option>
+        <option value="castle" ${ui.stlType === 'castle' ? 'selected' : ''}>Kaleler</option>
+        <option value="village" ${ui.stlType === 'village' ? 'selected' : ''}>Köyler</option></select></label>
+      <label class="f" style="grid-column:1/-1"><span>Krallık</span><select id="stlFac">
+        <option value="">Hepsi</option>${Object.values(S.factions).filter(f => !f.isBandit).map(f => `<option value="${f.id}" ${ui.stlFac === f.id ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}
+      </select></label>
+    </div>
+    <div class="small muted">${list.length} yerleşim</div>
+  </div>
+  <div class="list">
+    ${list.slice(0, 160).map(s => `<div class="item" data-act="selStl" data-id="${s.id}">
+      ${facDot(s.faction)}
+      <div class="grow"><div class="t">${s.type === 'town' ? '🏛 ' : s.type === 'castle' ? '🏰 ' : '🏘 '}${esc(s.name)}</div>
+      <div class="s">${esc(facName(s.faction))}${s.besiegedBy ? ' · kuşatma altında' : ''}${s.raidedUntil > S.day ? ' · yağmalandı' : ''}</div></div>
+      <div class="num small">${Math.round(s.prosperity)}</div>
+    </div>`).join('')}
+  </div>`;
+  const q = $('#stlQ');
+  if (q) q.oninput = e => { ui.stlQuery = e.target.value; uiDirty.stl = true; renderUI(true); $('#stlQ').focus(); };
+  const bindSel = (id, prop) => { const el2 = $('#' + id); if (el2) el2.onchange = e => { ui[prop] = e.target.value; uiDirty.stl = true; renderUI(true); }; };
+  bindSel('stlType', 'stlType'); bindSel('stlFac', 'stlFac');
+}
+
+/* ---------- DİPLOMASİ ---------- */
+function renderDip() {
+  const live = Object.values(S.factions).filter(f => !f.isBandit && f.alive);
+  const wars = Object.entries(S.wars).map(([k, v]) => {
+    const [a, b] = k.split('|'); return { a, b, since: v.since, days: Math.floor(S.day - v.since) };
+  }).sort((x, y) => y.days - x.days);
+  $('#paneDip').innerHTML = `
+  <div class="card">
+    <h3>Süren savaşlar <span class="sub">${wars.length}</span></h3>
+    ${wars.length ? `<div class="list">${wars.map(w => `<div class="item">
+      ${facDot(w.a)}<div class="grow"><div class="t">${esc(S.factions[w.a].short)} ⚔ ${esc(S.factions[w.b].short)}</div>
+      <div class="s">${w.days} gündür sürüyor</div></div>
+      <button class="btn sm" data-act="peace" data-a="${w.a}" data-b="${w.b}">Barış</button></div>`).join('')}</div>`
+    : '<div class="small muted">Kalradya şu an barış içinde.</div>'}
+  </div>
+
+  <div class="card">
+    <h3>Savaş / barış tablosu <span class="sub">hücreye tıkla, durumu değiştir</span></h3>
+    <div style="overflow-x:auto">
+    <table class="tbl"><tr><th></th>${live.map(f => `<th class="n" title="${esc(f.name)}">${esc(f.short.slice(0, 4))}</th>`).join('')}</tr>
+      ${live.map(a => `<tr><td><b>${facDot(a.id)} ${esc(a.short)}</b></td>${live.map(b => {
+        if (a.id === b.id) return '<td class="n muted">—</td>';
+        const w = atWar(a.id, b.id);
+        return `<td class="n"><span class="tag ${w ? 'war' : 'peace'}" style="cursor:pointer" data-act="toggleWar" data-a="${a.id}" data-b="${b.id}">${w ? '⚔' : '🕊'}</span></td>`;
+      }).join('')}</tr>`).join('')}
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h3>İlişki puanları</h3>
+    <div style="overflow-x:auto">
+    <table class="tbl"><tr><th></th>${live.map(f => `<th class="n">${esc(f.short.slice(0, 4))}</th>`).join('')}</tr>
+      ${live.map(a => `<tr><td>${facDot(a.id)} ${esc(a.short)}</td>${live.map(b => a.id === b.id ? '<td class="n muted">—</td>'
+        : `<td class="n" style="color:${(a.rel[b.id] || 0) < 0 ? 'var(--danger)' : 'var(--success)'}">${Math.round(a.rel[b.id] || 0)}</td>`).join('')}</tr>`).join('')}
+    </table></div>
+    <div class="btnrow" style="margin-top:8px">
+      <button class="btn sm" data-act="allPeace">Tüm savaşları bitir</button>
+      <button class="btn sm danger" data-act="allWar">Herkesi savaştır</button>
+    </div>
+  </div>`;
+}
+/* =====================================================================
+   Bölüm 6: Müdahale konsolu, diyaloglar ve komutlar
+   ===================================================================== */
+
+/* ---------- MÜDAHALE PANELİ ---------- */
+function renderGod() {
+  const live = Object.values(S.factions).filter(f => !f.isBandit);
+  const facSel = (id, incAll) => `<select id="${id}">${incAll ? '<option value="">— hepsi —</option>' : ''}${
+    live.map(f => `<option value="${f.id}">${esc(f.name)}</option>`).join('')}</select>`;
+  const stlSel = (id) => `<select id="${id}">${S.order.settlements.map(i => S.settlements[i])
+    .filter(s => s.type !== 'village')
+    .map(s => `<option value="${s.id}">${esc(s.name)} — ${esc(facName(s.faction))}</option>`).join('')}</select>`;
+
+  $('#paneGod').innerHTML = `
+  <div class="card">
+    <h3>Zaman <span class="sub">simülasyonu ileri sar</span></h3>
+    <div class="btnrow">
+      <button class="btn sm" data-act="skip" data-n="1">+1 gün</button>
+      <button class="btn sm" data-act="skip" data-n="7">+1 hafta</button>
+      <button class="btn sm" data-act="skip" data-n="30">+1 ay</button>
+      <button class="btn sm" data-act="skip" data-n="90">+3 ay</button>
+      <button class="btn sm" data-act="skip" data-n="360">+1 yıl</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Ordu yarat</h3>
+    <div class="grid2">
+      <label class="f"><span>Krallık</span>${facSel('gaFac')}</label>
+      <label class="f"><span>Konum</span>${stlSel('gaStl')}</label>
+      <label class="f"><span>Asker sayısı</span><input type="number" id="gaSize" value="120" min="1" max="4000"></label>
+      <label class="f"><span>Kalite (0-1)</span><input type="number" id="gaQ" value="0.6" min="0" max="1" step="0.05"></label>
+    </div>
+    <label class="f"><span>Komutan</span><select id="gaLord"><option value="">— yeni bir komutan —</option>${
+      S.order.lords.map(i => S.lords[i]).filter(l => l.state !== 'dead')
+        .map(l => `<option value="${l.id}">${esc(l.title)} ${esc(l.name)} (${esc(facName(l.faction))})</option>`).join('')}</select></label>
+    <div class="btnrow">
+      <button class="btn sm primary" data-act="spawnArmy">Orduyu kur</button>
+      <button class="btn sm" data-act="spawnBandit">Haydut çetesi çıkar</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Krallık müdahalesi</h3>
+    <label class="f"><span>Krallık</span>${facSel('gfFac')}</label>
+    <div class="btnrow">
+      <button class="btn sm" data-act="gfGold">+50.000 dinar</button>
+      <button class="btn sm" data-act="gfArmy">Tüm lordlara ordu ver</button>
+      <button class="btn sm" data-act="gfElite">Tüm orduları seçkinleştir</button>
+      <button class="btn sm" data-act="gfProsper">Refahı 100 yap</button>
+      <button class="btn sm" data-act="gfWalls">Surları güçlendir</button>
+      <button class="btn sm" data-act="gfRevive">Krallığı dirilt</button>
+    </div>
+    <div class="btnrow" style="margin-top:6px">
+      <label class="f grow" style="margin:0"><span>Tüm topraklarını devret</span>${facSel('gfTo')}</label>
+      <button class="btn sm danger" data-act="gfAnnex" style="align-self:flex-end">Devret</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Savaş oyunu</h3>
+    <div class="small muted" style="margin-bottom:6px">İki orduyu anında çarpıştır, sonucu gör.</div>
+    <div class="grid2">
+      <label class="f"><span>Taraf A</span><select id="gbA">${partyOptions(0)}</select></label>
+      <label class="f"><span>Taraf B</span><select id="gbB">${partyOptions(1)}</select></label>
+    </div>
+    <div class="btnrow">
+      <button class="btn sm primary" data-act="simBattle">Savaştır</button>
+      <button class="btn sm" data-act="siegeNow">Seçili yerleşimi anında düşür</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Simülasyon ayarları</h3>
+    ${rangeRow('Savaş ölümcüllüğü', 'lethality', 0.2, 3, 0.1)}
+    ${rangeRow('Asker toplama hızı', 'recruitRate', 0.2, 4, 0.1)}
+    ${rangeRow('Ekonomi çarpanı', 'economy', 0.2, 4, 0.1)}
+    ${rangeRow('Krallık saldırganlığı', 'aggression', 0, 3, 0.1)}
+    ${rangeRow('Haydut yoğunluğu', 'banditRate', 0, 3, 0.1)}
+    <div class="grid2 small" style="margin-top:6px">
+      ${chk('autoPeace', 'Yapay zeka barış yapsın')}
+      ${chk('lordDefection', 'Lordlar taraf değiştirsin')}
+      ${chk('banditSpawn', 'Haydutlar türesin')}
+      ${chk('pauseOnSiege', 'Kuşatmada duraklat')}
+      ${chk('pauseOnWar', 'Savaş ilanında duraklat')}
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Dünya</h3>
+    <div class="btnrow">
+      <button class="btn sm" data-act="save">Kaydet</button>
+      <button class="btn sm" data-act="load">Yükle</button>
+      <button class="btn sm" data-act="export">Dışa aktar</button>
+      <button class="btn sm" data-act="import">İçe aktar</button>
+      <button class="btn sm" data-act="clearLog">Günlüğü temizle</button>
+      <button class="btn sm danger" data-act="newWorld">Yeni dünya</button>
+    </div>
+    <div class="small muted" style="margin-top:6px">Kayıt tarayıcıda saklanır. Dışa aktarma dosyasını saklayıp başka cihazda içe aktarabilirsin.</div>
+  </div>`;
+
+  $$('#paneGod input[type="range"]').forEach(r => {
+    r.oninput = e => {
+      S.opts[e.target.dataset.opt] = +e.target.value;
+      const lab = e.target.parentElement.querySelector('.rv');
+      if (lab) lab.textContent = (+e.target.value).toFixed(1);
+    };
+  });
+  $$('#paneGod input[type="checkbox"]').forEach(c => {
+    c.onchange = e => { S.opts[e.target.dataset.opt] = e.target.checked; };
+  });
+}
+function rangeRow(label, key, min, max, step) {
+  return `<label class="f"><span>${esc(label)} — <b class="rv">${(S.opts[key]).toFixed(1)}</b></span>
+    <input type="range" min="${min}" max="${max}" step="${step}" value="${S.opts[key]}" data-opt="${key}"></label>`;
+}
+function chk(key, label) {
+  return `<label class="row" style="gap:6px"><input type="checkbox" data-opt="${key}" ${S.opts[key] ? 'checked' : ''} style="width:auto"> <span>${esc(label)}</span></label>`;
+}
+function partyOptions(selIndex) {
+  const list = S.order.parties.map(i => S.parties[i]).filter(Boolean)
+    .sort((a, b) => stackCount(b.troops) - stackCount(a.troops)).slice(0, 120);
+  let pickIdx = selIndex || 0;
+  if (selIndex === 1) {
+    const first = list[0];
+    const other = list.findIndex(p => first && p.faction !== first.faction);
+    pickIdx = other > 0 ? other : Math.min(1, list.length - 1);
+  }
+  return list.map((p, i) => `<option value="${p.id}" ${i === pickIdx ? 'selected' : ''}>${esc(partyLabel(p))} — ${esc(S.factions[p.faction] ? S.factions[p.faction].short : '?')} (${stackCount(p.troops)})</option>`).join('');
+}
+
+/* ---------- diyalog ---------- */
+const dlg = $('#dlg');
+function openDlg(title, body, buttons) {
+  $('#dlgTitle').textContent = title;
+  $('#dlgBody').innerHTML = body;
+  const foot = $('#dlgFoot'); foot.innerHTML = '';
+  (buttons || [{ t: 'Kapat', cls: '', fn: () => dlg.close() }]).forEach(b => {
+    const btn = document.createElement('button');
+    btn.className = 'btn ' + (b.cls || ''); btn.textContent = b.t;
+    btn.onclick = () => b.fn(dlg);
+    foot.appendChild(btn);
+  });
+  if (!dlg.open) dlg.showModal();
+}
+$('#dlgX').onclick = () => dlg.close();
+
+/* ---------- birlik düzenleyici ---------- */
+function troopEditor(kind, id) {
+  const target = kind === 'party' ? S.parties[id] : S.settlements[id];
+  if (!target) return;
+  const stack = kind === 'party' ? target.troops : target.garrison;
+  const culture = S.factions[target.faction] ? S.factions[target.faction].culture : 'sw';
+  const render = () => {
+    const rows = Object.entries(stack).filter(e => e[1] > 0)
+      .sort((a, b) => (TROOPS[b[0]]?.tier || 0) - (TROOPS[a[0]]?.tier || 0))
+      .map(([k, v]) => `<tr><td>${esc(TROOPS[k] ? TROOPS[k].name : k)}</td><td class="small muted">T${TROOPS[k] ? TROOPS[k].tier : '?'}</td>
+        <td class="n"><input type="number" value="${v}" min="0" max="99999" data-troop="${k}" style="width:88px;text-align:right"></td></tr>`).join('');
+    const opts = Object.values(TROOPS).sort((a, b) => a.culture.localeCompare(b.culture) || a.tier - b.tier)
+      .map(t => `<option value="${t.id}">${esc(t.name)} (T${t.tier})</option>`).join('');
+    $('#dlgBody').innerHTML = `
+      <div class="small muted" style="margin-bottom:8px">${esc(kind === 'party' ? partyLabel(target) : target.name)} — toplam <b>${fmt(stackCount(stack))}</b> asker, güç ${fmt(stackPower(stack))}</div>
+      <table class="tbl">${rows || '<tr><td class="small muted">Boş</td></tr>'}</table>
+      <div class="row" style="gap:6px;margin-top:10px">
+        <select id="teType" class="grow">${opts}</select>
+        <input type="number" id="teN" value="20" min="1" max="9999" style="width:90px">
+        <button class="btn sm" id="teAdd">Ekle</button>
+      </div>
+      <div class="btnrow" style="margin-top:8px">
+        <button class="btn sm" id="teFill">Kültür ordusu ekle (+100)</button>
+        <button class="btn sm" id="teUp">Hepsini terfi ettir</button>
+        <button class="btn sm danger" id="teClear">Boşalt</button>
+      </div>`;
+    $$('#dlgBody input[data-troop]').forEach(inp => {
+      inp.onchange = e => {
+        const k = e.target.dataset.troop, v = Math.max(0, Math.round(+e.target.value || 0));
+        if (v === 0) delete stack[k]; else stack[k] = v;
+        uiDirty.sel = true; render(); requestDraw();
+      };
+    });
+    $('#teAdd').onclick = () => { const k = $('#teType').value, n = Math.max(1, +$('#teN').value || 1);
+      stack[k] = (stack[k] || 0) + n; render(); uiDirty.sel = true; requestDraw(); };
+    $('#teFill').onclick = () => { stackMerge(stack, makeStack(culture, 100, 0.55)); render(); uiDirty.sel = true; requestDraw(); };
+    $('#teUp').onclick = () => { for (let i = 0; i < 12; i++) upgradeStack(stack, null); render(); uiDirty.sel = true; requestDraw(); };
+    $('#teClear').onclick = () => { Object.keys(stack).forEach(k => delete stack[k]); render(); uiDirty.sel = true; requestDraw(); };
+  };
+  openDlg(kind === 'party' ? 'Askerleri düzenle' : 'Garnizonu düzenle', '', [{ t: 'Tamam', cls: 'primary', fn: () => { dlg.close(); renderUI(true); } }]);
+  render();
+}
+
+/* ---------- diğer diyaloglar ---------- */
+function teleportDialog(pid) {
+  const p = S.parties[pid]; if (!p) return;
+  const opts = S.order.settlements.map(i => S.settlements[i])
+    .map(s => `<option value="${s.id}">${esc(s.name)} — ${esc(facName(s.faction))}</option>`).join('');
+  openDlg('Orduyu ışınla', `<label class="f"><span>Hedef yerleşim</span><select id="tpS">${opts}</select></label>`,
+    [{ t: 'Işınla', cls: 'primary', fn: () => {
+      const s = S.settlements[$('#tpS').value]; if (s) { p.x = s.x + rf(-8, 8); p.y = s.y + rf(-8, 8); p.besieging = null; p.goal = 'idle'; p.tx = null; }
+      dlg.close(); requestDraw(); renderUI(true); toast('Ordu taşındı');
+    } }, { t: 'Vazgeç', fn: () => dlg.close() }]);
+}
+function orderDialog(pid) {
+  const p = S.parties[pid]; if (!p) return;
+  const stls = S.order.settlements.map(i => S.settlements[i]);
+  openDlg('Orduya emir ver', `
+    <label class="f"><span>Görev</span><select id="odG">
+      <option value="siege">Kuşat</option><option value="raid">Yağmala</option>
+      <option value="return">Dön / konakla</option><option value="patrol">Devriye</option>
+      <option value="defend">Savun</option></select></label>
+    <label class="f"><span>Hedef</span><select id="odT">${stls.map(s => `<option value="${s.id}">${esc(s.name)} — ${esc(facName(s.faction))}</option>`).join('')}</select></label>
+    <div class="small muted">Kuşatma için hedefin düşman olması gerekir; gerekiyorsa savaş otomatik ilan edilir.</div>`,
+    [{ t: 'Gönder', cls: 'primary', fn: () => {
+      const g = $('#odG').value, t = S.settlements[$('#odT').value];
+      if (t) {
+        if ((g === 'siege' || g === 'raid') && t.faction !== p.faction && !atWar(p.faction, t.faction) && p.faction !== 'bandit') declareWar(p.faction, t.faction);
+        if (p.besieging) liftSiege(p);
+        setGoal(p, g, t);
+      }
+      dlg.close(); requestDraw(); renderUI(true); toast('Emir verildi');
+    } }, { t: 'Vazgeç', fn: () => dlg.close() }]);
+}
+function giveFiefDialog(sid) {
+  const s = S.settlements[sid]; if (!s) return;
+  const lords = S.order.lords.map(i => S.lords[i]).filter(l => l.state !== 'dead');
+  openDlg('Tımar ver', `<label class="f"><span>Yeni sahip</span><select id="gfL">${
+    lords.map(l => `<option value="${l.id}" ${l.id === s.lordId ? 'selected' : ''}>${esc(l.title)} ${esc(l.name)} — ${esc(facName(l.faction))}</option>`).join('')}</select></label>
+    <div class="small muted">Lord başka bir krallıktansa yerleşim de o krallığa geçer.</div>`,
+    [{ t: 'Ver', cls: 'primary', fn: () => {
+      const l = S.lords[$('#gfL').value];
+      if (l) { if (l.faction !== s.faction) changeOwner(s, l.faction, l); else grantFief(s, l); }
+      dlg.close(); territoryDirty = true; requestDraw(); renderUI(true); toast('Tımar verildi');
+    } }, { t: 'Vazgeç', fn: () => dlg.close() }]);
+}
+function battleReport(r, nameA, nameB) {
+  openDlg('Savaş raporu', `
+    <table class="tbl">
+      <tr><th></th><th class="n">${esc(nameA)}</th><th class="n">${esc(nameB)}</th></tr>
+      <tr><td>Başlangıç</td><td class="n">${fmt(r.startA)}</td><td class="n">${fmt(r.startB)}</td></tr>
+      <tr><td>Kayıp</td><td class="n">${fmt(r.lossA)}</td><td class="n">${fmt(r.lossB)}</td></tr>
+      <tr><td>Kalan</td><td class="n">${fmt(stackCount(r.A))}</td><td class="n">${fmt(stackCount(r.B))}</td></tr>
+    </table>
+    <div class="card" style="margin-top:10px"><h3>Kazanan</h3><b>${esc(r.winner === 'a' ? nameA : nameB)}</b></div>`);
+}
+
+/* ---------- komut dağıtıcı ---------- */
+const ACTIONS = {
+  focus: () => focusSel(),
+  selStl: (el2) => select({ type: 'settlement', id: el2.dataset.id }),
+  selLord: (el2) => select({ type: 'lord', id: el2.dataset.id }),
+  selParty: (el2) => select({ type: 'party', id: el2.dataset.id }),
+  selFac: (el2) => { S.sel = { type: 'faction', id: el2.dataset.id }; uiDirty.sel = true; setTab('sel'); },
+  toggleFac: (el2) => { const f = el2.dataset.id; S.hidden[f] = !S.hidden[f]; renderLegend(); requestDraw(); },
+  facFocus: (el2) => {
+    const own = ownSettlements(el2.dataset.id);
+    if (!own.length) return;
+    const cx = own.reduce((a, s) => a + s.x, 0) / own.length, cy = own.reduce((a, s) => a + s.y, 0) / own.length;
+    focusOn(cx, cy, 1.1); if (window.innerWidth <= 900) $('#side').classList.remove('open');
+  },
+  facLords: (el2) => { ui.lordFac = el2.dataset.id; ui.lordState = ''; uiDirty.lrd = true; setTab('lrd'); },
+  facTreasury: (el2) => { const f = S.factions[el2.dataset.id]; if (f) { f.treasury += 50000; toast('Hazineye 50.000 dinar eklendi'); uiDirty.sel = true; renderUI(true); } },
+  facDestroy: (el2) => {
+    const f = S.factions[el2.dataset.id]; if (!f) return;
+    openDlg('Krallığı yık', `<div>${esc(f.name)} krallığının tüm toprakları dağıtılacak ve krallık haritadan silinecek. Emin misin?</div>`,
+      [{ t: 'Yık', cls: 'danger', fn: () => {
+        const others = Object.values(S.factions).filter(o => !o.isBandit && o.alive && o.id !== f.id);
+        ownSettlements(f.id).forEach(s => { if (others.length) changeOwner(s, pick(others).id, null); });
+        checkFactionAlive(f.id); dlg.close(); territoryDirty = true; renderUI(true); requestDraw();
+      } }, { t: 'Vazgeç', fn: () => dlg.close() }]);
+  },
+  lordHeal: (el2) => {
+    const l = S.lords[el2.dataset.id]; if (!l) return;
+    let p = l.partyId ? S.parties[l.partyId] : null;
+    if (!p) { if (l.state === 'prisoner' || l.state === 'dead') { l.state = 'active'; } p = spawnLordParty(l); }
+    const cap = lordPartyCap(l), cnt = stackCount(p.troops);
+    if (cnt < cap) stackMerge(p.troops, makeStack(S.factions[l.faction].culture, cap - cnt, 0.5));
+    p.morale = 100; toast('Ordu tamamlandı'); uiDirty.sel = true; renderUI(true); requestDraw();
+  },
+  lordElite: (el2) => {
+    const l = S.lords[el2.dataset.id]; if (!l) return;
+    const p = l.partyId ? S.parties[l.partyId] : spawnLordParty(l);
+    stackMerge(p.troops, makeStack(S.factions[l.faction].culture, 60, 0.95));
+    toast('Seçkin birlikler katıldı'); uiDirty.sel = true; renderUI(true); requestDraw();
+  },
+  lordFree: (el2) => { const l = S.lords[el2.dataset.id]; if (l) { releaseLord(l); renderUI(true); } },
+  lordSpawn: (el2) => { const l = S.lords[el2.dataset.id]; if (l && !l.partyId) { l.state = 'active'; spawnLordParty(l); renderUI(true); requestDraw(); } },
+  lordKill: (el2) => {
+    const l = S.lords[el2.dataset.id]; if (!l) return;
+    if (l.partyId) removeParty(l.partyId);
+    l.partyId = null; l.state = 'dead';
+    l.fiefs.slice().forEach(f => { const s = S.settlements[f]; if (s) { s.lordId = null; } });
+    l.fiefs = [];
+    if (l.isKing) { l.isKing = false; succession(l.faction); }
+    addLog(`☠ ${l.title} ${l.name} öldü.`, 'war');
+    renderUI(true); requestDraw();
+  },
+  makeKing: (el2) => { const l = S.lords[el2.dataset.id]; if (l) { makeKing(l); renderUI(true); } },
+  troopEditor: (el2) => troopEditor(el2.dataset.kind, el2.dataset.id),
+  teleport: (el2) => teleportDialog(el2.dataset.id),
+  orderParty: (el2) => orderDialog(el2.dataset.id),
+  killParty: (el2) => { const p = S.parties[el2.dataset.id]; if (p) { destroyParty(p, null); renderUI(true); requestDraw(); } },
+  reinforce: (el2) => {
+    const s = S.settlements[el2.dataset.id]; if (!s) return;
+    stackMerge(s.garrison, makeStack(S.factions[s.faction].culture, 60, 0.6));
+    toast('Garnizon takviye edildi'); uiDirty.sel = true; renderUI(true);
+  },
+  breakSiege: (el2) => {
+    const s = S.settlements[el2.dataset.id]; if (!s) return;
+    S.order.parties.forEach(i => { const p = S.parties[i]; if (p && p.besieging === s.id) { liftSiege(p); p.cooldown = 2; fleeFrom(p, s); } });
+    s.besiegedBy = null; s.siegeProgress = 0;
+    addLog(`${s.name} üzerindeki kuşatma kaldırıldı.`, 'siege');
+    renderUI(true); requestDraw();
+  },
+  giveFief: (el2) => giveFiefDialog(el2.dataset.id),
+  peace: (el2) => { makePeace(el2.dataset.a, el2.dataset.b); renderUI(true); },
+  toggleWar: (el2) => {
+    const a = el2.dataset.a, b = el2.dataset.b;
+    if (atWar(a, b)) makePeace(a, b); else declareWar(a, b);
+    uiDirty.dip = true; renderUI(true);
+  },
+  allPeace: () => { Object.keys(S.wars).forEach(k => { const [a, b] = k.split('|'); makePeace(a, b, true); });
+    addLog('🕊 Kalradya\'da genel barış ilan edildi.', 'peace'); renderUI(true); },
+  allWar: () => {
+    const live = Object.values(S.factions).filter(f => !f.isBandit && f.alive);
+    live.forEach(a => live.forEach(b => { if (a.id < b.id) declareWar(a.id, b.id, true); }));
+    addLog('⚔ Bütün krallıklar birbirine savaş ilan etti!', 'war'); renderUI(true);
+  },
+  skip: (el2) => skipDays(+el2.dataset.n),
+  spawnArmy: () => {
+    const f = $('#gaFac').value, s = S.settlements[$('#gaStl').value];
+    const size = clamp(+$('#gaSize').value || 100, 1, 4000), q = clamp(+$('#gaQ').value || 0.5, 0, 1);
+    const lordId = $('#gaLord').value;
+    let lord = lordId ? S.lords[lordId] : null;
+    if (!lord) {
+      lord = createLord(f);
+      addLog(`${lord.title} ${lord.name}, ${facName(f)} hizmetinde göründü.`, '');
+    }
+    if (lord.partyId && S.parties[lord.partyId]) removeParty(lord.partyId);
+    lord.state = 'active';
+    const p = spawnLordParty(lord);
+    p.troops = makeStack(S.factions[lord.faction].culture, size, q);
+    if (s) { p.x = s.x + rf(-8, 8); p.y = s.y + rf(-8, 8); }
+    p.morale = 90;
+    toast(`${size} kişilik ordu kuruldu`); uiDirty.lrd = true; renderUI(true); requestDraw();
+  },
+  spawnBandit: () => { const s = S.settlements[$('#gaStl') ? $('#gaStl').value : '']; const p = spawnBandit(s ? s.x + rf(-30, 30) : null, s ? s.y + rf(-30, 30) : null);
+    stackMerge(p.troops, {}); toast('Haydut çetesi çıktı'); requestDraw(); },
+  gfGold: () => { const f = S.factions[$('#gfFac').value]; if (f) { f.treasury += 50000; toast('+50.000 dinar'); } },
+  gfArmy: () => {
+    const f = $('#gfFac').value;
+    S.order.lords.map(i => S.lords[i]).filter(l => l.faction === f && l.state !== 'dead').forEach(l => {
+      if (l.state === 'prisoner' || l.state === 'exile') l.state = 'active';
+      const p = l.partyId && S.parties[l.partyId] ? S.parties[l.partyId] : spawnLordParty(l);
+      const cap = lordPartyCap(l), cnt = stackCount(p.troops);
+      if (cnt < cap) stackMerge(p.troops, makeStack(S.factions[f].culture, cap - cnt, 0.55));
+      p.morale = 95;
+    });
+    toast('Bütün lordların orduları tamamlandı'); renderUI(true); requestDraw();
+  },
+  gfElite: () => {
+    const f = $('#gfFac').value;
+    S.order.parties.map(i => S.parties[i]).filter(p => p && p.faction === f).forEach(p => {
+      for (let i = 0; i < 20; i++) upgradeStack(p.troops, null);
+    });
+    toast('Ordular seçkinleştirildi'); renderUI(true);
+  },
+  gfProsper: () => { ownSettlements($('#gfFac').value).forEach(s => { s.prosperity = 100; s.food = 100; s.raidedUntil = 0; }); toast('Refah yükseltildi'); renderUI(true); },
+  gfWalls: () => { ownSettlements($('#gfFac').value).forEach(s => { if (s.type !== 'village') s.walls = 100; }); toast('Surlar güçlendirildi'); renderUI(true); },
+  gfRevive: () => {
+    const f = S.factions[$('#gfFac').value]; if (!f) return;
+    f.alive = true;
+    if (!ownSettlements(f.id).length) {
+      const home = S.settlements[f.capital] || pick(S.order.settlements.map(i => S.settlements[i]).filter(s => s.type === 'town'));
+      if (home) changeOwner(home, f.id, null);
+    }
+    S.order.lords.map(i => S.lords[i]).filter(l => l.faction === f.id).forEach(l => {
+      if (l.state === 'exile' || l.state === 'dead') { l.state = 'regroup'; l.freeAt = S.day + 1; }
+    });
+    if (!f.kingId || !S.lords[f.kingId] || S.lords[f.kingId].faction !== f.id) succession(f.id);
+    addLog(`${f.name} yeniden doğdu!`, 'peace');
+    territoryDirty = true; renderUI(true); requestDraw();
+  },
+  gfAnnex: () => {
+    const from = $('#gfFac').value, to = $('#gfTo').value;
+    if (from === to) { toast('Aynı krallık'); return; }
+    ownSettlements(from).forEach(s => changeOwner(s, to, null));
+    checkFactionAlive(from);
+    addLog(`${facName(from)} toprakları ${facName(to)} krallığına devredildi.`, 'war');
+    territoryDirty = true; renderUI(true); requestDraw();
+  },
+  simBattle: () => {
+    const a = S.parties[$('#gbA').value], b = S.parties[$('#gbB').value];
+    if (!a || !b || a === b) { toast('İki farklı ordu seç'); return; }
+    const nameA = `${partyLabel(a)} (${S.factions[a.faction].short})`, nameB = `${partyLabel(b)} (${S.factions[b.faction].short})`;
+    const r = fightStacks(a.troops, b.troops, 1, 1);
+    a.troops = r.A; b.troops = r.B;
+    const win = r.winner === 'a' ? a : b, lose = r.winner === 'a' ? b : a;
+    addLog(`⚔ Emirle çarpışma: ${r.winner === 'a' ? nameA : nameB} kazandı.`, 'war');
+    if (stackCount(lose.troops) <= 2) destroyParty(lose, win);
+    battleReport(r, nameA, nameB);
+    uiDirty.god = true; renderUI(true); requestDraw();
+  },
+  siegeNow: () => {
+    if (!S.sel || S.sel.type !== 'settlement') { toast('Önce bir yerleşim seç'); return; }
+    const s = S.settlements[S.sel.id];
+    if (!s || s.type === 'village') { toast('Şehir veya kale seç'); return; }
+    const near = S.order.parties.map(i => S.parties[i])
+      .filter(p => p && p.faction !== s.faction && p.faction !== 'bandit')
+      .sort((a, b) => dist2(a.x, a.y, s.x, s.y) - dist2(b.x, b.y, s.x, s.y))[0];
+    if (!near) { toast('Yakında düşman ordu yok'); return; }
+    if (!atWar(near.faction, s.faction)) declareWar(near.faction, s.faction);
+    near.x = s.x; near.y = s.y; startSiege(near, s);
+    s.siegeProgress = 100; progressSieges(0.01);
+    renderUI(true); requestDraw();
+  },
+  save: () => saveGame(),
+  load: () => loadGame(),
+  export: () => exportGame(),
+  import: () => importGame(),
+  clearLog: () => { S.log = []; logDirty = true; renderLog(); },
+  newWorld: () => {
+    openDlg('Yeni dünya', `<label class="f"><span>Tohum (aynı tohum aynı dünyayı verir)</span>
+      <input type="number" id="nwSeed" value="${Math.floor(Math.random() * 999999)}"></label>
+      <div class="small muted">Mevcut oyun kaybolur.</div>`,
+      [{ t: 'Kur', cls: 'danger', fn: () => { const sd = +$('#nwSeed').value || 1; dlg.close(); newWorld(sd); } },
+       { t: 'Vazgeç', fn: () => dlg.close() }]);
+  }
+};
+
+function createLord(faction) {
+  const fac = S.factions[faction];
+  const pool = LORD_NAMES[faction] || LORD_NAMES.swadia;
+  const used = new Set(S.order.lords.map(i => S.lords[i].name));
+  const nm = pool.find(n => !used.has(n)) || pool[ri(0, pool.length - 1)] + ' ' + ri(2, 9);
+  const id = uid('l');
+  S.lords[id] = {
+    id, name: nm, faction, title: fac.lordTitle, isKing: false, personality: pick(PERSONALITIES).id,
+    renown: ri(100, 400), relKing: ri(0, 40), gold: ri(1000, 5000),
+    skillTactics: ri(2, 6), skillLeadership: ri(3, 8), fiefs: [], partyId: null,
+    state: 'active', prisonerOf: null, freeAt: 0, wounded: 0, kills: 0, battlesWon: 0, battlesLost: 0
+  };
+  S.order.lords.push(id);
+  uiDirty.lrd = true;
+  return S.lords[id];
+}
+
+function makeKing(l) {
+  const fac = S.factions[l.faction]; if (!fac) return;
+  const old = fac.kingId ? S.lords[fac.kingId] : null;
+  if (old && old !== l) { old.isKing = false; old.title = fac.lordTitle; old.relKing = -30; }
+  l.isKing = true; l.title = fac.rulerTitle; l.relKing = 100;
+  fac.kingId = l.id;
+  addLog(`👑 ${l.title} ${l.name}, ${fac.name} tahtına oturdu.`, 'siege');
+  uiDirty.fac = true; uiDirty.lrd = true; uiDirty.sel = true;
+}
+function succession(factionId) {
+  const fac = S.factions[factionId]; if (!fac) return;
+  const cands = S.order.lords.map(i => S.lords[i]).filter(l => l.faction === factionId && l.state !== 'dead');
+  if (!cands.length) { fac.kingId = null; checkFactionAlive(factionId); return; }
+  cands.sort((a, b) => (b.renown + b.fiefs.length * 60) - (a.renown + a.fiefs.length * 60));
+  makeKing(cands[0]);
+}
+
+function skipDays(n) {
+  const wasSpeed = S.speed;
+  const stepsPerDay = 4;
+  for (let i = 0; i < n * stepsPerDay; i++) stepWorld(1 / stepsPerDay);
+  S.speed = wasSpeed;
+  uiDirty.sel = uiDirty.ovw = uiDirty.fac = uiDirty.lrd = uiDirty.stl = uiDirty.dip = true;
+  territoryDirty = true;
+  renderUI(true); requestDraw();
+  toast(`${n} gün ilerlendi`);
+}
+
+/* ---------- düzenleme uygulaması ---------- */
+function applyEdit(kind, id, key, raw, type) {
+  const obj = getEnt(kind, id); if (!obj) return;
+  let v = raw;
+  if (type === 'num') v = +raw;
+  if (type === 'num' && isNaN(v)) return;
+
+  if (kind === 'lord' && key === 'faction' && v !== obj.faction) { transferLord(obj, v); renderUI(true); requestDraw(); return; }
+  if (kind === 'lord' && key === 'state') {
+    obj.state = v;
+    if (v === 'dead' || v === 'prisoner' || v === 'exile') { if (obj.partyId) removeParty(obj.partyId); obj.partyId = null; }
+    if (v === 'active' && !obj.partyId) spawnLordParty(obj);
+    if (v === 'regroup') obj.freeAt = S.day + 2;
+    renderUI(true); requestDraw(); return;
+  }
+  if (kind === 'settlement' && key === 'faction' && v !== obj.faction) {
+    changeOwner(obj, v, null); territoryDirty = true; renderUI(true); requestDraw(); return;
+  }
+  if (kind === 'settlement' && key === 'lordId') {
+    const l = v ? S.lords[v] : null;
+    if (l) grantFief(obj, l);
+    else { if (obj.lordId && S.lords[obj.lordId]) S.lords[obj.lordId].fiefs = S.lords[obj.lordId].fiefs.filter(f => f !== obj.id); obj.lordId = null; }
+    renderUI(true); return;
+  }
+  if (kind === 'settlement' && key === 'type') { obj.type = v; territoryDirty = true; rebuildSettlementNodes(); requestDraw(); renderUI(true); return; }
+  if (kind === 'faction' && key === 'kingId') { const l = S.lords[v]; if (l) makeKing(l); renderUI(true); return; }
+  if (kind === 'faction' && key === 'color') { obj.color = v; territoryDirty = true; requestDraw(); renderLegend(); return; }
+
+  obj[key] = v;
+  if (kind === 'settlement' && (key === 'x' || key === 'y')) territoryDirty = true;
+  uiDirty.sel = true; uiDirty.ovw = true;
+  requestDraw();
+}
+
+function transferLord(l, toFaction) {
+  const from = l.faction;
+  l.faction = toFaction;
+  l.title = l.isKing ? S.factions[toFaction].rulerTitle : S.factions[toFaction].lordTitle;
+  if (l.partyId && S.parties[l.partyId]) S.parties[l.partyId].faction = toFaction;
+  l.fiefs.slice().forEach(f => { const s = S.settlements[f]; if (s) { s.faction = toFaction; if (s.type !== 'village') {
+    S.order.settlements.forEach(i => { const v = S.settlements[i]; if (v.parentId === s.id) v.faction = toFaction; }); } } });
+  if (l.isKing) {
+    const oldFac = S.factions[from];
+    if (oldFac && oldFac.kingId === l.id) { l.isKing = false; l.title = S.factions[toFaction].lordTitle; succession(from); }
+  }
+  addLog(`${l.title} ${l.name} artık ${facName(toFaction)} hizmetinde.`, '');
+  territoryDirty = true; checkFactionAlive(from);
+  uiDirty.lrd = true; uiDirty.fac = true;
+}
+/* =====================================================================
+   Bölüm 7: Kayıt, olaylar, ana döngü ve açılış
+   ===================================================================== */
+
+const SAVE_KEY = 'kalradya_save_v1';
+
+function snapshot() {
+  return JSON.stringify({
+    v: 1, uidn: UIDN,
+    day: S.day, factions: S.factions, settlements: S.settlements, lords: S.lords,
+    parties: S.parties, order: S.order, wars: S.wars, log: S.log, opts: S.opts, stats: S.stats
+  });
+}
+function restore(json) {
+  const d = typeof json === 'string' ? JSON.parse(json) : json;
+  if (!d || !d.settlements) throw new Error('Geçersiz kayıt');
+  S.day = d.day; S.factions = d.factions; S.settlements = d.settlements; S.lords = d.lords;
+  S.parties = d.parties; S.order = d.order; S.wars = d.wars || {}; S.log = d.log || [];
+  S.opts = Object.assign(S.opts, d.opts || {}); S.stats = d.stats || S.stats;
+  S.sel = null;
+  UIDN = Math.max(d.uidn || 0, ...S.order.parties.map(x => +String(x).replace(/\D/g, '') || 0), 0);
+  territoryDirty = true; logDirty = true;
+  Object.keys(uiDirty).forEach(k => uiDirty[k] = true);
+  initSvg(); requestDraw(); renderUI(true);
+}
+function saveGame() {
+  try { localStorage.setItem(SAVE_KEY, snapshot()); toast('Oyun kaydedildi'); }
+  catch (e) { toast('Kayıt başarısız: ' + e.message); }
+}
+function loadGame() {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) { toast('Kayıt bulunamadı'); return; }
+  try { restore(raw); toast('Kayıt yüklendi'); } catch (e) { toast('Yükleme hatası: ' + e.message); }
+}
+function exportGame() {
+  const blob = new Blob([snapshot()], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `kalradya-${shortDate(S.day).replace(/\./g, '-')}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function importGame() {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'application/json,.json';
+  inp.onchange = () => {
+    const f = inp.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => { try { restore(r.result); toast('Dosya yüklendi'); } catch (e) { toast('Hatalı dosya: ' + e.message); } };
+    r.readAsText(f);
+  };
+  inp.click();
+}
+function newWorld(seed) {
+  buildWorld(seed);
+  S.day = 150; S.sel = null; S.hidden = {};
+  territoryDirty = true; logDirty = true;
+  Object.keys(uiDirty).forEach(k => uiDirty[k] = true);
+  initSvg(); fitView(); requestDraw(); renderUI(true);
+  toast('Yeni Kalradya kuruldu');
+}
+
+/* ---------------- olaylar ---------------- */
+$('#spdCtl').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  setSpeed(+b.dataset.spd);
+});
+$('#btnTheme').onclick = () => {
+  const cur = document.documentElement.getAttribute('data-theme') === 'light' ? '' : 'light';
+  if (cur) document.documentElement.setAttribute('data-theme', 'light');
+  else document.documentElement.removeAttribute('data-theme');
+  try { localStorage.setItem('kalradya_theme', cur); } catch (e) {}
+  $('#btnTheme').textContent = cur ? '☀' : '☾';
+};
+$('#btnSave').onclick = () => saveGame();
+$('#btnSheet').onclick = () => $('#side').classList.toggle('open');
+$('#btnFit').onclick = () => { fitView(); requestDraw(); };
+$('#btnMenu').onclick = () => openDlg('Kalradya', `
+  <div class="card"><h3>Nasıl kullanılır</h3>
+    <div class="small">
+      <p>Haritada bir <b>şehir, kale, köy ya da ordu</b>ya tıkla — sağdaki <b>Seçim</b> sekmesinde o birimin bütün özellikleri düzenlenebilir hâlde açılır.</p>
+      <p><b>Müdahale</b> sekmesinden ordu yaratabilir, hazine verebilir, savaş açıp barış imzalayabilir, zamanı ileri sarabilir ve simülasyon kurallarını (ölümcüllük, ekonomi, saldırganlık…) değiştirebilirsin.</p>
+      <p><b>Diplomasi</b> sekmesindeki tabloda hücreye tıklayarak iki krallığı anında savaştırabilir ya da barıştırabilirsin.</p>
+      <p>Kısayollar: <b>Boşluk</b> duraklat/devam · <b>1-5</b> hız · <b>F</b> haritayı sığdır · <b>S</b> kaydet</p>
+    </div>
+  </div>
+  <div class="card"><h3>Dünya</h3><div class="btnrow">
+    <button class="btn sm" data-act="save">Kaydet</button>
+    <button class="btn sm" data-act="load">Yükle</button>
+    <button class="btn sm" data-act="export">Dışa aktar</button>
+    <button class="btn sm" data-act="import">İçe aktar</button>
+    <button class="btn sm danger" data-act="newWorld">Yeni dünya</button>
+  </div></div>`);
+
+$('#tabs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  setTab(b.dataset.tab);
+});
+$$('.mapctl .chip[data-layer]').forEach(b => {
+  b.onclick = () => {
+    const l = b.dataset.layer;
+    S.layers[l] = !S.layers[l];
+    b.classList.toggle('on', S.layers[l]);
+    if (l === 'borders') territoryDirty = true;
+    requestDraw();
+  };
+});
+
+/* komut delegasyonu */
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]');
+  if (!t) return;
+  const fn = ACTIONS[t.dataset.act];
+  if (fn) { e.preventDefault(); fn(t); }
+});
+/* düzenleme delegasyonu */
+document.addEventListener('change', e => {
+  const t = e.target.closest('[data-edit]');
+  if (!t) return;
+  const [kind, id, key, type] = t.dataset.edit.split('|');
+  applyEdit(kind, id, key, t.value, type);
+});
+
+/* harita gezinme */
+svg.addEventListener('pointerdown', onPointerDown);
+svg.addEventListener('pointermove', onPointerMove);
+svg.addEventListener('pointerup', onPointerUp);
+svg.addEventListener('pointercancel', () => { dragging = false; });
+svg.addEventListener('wheel', e => {
+  e.preventDefault();
+  const rect = svg.getBoundingClientRect();
+  zoomAt(e.clientX - rect.left, e.clientY - rect.top, e.deltaY < 0 ? 1.14 : 1 / 1.14);
+}, { passive: false });
+
+/* dokunmatik pinch */
+const touches = new Map();
+svg.addEventListener('pointerdown', e => touches.set(e.pointerId, e));
+svg.addEventListener('pointermove', e => {
+  if (!touches.has(e.pointerId)) return;
+  touches.set(e.pointerId, e);
+  if (touches.size === 2) {
+    dragging = false;
+    const [a, b] = Array.from(touches.values());
+    const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    const rect = svg.getBoundingClientRect();
+    const mx = (a.clientX + b.clientX) / 2 - rect.left, my = (a.clientY + b.clientY) / 2 - rect.top;
+    if (pinchDist) zoomAt(mx, my, d / pinchDist);
+    pinchDist = d;
+  }
+});
+const endTouch = e => { touches.delete(e.pointerId); if (touches.size < 2) pinchDist = 0; };
+svg.addEventListener('pointerup', endTouch);
+svg.addEventListener('pointercancel', endTouch);
+
+window.addEventListener('resize', () => { resizeCanvas(); clampView(); requestDraw(); });
+
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+  if (e.code === 'Space') { e.preventDefault(); setSpeed(S.speed > 0 ? 0 : 1); }
+  else if (e.key === '1') setSpeed(1);
+  else if (e.key === '2') setSpeed(3);
+  else if (e.key === '3') setSpeed(8);
+  else if (e.key === '4') setSpeed(20);
+  else if (e.key === '0') setSpeed(0);
+  else if (e.key.toLowerCase() === 'f') { fitView(); requestDraw(); }
+  else if (e.key.toLowerCase() === 's') { e.preventDefault(); saveGame(); }
+});
+
+/* ---------------- ana döngü ---------------- */
+let lastFrame = performance.now();
+let acc = 0;
+function frame(now) {
+  const dtReal = Math.min(0.25, (now - lastFrame) / 1000);
+  lastFrame = now;
+  if (S.speed > 0) {
+    let days = dtReal * S.speed;
+    let guard = 0;
+    while (days > 0 && guard++ < 200) {
+      const st = Math.min(0.2, days);
+      stepWorld(st);
+      days -= st;
+    }
+  }
+  drawCanvas(); updateSvg(); renderUI();
+  requestAnimationFrame(frame);
+}
+
+/* ---------------- açılış ---------------- */
+function boot() {
+  try {
+    const th = localStorage.getItem('kalradya_theme');
+    if (th === 'light') { document.documentElement.setAttribute('data-theme', 'light'); $('#btnTheme').textContent = '☀'; }
+  } catch (e) {}
+  resizeCanvas();
+  buildWorld(20250810);
+  buildTerrain();
+  territoryDirty = true;
+  initSvg();
+  fitView();
+  setSpeed(1);
+  setTab('sel');
+  renderUI(true);
+  requestDraw();
+  requestAnimationFrame(frame);
+  booted = true;
+  if (localStorage.getItem(SAVE_KEY)) addLog('Kayıtlı bir oyun bulundu — Müdahale sekmesinden yükleyebilirsin.', '');
+}
+boot();
+
+/* çevrimdışı önbellek */
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('warband-sw.js').catch(function () {});
+}
+</script>
+</body>
+</html>
