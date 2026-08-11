@@ -478,12 +478,12 @@ const MAP_W = 1200, MAP_H = 800;
 
 /* ---------------- Krallıklar ---------------- */
 const FACTION_DEFS = [
-  { id:'swadia',   name:'Swadya Krallığı',    short:'Swadya',   color:'#d9a441', culture:'sw', rulerTitle:'Kral',   lordTitle:'Kont',  capital:'praven',   aggr:0.55, banner:'shield' },
-  { id:'vaegir',   name:'Vaegir Krallığı',    short:'Vaegir',   color:'#c3ced8', culture:'vg', rulerTitle:'Kral',   lordTitle:'Boyar', capital:'reyvadin', aggr:0.55, banner:'star' },
-  { id:'khergit',  name:'Kherjit Hanlığı',    short:'Kherjit',  color:'#d9682f', culture:'kh', rulerTitle:'Han',    lordTitle:'Noyan', capital:'tulga',    aggr:0.70, banner:'horse' },
+  { id:'swadia',   name:'Swadya Krallığı',    short:'Swadya',   color:'#e07b2a', culture:'sw', rulerTitle:'Kral',   lordTitle:'Kont',  capital:'praven',   aggr:0.55, banner:'shield' },
+  { id:'vaegir',   name:'Vaegir Krallığı',    short:'Vaegir',   color:'#c8d4dd', culture:'vg', rulerTitle:'Kral',   lordTitle:'Boyar', capital:'reyvadin', aggr:0.55, banner:'star' },
+  { id:'khergit',  name:'Kherjit Hanlığı',    short:'Kherjit',  color:'#9160c9', culture:'kh', rulerTitle:'Han',    lordTitle:'Noyan', capital:'tulga',    aggr:0.70, banner:'horse' },
   { id:'nord',     name:'Nord Krallığı',      short:'Nord',     color:'#3d6bb5', culture:'nd', rulerTitle:'Kral',   lordTitle:'Jarl',  capital:'sargoth',  aggr:0.65, banner:'axe' },
   { id:'rhodok',   name:'Rodok Krallığı',     short:'Rodok',    color:'#4f9146', culture:'rh', rulerTitle:'Kral',   lordTitle:'Lord',  capital:'jelkala',  aggr:0.35, banner:'bolt' },
-  { id:'sarranid', name:'Sarranid Sultanlığı',short:'Sarranid', color:'#17a08e', culture:'sr', rulerTitle:'Sultan', lordTitle:'Emir',  capital:'shariz',   aggr:0.50, banner:'moon' }
+  { id:'sarranid', name:'Sarranid Sultanlığı',short:'Sarranid', color:'#e6c536', culture:'sr', rulerTitle:'Sultan', lordTitle:'Emir',  capital:'shariz',   aggr:0.50, banner:'moon' }
 ];
 const BANDIT_FACTION = { id:'bandit', name:'Haydutlar', short:'Haydut', color:'#8a7a68', culture:'bd', rulerTitle:'Reis', lordTitle:'Reis', aggr:1 };
 
@@ -819,6 +819,151 @@ const TERRAIN_MOD = {
   snow:   { inf:1.05, arch:0.95, cav:0.82 },
   tundra: { inf:1.02, arch:1.00, cav:0.95 }
 };
+
+/* =====================================================================
+   v4 verileri: hanedan renkleri, armalar, seçimler, diyaloglar
+   ===================================================================== */
+
+/* ---------------- Hanedan renk paleti ---------------- */
+const HOUSE_COLORS = [
+  '#c0392b','#8e44ad','#2980b9','#16a085','#d35400','#7f8c8d','#c2185b','#00838f',
+  '#5d4037','#455a64','#e64a19','#6a1b9a','#1565c0','#2e7d32','#f9a825','#ad1457',
+  '#00695c','#4527a0','#283593','#37474f','#bf360c','#4e342e','#827717','#01579b'
+];
+
+/* ---------------- Arma bileşenleri ---------------- */
+const ARMS_PATTERNS = ['solid', 'fess', 'pale', 'bend', 'chevron', 'saltire', 'quarterly', 'bordure', 'chief'];
+const ARMS_CHARGES = {
+  sword:   'M 50 18 L 55 26 L 55 62 L 61 68 L 55 72 L 55 82 L 45 82 L 45 72 L 39 68 L 45 62 L 45 26 Z',
+  tower:   'M 30 82 L 30 44 L 38 44 L 38 34 L 45 34 L 45 44 L 55 44 L 55 34 L 62 34 L 62 44 L 70 44 L 70 82 Z',
+  star:    'M 50 20 L 58 44 L 83 44 L 63 59 L 70 82 L 50 68 L 30 82 L 37 59 L 17 44 L 42 44 Z',
+  crescent:'M 62 26 A 28 28 0 1 0 62 76 A 22 22 0 1 1 62 26 Z',
+  horse:   'M 28 78 L 32 54 Q 36 40 50 38 L 58 26 L 64 32 L 60 40 Q 72 46 72 60 L 74 78 L 64 78 L 62 60 L 44 60 L 40 78 Z',
+  axe:     'M 47 20 L 53 20 L 53 80 L 47 80 Z M 53 26 Q 76 30 74 50 Q 72 62 53 58 Z',
+  eagle:   'M 50 26 L 58 36 L 82 30 L 66 46 L 74 74 L 50 60 L 26 74 L 34 46 L 18 30 L 42 36 Z',
+  wolf:    'M 26 44 L 34 24 L 44 38 L 56 38 L 66 24 L 74 44 Q 74 74 50 82 Q 26 74 26 44 Z',
+  crown:   'M 24 66 L 30 32 L 42 50 L 50 26 L 58 50 L 70 32 L 76 66 Z M 24 68 L 76 68 L 76 78 L 24 78 Z',
+  tree:    'M 46 82 L 46 60 Q 26 58 30 42 Q 30 26 50 22 Q 70 26 70 42 Q 74 58 54 60 L 54 82 Z',
+  ship:    'M 20 60 L 80 60 L 70 78 L 30 78 Z M 48 16 L 52 16 L 52 60 L 48 60 Z M 52 22 L 74 40 L 52 48 Z',
+  boar:    'M 24 60 Q 24 40 46 38 L 56 28 L 62 38 Q 78 42 78 60 Q 78 76 50 78 Q 24 76 24 60 Z',
+  lion:    'M 50 22 Q 70 22 72 42 L 80 50 L 70 54 Q 72 76 50 80 Q 28 76 30 54 L 20 50 L 28 42 Q 30 22 50 22 Z',
+  chalice: 'M 32 24 L 68 24 L 62 46 Q 56 58 54 60 L 54 72 L 66 76 L 66 82 L 34 82 L 34 76 L 46 72 L 46 60 Q 44 58 38 46 Z'
+};
+const ARMS_CHARGE_IDS = Object.keys(ARMS_CHARGES);
+
+/* ---------------- Seçim türleri ---------------- */
+const ELECTION_KINDS = {
+  throne:  { id:'throne',  name:'Taht Seçimi',    icon:'👑', desc:'Kurultay yeni hükümdarı seçer.' },
+  fief:    { id:'fief',    name:'Tımar Divanı',   icon:'📜', desc:'Divan, boşta kalan tımarın sahibini belirler.' },
+  marshal: { id:'marshal', name:'Mareşal Seçimi', icon:'⚔', desc:'Lordlar sefer ordusunun başına geçecek mareşali seçer.' }
+};
+/* seçim sonrası olabilecekler */
+const ELECTION_AFTERMATH = {
+  none:    { id:'none',    name:'Sükûnet',            desc:'Kaybedenler sonucu kabul eder.' },
+  grudge:  { id:'grudge',  name:'Kırgınlık',          desc:'Kaybeden hanedan küser, sadakat düşer.' },
+  feud:    { id:'feud',    name:'Hanedan Kan Davası', desc:'İki hanedan arasında kan davası başlar; birbirlerinin ordularına saldırırlar.' },
+  banner:  { id:'banner',  name:'İsyan Bayrağı',      desc:'Kaybeden hanedan isyan bayrağı açar; krallık içinde asi ordular dolaşır.' },
+  civil:   { id:'civil',   name:'İç Savaş',           desc:'Kaybeden aday kendi devletini ilan eder.' },
+  exile:   { id:'exile',   name:'Sürgün',             desc:'Kaybeden aday krallığı terk edip başka bir krallığa sığınır.' }
+};
+
+/* ---------------- Diyalog şablonları ---------------- */
+/* {A} konuşan, {B} muhatap, {X} yer/konu, {F} krallık, {H} hanedan */
+const DIALOGUES = {
+  campaign: {
+    title: 'Seçim pazarlığı',
+    lines: [
+      ['A', 'Kurultay yaklaşıyor {B}. Oyunu benden yana kullanırsan {X} senin olur.'],
+      ['B', 'Sözün senet mi {A}? Baban da böyle demişti, sonra tahtı başkasına verdi.'],
+      ['A', 'Baba başka, evlat başka. {H} hanedanı borcunu unutmaz.'],
+      ['B', 'O hâlde kurultayda yanındayım. Ama sözünü tutmazsan mızrağım senin kapında olur.']
+    ]
+  },
+  campaignRefuse: {
+    title: 'Reddedilen ittifak',
+    lines: [
+      ['A', '{B}, kurultayda beni destekle. {F} güçlü bir el ister.'],
+      ['B', 'Güçlü el senin elin değil {A}. Ben {C} adına oy vereceğim.'],
+      ['A', 'Bu cevabı unutmam.'],
+      ['B', 'Unutma. Ben de unutmayacağım.']
+    ]
+  },
+  victory: {
+    title: 'Tahta çıkış',
+    lines: [
+      ['A', 'Kurultay kararını verdi. Bugünden itibaren {F} tahtı {H} hanedanınındır.'],
+      ['B', 'Kurultay yanıldı. Ama kılıcım hâlâ senin emrinde… şimdilik.'],
+      ['A', 'Şimdilik mi {B}?'],
+      ['B', 'Sadakat, adalet kadar sürer efendim.']
+    ]
+  },
+  feud: {
+    title: 'Kan davası',
+    lines: [
+      ['A', '{H} hanedanının kanı yerde kalmayacak {B}.'],
+      ['B', 'Savaşta ölen savaşta öldü. Kan davası güdenin sonu kendi mezarıdır.'],
+      ['A', 'O mezarı beraber kazacağız o hâlde.']
+    ]
+  },
+  marriage: {
+    title: 'Evlilik teklifi',
+    lines: [
+      ['A', '{B}, iki hanedanı bir yatakta birleştirmenin vakti geldi. Kızımı oğluna vereyim.'],
+      ['B', 'Toprak da veriyor musun, yoksa sadece kan mı?'],
+      ['A', 'Kan yeter. Toprağı düşmandan beraber alırız.'],
+      ['B', 'Anlaştık. {X} önünde nikâh kıyılsın.']
+    ]
+  },
+  reprimand: {
+    title: 'Azarlama',
+    lines: [
+      ['A', '{B}, ordun {X} önünde dağıldı. Bunun hesabını nasıl vereceksin?'],
+      ['B', 'Adamlarım aç, hazineniz kapalıydı efendim.'],
+      ['A', 'Bahane dinlemem.'],
+      ['B', 'Bahane değil, sebep. Fark ettiğiniz gün ordunuz kalmaz.']
+    ]
+  },
+  reward: {
+    title: 'Tımar bahşi',
+    lines: [
+      ['A', '{X} artık senin {B}. Sadakatinin karşılığıdır.'],
+      ['B', 'Kılıcım ve oğullarım sizindir efendim.'],
+      ['A', 'Öyle olsun. Sınırı tutamazsan geri alırım.']
+    ]
+  },
+  warDeclare: {
+    title: 'Savaş ilanı',
+    lines: [
+      ['A', '{F} elçisi, kralına söyle: {X} bizimdir, bu ay içinde teslim edilsin.'],
+      ['B', 'Kralım böyle bir talebi ancak mızrak ucunda dinler.'],
+      ['A', 'O hâlde mızrakları hazırlasın.']
+    ]
+  },
+  peaceOffer: {
+    title: 'Barış görüşmesi',
+    lines: [
+      ['A', 'Yeterince kan aktı {B}. Sınırlar bugünkü hâliyle kalsın.'],
+      ['B', 'Köylerim yandı, hazinem boş. Tazminat isterim.'],
+      ['A', 'Tazminat yerine ticaret yolu vereyim. İkimiz de kazanalım.'],
+      ['B', 'Kabul. Mühürleri getirin.']
+    ]
+  },
+  banner: {
+    title: 'İsyan bayrağı',
+    lines: [
+      ['A', 'Kurultayda hakkımız yendi. {H} bayrağı bugün {X} üzerinde dalgalanacak.'],
+      ['B', 'Bu ihanettir.'],
+      ['A', 'İhanet, hakkı olanı vermemektir. Biz sadece alıyoruz.']
+    ]
+  },
+  oath: {
+    title: 'Bağlılık yemini',
+    lines: [
+      ['A', '{F} tahtına ve {H} hanedanına bağlılık yemini ediyorum.'],
+      ['B', 'Yeminin kabulümdür {A}. Sınırı sana emanet ediyorum.']
+    ]
+  }
+};
 /* =====================================================================
    Bölüm 2: Yardımcılar, durum ve dünya kurulumu
    ===================================================================== */
@@ -946,7 +1091,7 @@ const S = {
   settlements: {},
   lords: {},
   parties: {},
-  order: { settlements: [], lords: [], parties: [] },
+  order: { settlements: [], lords: [], parties: [], houses: [] },
   wars: {},           // "a|b" -> { since }
   pacts: {},          // "a|b" -> { type, since }
   roads: [],          // [aId, bId]
@@ -954,6 +1099,11 @@ const S = {
   decisions: [],      // bekleyen kararlar (tımar dağıtımı, seçim…)
   snapshots: [],      // zaman makinesi
   builds: [],         // süren inşaatlar
+  houses: {},         // hanedanlar
+  elections: [],      // süren/biten seçimler
+  dialogues: [],      // konuşmalar
+  feuds: {},          // "h1|h2" -> { since, level }
+  chronicle: [],      // yıllık yazılı tarih
   log: [],
   battles: [],
   sel: null,          // {type:'lord'|'settlement'|'faction'|'party', id}
@@ -981,6 +1131,9 @@ const S = {
     askFief: false,      // yeni fetihte tımarı bana sor
     autoSnapshot: true,
     pauseOnDecision: false,
+    houseColors: true,   // hanedan başa geçince krallık rengi değişsin
+    pauseOnElection: false,
+    dialogueRate: 1,
     mapStyle: 'natural',
     logLimit: 300
   },
@@ -1002,7 +1155,8 @@ function buildWorld(seed) {
   S.factions = {}; S.settlements = {}; S.lords = {}; S.parties = {};
   S.wars = {}; S.log = []; S.battles = []; S.alert = null;
   S.pacts = {}; S.roads = []; S.history = []; S.decisions = []; S.snapshots = []; S.builds = [];
-  S.order = { settlements: [], lords: [], parties: [] };
+  S.houses = {}; S.elections = []; S.dialogues = []; S.feuds = {}; S.chronicle = [];
+  S.order = { settlements: [], lords: [], parties: [], houses: [] };
 
   /* --- krallıklar --- */
   const allFac = FACTION_DEFS.concat([BANDIT_FACTION]);
@@ -1011,6 +1165,7 @@ function buildWorld(seed) {
       id: d.id, name: d.name, short: d.short, color: d.color, culture: d.culture,
       rulerTitle: d.rulerTitle, lordTitle: d.lordTitle, capital: d.capital || null,
       aggr: d.aggr, kingId: null, treasury: d.id === 'bandit' ? 0 : ri(9000, 26000),
+      baseColor: d.color, rulingHouseId: null,
       rel: {}, warWeariness: {}, target: null, marshalId: null, alive: true, isBandit: d.id === 'bandit',
       succession: d.id === 'khergit' || d.id === 'nord' ? 'elective' : 'hereditary',
       prestige: ri(40, 70), warPlan: null, stance: 'defend', buildId: null, founded: 1084
@@ -1131,7 +1286,8 @@ function buildWorld(seed) {
   declareWar('vaegir', 'nord', true);
   declareWar('khergit', 'sarranid', true);
 
-  /* --- aileler, ekonomi, yollar --- */
+  /* --- hanedanlar, aileler, ekonomi, yollar --- */
+  buildHouses();
   S.order.lords.forEach(id => giveChildren(S.lords[id]));
   assignEconomy();
   buildRoads();
@@ -1458,6 +1614,106 @@ function alliesOf(f) {
     .map(o => o.k.split('|').find(x => x !== f))
     .filter(x => S.factions[x] && S.factions[x].alive);
 }
+
+/* =====================================================================
+   v4: hanedanlar (kuruluş ve yardımcılar)
+   ===================================================================== */
+let HOUSE_COLOR_I = 0;
+function nextHouseColor() { return HOUSE_COLORS[(HOUSE_COLOR_I++) % HOUSE_COLORS.length]; }
+
+function makeArms(seedStr) {
+  let h = 0;
+  for (let i = 0; i < seedStr.length; i++) h = (h * 31 + seedStr.charCodeAt(i)) >>> 0;
+  const pick2 = arr => arr[h % arr.length];
+  const pattern = ARMS_PATTERNS[h % ARMS_PATTERNS.length];
+  const charge = ARMS_CHARGE_IDS[(h >> 3) % ARMS_CHARGE_IDS.length];
+  return { pattern, charge };
+}
+
+function ensureHouse(faction, name) {
+  const found = S.order.houses.map(i => S.houses[i])
+    .find(x => x && x.faction === faction && x.name === name && !x.extinct);
+  if (found) return found;
+  const id = uid('h');
+  const hs = {
+    id, name, faction, color: nextHouseColor(), headId: null,
+    founded: calendar(S.day).year, prestige: ri(25, 60),
+    arms: makeArms(name + faction), extinct: false, motto: null
+  };
+  S.houses[id] = hs; S.order.houses.push(id);
+  return hs;
+}
+
+function buildHouses() {
+  S.houses = {}; S.order.houses = []; HOUSE_COLOR_I = 0;
+  S.order.lords.forEach(id => {
+    const l = S.lords[id];
+    const hs = ensureHouse(l.faction, l.house || pick(HOUSES[l.faction] || HOUSES.swadia));
+    l.houseId = hs.id; l.house = hs.name;
+  });
+  refreshHouses();
+  /* kralın hanesi hükümdar hanedanı olur ve krallığın kurucu rengini taşır */
+  Object.values(S.factions).forEach(f => {
+    if (f.isBandit || !f.kingId) return;
+    const k = S.lords[f.kingId];
+    if (k && k.houseId && S.houses[k.houseId]) {
+      f.rulingHouseId = k.houseId;
+      S.houses[k.houseId].color = f.baseColor || f.color;
+      S.houses[k.houseId].arms = makeArms(f.id + k.houseId);
+      f.color = f.baseColor || f.color;
+    }
+  });
+}
+
+function houseMembers(hid) {
+  return S.order.lords.map(i => S.lords[i]).filter(l => l.houseId === hid && l.state !== 'dead');
+}
+function housePower(hid) {
+  return houseMembers(hid).reduce((a, l) => a + 1 + l.fiefs.length * 2 + l.renown / 260 + (l.isKing ? 6 : 0), 0);
+}
+function houseOf(l) { return l && l.houseId ? S.houses[l.houseId] : null; }
+function houseName(hid) { const h = S.houses[hid]; return h ? h.name : '—'; }
+function houseColor(hid) { const h = S.houses[hid]; return h ? h.color : '#8a7a68'; }
+
+function refreshHouses() {
+  S.order.houses.forEach(hid => {
+    const h = S.houses[hid]; if (!h) return;
+    const mem = houseMembers(hid);
+    if (!mem.length) {
+      if (!h.extinct) {
+        h.extinct = true; h.endedYear = calendar(S.day).year;
+        addLog(`🕯 ${h.name} hanedanının soyu tükendi.`, 'war', 2);
+      }
+      h.headId = null;
+      return;
+    }
+    h.extinct = false;
+    mem.sort((a, b) => (b.isKing ? 1e6 : 0) + b.renown + b.fiefs.length * 80 - ((a.isKing ? 1e6 : 0) + a.renown + a.fiefs.length * 80));
+    h.headId = mem[0].id;
+    /* hanedanın krallığı: üyelerin çoğunluğu nerede */
+    const cnt = {};
+    mem.forEach(m => { cnt[m.faction] = (cnt[m.faction] || 0) + 1; });
+    h.faction = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0][0];
+  });
+}
+
+/* kan davaları */
+const feudKey = (a, b) => a < b ? `${a}|${b}` : `${b}|${a}`;
+function feudLevel(a, b) { const f = S.feuds[feudKey(a, b)]; return f ? f.level : 0; }
+function addFeud(a, b, amount, reason) {
+  if (!a || !b || a === b) return;
+  const k = feudKey(a, b);
+  const f = S.feuds[k] || (S.feuds[k] = { since: S.day, level: 0 });
+  f.level = clamp(f.level + amount, 0, 100);
+  f.reason = reason || f.reason;
+  if (f.level >= 60 && !f.open) {
+    f.open = true; f.openedAt = S.day;
+    addLog(`⚔ ${houseName(a)} ile ${houseName(b)} hanedanları arasında kan davası açıldı! (${reason || 'eski hesaplar'})`, 'war', 2);
+    talk('feud', { a: houseHead(a), b: houseHead(b), h: S.houses[a] });
+  }
+}
+function houseHead(hid) { const h = S.houses[hid]; return h && h.headId ? S.lords[h.headId] : null; }
+function feudOpen(a, b) { const f = S.feuds[feudKey(a, b)]; return !!(f && f.open); }
 /* =====================================================================
    Bölüm 3: Harita — arazi, sınırlar, şehir/ordu simgeleri, gezinme
    ===================================================================== */
@@ -2620,8 +2876,9 @@ function checkEncounters() {
     const a = list[i]; if (!S.parties[a.id]) continue;
     for (let j = i + 1; j < list.length; j++) {
       const b = list[j]; if (!S.parties[b.id] || !S.parties[a.id]) continue;
-      if (a.faction === b.faction) continue;
-      const hostile = a.faction === 'bandit' || b.faction === 'bandit' || atWar(a.faction, b.faction);
+      if (a.faction === b.faction && !partiesFeuding(a, b)) continue;
+      const hostile = a.faction === b.faction ? true
+        : (a.faction === 'bandit' || b.faction === 'bandit' || atWar(a.faction, b.faction));
       if (!hostile) continue;
       if (a.cooldown > 0 || b.cooldown > 0) continue;
       if (dist2(a.x, a.y, b.x, b.y) > ENCOUNTER_R) continue;
@@ -2796,7 +3053,7 @@ function resolveBattle(a, b, kind) {
   if (wiped) destroyParty(lose, win);
   else {
     fleeFrom(lose, win);
-    if (loseLord && rnd() < 0.12) capturePrisoner(loseLord, win, place.name);
+    if (loseLord && rnd() < 0.12) { capturePrisoner(loseLord, win, place.name); houseFeudFromBattle(win, loseLord, 12); }
   }
   if (win.faction !== 'bandit' && S.factions[win.faction]) S.factions[win.faction].treasury += Math.round(loseLoss * rf(4, 12));
   uiDirty.kra = true;
@@ -2807,7 +3064,7 @@ function destroyParty(p, winner) {
   const lord = p.lordId ? S.lords[p.lordId] : null;
   if (lord) {
     lord.partyId = null;
-    if (rnd() < 0.55 && winner && winner.faction !== 'bandit') capturePrisoner(lord, winner);
+    if (rnd() < 0.55 && winner && winner.faction !== 'bandit') { capturePrisoner(lord, winner); houseFeudFromBattle(winner, lord, 10); }
     else {
       lord.state = 'regroup'; lord.freeAt = S.day + rf(4, 10);
       addLog(`${lord.title} ${lord.name} ordusunu kaybetti, dağılan adamlarını topluyor.`, '', 1);
@@ -2825,6 +3082,12 @@ function removeParty(id) {
   S.order.parties = S.order.parties.filter(x => x !== id);
   S.order.parties.forEach(i => { const q = S.parties[i]; if (q && q.goal === 'follow' && q.targetId === id) { q.goal = 'idle'; q.tx = null; } });
   if (S.sel && S.sel.type === 'party' && S.sel.id === id) S.sel = null;
+}
+function houseFeudFromBattle(winnerParty, loserLord, amount) {
+  const wl = winnerParty && winnerParty.lordId ? S.lords[winnerParty.lordId] : null;
+  if (!wl || !loserLord || !wl.houseId || !loserLord.houseId) return;
+  if (wl.houseId === loserLord.houseId) return;
+  addFeud(wl.houseId, loserLord.houseId, amount, 'savaş meydanında dökülen kan');
 }
 function capturePrisoner(lord, winner, place) {
   lord.state = 'prisoner';
@@ -2996,6 +3259,7 @@ function changeOwner(s, newF, lord) {
 
 function checkFactionAlive(f) {
   const fac = S.factions[f]; if (!fac || fac.isBandit) return;
+  if (fac.isBanner) return;
   const own = ownSettlements(f);
   if (own.length === 0 && fac.alive) {
     fac.alive = false;
@@ -3178,6 +3442,12 @@ function dailyTick() {
   agingTick(day);
   capitalTick();
   seaRaidTick();
+  houseTick(day);
+  electionTick(day);
+  marriageTick(day);
+  courtTick(day);
+  bannerTick();
+  chronicleTick(day);
   tradeTick(day);
   buildTick();
   historyTick(day);
@@ -3345,6 +3615,12 @@ function lordDies(l, cause) {
   addLog(`⚰ ${l.title} ${lordFullName(l)} öldü (${l.age} yaşında, ${l.deathCause}).` +
     (heir ? ` Varisi ${heir.title} ${lordFullName(heir)} tımarlarını devraldı.` : ' Tımarları krala kaldı.'), 'war', 2);
 
+  refreshHouses();
+  /* aynı hanedandan biri savaşta öldüyse öfke diğer hanedanlara yönelir */
+  if (l.houseId && (cause === 'yaralarından' || cause === 'suikast')) {
+    const h = S.houses[l.houseId];
+    if (h) houseMembers(h.id).forEach(m => { m.relKing = clamp(m.relKing - ri(2, 8), -100, 100); });
+  }
   if (wasKing) { l.isKing = false; if (fac) fac.kingId = null; succession(l.faction, l); }
   uiDirty.kra = uiDirty.sel = true; territoryDirty = true;
 }
@@ -3356,7 +3632,11 @@ function succession(factionId, deadKing) {
     .filter(l => l.faction === factionId && l.state !== 'dead' && l.state !== 'exile');
   if (!cands.length) { fac.kingId = null; checkFactionAlive(factionId); return; }
 
-  if (fac.succession === 'elective') return holdElection(fac, cands, deadKing);
+  if (fac.succession === 'elective') {
+    const el = startElection(factionId, 'throne', { deadKing: deadKing ? deadKing.id : null });
+    if (el) { fac.interregnum = true; return el; }
+    return holdElection(fac, cands, deadKing);
+  }
 
   /* veraset: ölen kralın hanesinden en güçlü aday, yoksa en şöhretli lord */
   const house = deadKing ? deadKing.house : null;
@@ -3365,6 +3645,8 @@ function succession(factionId, deadKing) {
   pool.sort((a, b) => (b.renown + b.fiefs.length * 70) - (a.renown + a.fiefs.length * 70));
   const king = pool[0];
   makeKing(king, true);
+  applyRulingHouseColor(fac);
+  if (!(deadKing && (deadKing.children || []).some(c => c.age >= 16))) foreignClaimCheck(factionId, deadKing);
   addLog(`👑 ${king.title} ${lordFullName(king)}, ${fac.name} tahtına oturdu (veraset yoluyla).`, 'peace', 2);
   /* rakipler küser */
   cands.forEach(l => { if (l !== king && l.renown > king.renown * 0.85) l.relKing -= ri(10, 30); });
@@ -4090,6 +4372,547 @@ function rewindTo(index) {
   renderUI(true);
 }
 /* =====================================================================
+   Bölüm 4c: Hanedanlar, seçimler, diyaloglar, evlilikler, isyan bayrakları
+   ===================================================================== */
+
+/* =====================  DİYALOG  ===================== */
+function lordShort(l) { return l ? `${l.title} ${l.name}` : 'bilinmeyen'; }
+function talk(tpl, ctx) {
+  const t = DIALOGUES[tpl]; if (!t) return null;
+  if (rnd() > 0.75 * S.opts.dialogueRate && !ctx.force) return null;
+  const A = ctx.a, B = ctx.b, C = ctx.c;
+  if (!A || !B) return null;
+  const map = {
+    A: A ? lordShort(A) : '', B: B ? lordShort(B) : '', C: C ? lordShort(C) : '',
+    X: ctx.x || 'bu topraklar',
+    F: ctx.f ? (S.factions[ctx.f] ? S.factions[ctx.f].name : ctx.f) : facName(A.faction),
+    H: ctx.h ? (ctx.h.name || houseName(ctx.h)) : (houseOf(A) ? houseOf(A).name : 'hanedan')
+  };
+  const fill = s => s.replace(/\{(\w)\}/g, (m, k) => map[k] != null ? map[k] : m);
+  const d = {
+    id: uid('dlg'), day: S.day, tpl, title: t.title,
+    a: A.id, b: B.id, aName: lordShort(A), bName: lordShort(B),
+    aFaction: A.faction, bFaction: B.faction,
+    aHouse: A.houseId, bHouse: B.houseId,
+    lines: t.lines.map(ln => ({ who: ln[0] === 'A' ? A.id : (ln[0] === 'C' && C ? C.id : B.id), name: ln[0] === 'A' ? lordShort(A) : (ln[0] === 'C' && C ? lordShort(C) : lordShort(B)), text: fill(ln[1]) }))
+  };
+  S.dialogues.unshift(d);
+  if (S.dialogues.length > 40) S.dialogues.length = 40;
+  uiDirty.kra = true;
+  return d;
+}
+
+/* =====================  HANEDAN DİNAMİKLERİ  ===================== */
+function applyRulingHouseColor(fac) {
+  if (!fac) return;
+  const king = fac.kingId ? S.lords[fac.kingId] : null;
+  const h = king ? houseOf(king) : null;
+  const before = fac.color;
+  if (S.opts.houseColors && h) {
+    fac.rulingHouseId = h.id;
+    fac.color = h.color;
+  } else {
+    fac.color = fac.baseColor || fac.color;
+  }
+  if (before !== fac.color) { territoryDirty = true; uiDirty.kra = true; }
+}
+function refreshAllColors() {
+  Object.values(S.factions).forEach(f => { if (!f.isBandit) applyRulingHouseColor(f); });
+  territoryDirty = true; requestDraw();
+}
+
+function houseTick(day) {
+  refreshHouses();
+  /* kan davaları zamanla soğur */
+  Object.keys(S.feuds).forEach(k => {
+    const f = S.feuds[k];
+    f.level = clamp(f.level - 0.35, 0, 100);
+    if (f.open && f.level < 25) {
+      f.open = false;
+      const [a, b] = k.split('|');
+      addLog(`🕊 ${houseName(a)} ile ${houseName(b)} hanedanları barıştı.`, 'peace', 1);
+    }
+    if (f.level <= 0) delete S.feuds[k];
+  });
+  if (day % 30 !== 0) return;
+  /* yeni hanedan kuruluşu: topraklı, şöhretli ama kendi hanesinde ikinci planda kalan lord */
+  S.order.lords.map(i => S.lords[i]).forEach(l => {
+    if (l.state !== 'active' || l.isKing) return;
+    const h = houseOf(l);
+    if (!h || h.headId === l.id) return;
+    if (l.renown < 450 || l.fiefs.length < 2) return;
+    if (rnd() > 0.05) return;
+    const base = (LORD_NAMES[l.faction] || LORD_NAMES.swadia);
+    const nm = `${l.name} ${pick(['Hanedanı', 'Evi', 'Ocağı'])}`.replace(' Hanedanı Hanedanı', ' Hanedanı');
+    const nh = ensureHouse(l.faction, nm);
+    nh.color = nextHouseColor();
+    nh.arms = makeArms(nm + l.id);
+    const old = h.id;
+    l.houseId = nh.id; l.house = nh.name;
+    (l.children || []).forEach(c => { c.house = nh.name; });
+    addFeud(old, nh.id, 18, 'hanedandan kopuş');
+    refreshHouses();
+    addLog(`🏛 ${lordShort(l)}, ${h.name} hanedanından kopup kendi hanedanını kurdu: ${nh.name}.`, '', 2);
+  });
+  /* hanedan prestiji: toprak ve tahttan beslenir */
+  S.order.houses.forEach(hid => {
+    const h = S.houses[hid]; if (!h || h.extinct) return;
+    const target = clamp(housePower(hid) * 4, 5, 100);
+    h.prestige += (target - h.prestige) * 0.15;
+  });
+}
+
+/* kan davası olan hanedanların orduları birbirine düşman */
+function partiesFeuding(a, b) {
+  if (!a || !b || a.faction !== b.faction) return false;
+  const la = a.lordId ? S.lords[a.lordId] : null, lb = b.lordId ? S.lords[b.lordId] : null;
+  if (!la || !lb || !la.houseId || !lb.houseId || la.houseId === lb.houseId) return false;
+  return feudOpen(la.houseId, lb.houseId);
+}
+
+/* =====================  EVLİLİKLER  ===================== */
+function marriageTick(day) {
+  if (day % 20 !== 0) return;
+  const houses = S.order.houses.map(i => S.houses[i]).filter(h => h && !h.extinct && h.headId);
+  if (houses.length < 2) return;
+  if (rnd() > 0.5) return;
+  const a = pick(houses);
+  const cands = houses.filter(h => h.id !== a.id && !feudOpen(a.id, h.id));
+  if (!cands.length) return;
+  /* aynı krallıktan ya da barış içindeki komşudan */
+  const b = pick(cands.filter(h => h.faction === a.faction || !atWar(h.faction, a.faction)) || cands);
+  if (!b) return;
+  const ha = houseHead(a.id), hb = houseHead(b.id);
+  if (!ha || !hb) return;
+  const kidsA = (ha.children || []).filter(c => c.age >= 14);
+  const kidsB = (hb.children || []).filter(c => c.age >= 14);
+  if (!kidsA.length || !kidsB.length) return;
+  const ka = pick(kidsA), kb = pick(kidsB);
+  if (ka.male === kb.male) return;
+
+  a.allies = a.allies || {}; b.allies = b.allies || {};
+  a.allies[b.id] = S.day; b.allies[a.id] = S.day;
+  delete S.feuds[feudKey(a.id, b.id)];
+  houseMembers(a.id).forEach(m => houseMembers(b.id).forEach(n => addLordRel(m, n, ri(6, 16))));
+  a.prestige = clamp(a.prestige + 4, 0, 100); b.prestige = clamp(b.prestige + 4, 0, 100);
+  const place = (ha.fiefs.map(f => S.settlements[f]).find(Boolean) || {}).name || 'saray';
+  talk('marriage', { a: ha, b: hb, x: place, force: true });
+  addLog(`💍 ${a.name} ile ${b.name} hanedanları evlilikle akraba oldu (${ka.name} — ${kb.name}).`, 'peace', 2);
+  /* krallıklar arası evlilik: yakınlaşma ve taht üzerinde hak */
+  if (a.faction !== b.faction) {
+    const fa = S.factions[a.faction], fb = S.factions[b.faction];
+    if (fa && fb) {
+      fa.rel[b.faction] = clamp((fa.rel[b.faction] || 0) + 22, -100, 100);
+      fb.rel[a.faction] = clamp((fb.rel[a.faction] || 0) + 22, -100, 100);
+      if (!hasPact(a.faction, b.faction) && rnd() < 0.5) makePact(a.faction, b.faction, 'nap');
+      a.claims = a.claims || {}; a.claims[b.faction] = S.day;
+      b.claims = b.claims || {}; b.claims[a.faction] = S.day;
+    }
+  }
+  uiDirty.kra = true;
+}
+/* varissiz ölen kralın tahtı üzerinde yabancı hak iddiası */
+function foreignClaimCheck(faction, deadKing) {
+  const fac = S.factions[faction]; if (!fac) return;
+  const claimants = S.order.houses.map(i => S.houses[i])
+    .filter(h => h && !h.extinct && h.faction !== faction && h.claims && h.claims[faction]);
+  if (!claimants.length) return;
+  const h = claimants.sort((a, b) => housePower(b.id) - housePower(a.id))[0];
+  const other = S.factions[h.faction];
+  if (!other || !other.alive || atWar(faction, h.faction)) return;
+  if (rnd() > 0.45) return;
+  addLog(`⚔ ${other.name}, evlilik bağına dayanarak ${fac.name} tahtı üzerinde hak iddia etti!`, 'war', 2);
+  const ka = houseHead(h.id), kb = fac.kingId ? S.lords[fac.kingId] : null;
+  if (ka && kb) talk('warDeclare', { a: ka, b: kb, x: capitalOf(faction) ? capitalOf(faction).name : fac.name, f: h.faction, force: true });
+  declareWar(h.faction, faction);
+}
+
+/* =====================  SEÇİMLER  ===================== */
+function electionCandidates(fac, kind, settlement) {
+  const lords = S.order.lords.map(i => S.lords[i])
+    .filter(l => l.faction === fac.id && l.state !== 'dead' && l.state !== 'exile');
+  if (kind === 'throne') {
+    const pool = lords.filter(l => !l.isKing && (l.fiefs.length > 0 || l.renown > 250));
+    return (pool.length >= 2 ? pool : lords.filter(l => !l.isKing)).slice(0, 8);
+  }
+  if (kind === 'marshal') {
+    return lords.filter(l => l.state === 'active' && l.partyId)
+      .sort((a, b) => b.renown - a.renown).slice(0, 5);
+  }
+  /* tımar */
+  return lords.map(l => ({ l, sc: fiefClaimScore(l, settlement, null) }))
+    .sort((a, b) => b.sc - a.sc).slice(0, 5).map(o => o.l);
+}
+
+function startElection(factionId, kind, opt) {
+  opt = opt || {};
+  const fac = S.factions[factionId];
+  if (!fac || fac.isBandit || !fac.alive) return null;
+  if (S.elections.some(e => e.faction === factionId && e.stage !== 'done')) return null;
+  const settlement = opt.settlementId ? S.settlements[opt.settlementId] : null;
+  const cands = electionCandidates(fac, kind, settlement);
+  if (cands.length < 2) return null;
+  const electors = S.order.lords.map(i => S.lords[i])
+    .filter(l => l.faction === factionId && l.state !== 'dead' && l.state !== 'exile')
+    .map(l => ({
+      lordId: l.id,
+      weight: Math.round((1 + l.fiefs.length * 0.6 + l.renown / 350 + (l.isKing ? 2 : 0)) * 10) / 10,
+      votedFor: null, reason: null, pledged: null
+    }));
+  const el = {
+    id: uid('el'), faction: factionId, kind, settlementId: settlement ? settlement.id : null,
+    day: S.day, stage: 'campaign', endsAt: S.day + (opt.instant ? 0 : ri(6, 12)),
+    candidates: cands.map(c => ({ lordId: c.id, houseId: c.houseId, votes: 0, backers: [] })),
+    electors, winnerId: null, forcedWinner: opt.forcedWinner || null,
+    forcedAftermath: opt.forcedAftermath || null, aftermath: null, tally: null
+  };
+  S.elections.unshift(el);
+  if (S.elections.length > 12) S.elections.length = 12;
+  const kn = ELECTION_KINDS[kind];
+  addLog(`${kn.icon} ${fac.name}: ${kn.name} başladı${settlement ? ' — ' + settlement.name : ''}. ${cands.length} aday, ${electors.length} seçici.`, 'siege', 2);
+  if (S.opts.pauseOnElection) setSpeed(0);
+  uiDirty.kra = uiDirty.sel = true;
+  if (opt.instant) resolveElection(el);
+  return el;
+}
+
+/* kampanya: lordlar birbirini ikna eder */
+function campaignStep(el) {
+  const fac = S.factions[el.faction];
+  const cands = el.candidates.map(c => S.lords[c.lordId]).filter(Boolean);
+  if (!cands.length) return;
+  for (let i = 0; i < 3; i++) {
+    const c = pick(cands);
+    const target = pick(el.electors);
+    const voter = S.lords[target.lordId];
+    if (!voter || voter.id === c.id) continue;
+    const affinity = voteScore(voter, c, el).total;
+    const rival = cands.find(x => x !== c && voteScore(voter, x, el).total > affinity);
+    if (!rival && rnd() < 0.5) {
+      target.pledged = c.id;
+      addLordRel(voter, c, ri(2, 6));
+      talk('campaign', { a: c, b: voter, x: (voter.fiefs.map(f => S.settlements[f]).find(Boolean) || {}).name || 'bir tımar', h: houseOf(c) });
+    } else if (rival && rnd() < 0.35) {
+      talk('campaignRefuse', { a: c, b: voter, c: rival, f: el.faction });
+      addLordRel(voter, c, -ri(1, 4));
+    }
+  }
+}
+
+/* bir seçicinin bir adaya verdiği puan ve gerekçesi */
+function voteScore(voter, cand, el) {
+  const parts = [];
+  let total = 0;
+  const add = (v, why) => { if (Math.abs(v) > 0.01) { total += v; parts.push({ v, why }); } };
+  add(cand.renown / 130, 'şöhret');
+  add(cand.fiefs.length * 0.95, 'toprak gücü');
+  add(lordRel(voter, cand) / 16, 'kişisel dostluk');
+  if (cand.id === voter.id) add(1.25, 'kendi adaylığı');
+  if (voter.houseId && voter.houseId === cand.houseId) add(3.1, 'hanedan bağı');
+  const hh = houseOf(cand);
+  if (hh) add(hh.prestige / 45, 'hanedan prestiji');
+  const hv = houseOf(voter), hc = houseOf(cand);
+  if (hv && hc && hv.allies && hv.allies[hc.id]) add(1.8, 'evlilik bağı');
+  if (hv && hc && feudLevel(hv.id, hc.id) > 20) add(-feudLevel(hv.id, hc.id) / 22, 'kan davası');
+  if (cand.isKing || (S.factions[el.faction] && S.factions[el.faction].kingId === cand.id)) add(voter.relKing / 24, 'krala sadakat');
+  const pers = PERSONALITIES.find(p => p.id === voter.personality) || PERSONALITIES[0];
+  if (pers.id === 'custodian' || pers.id === 'upstanding') add(cand.relKing / 30, 'meşruiyete saygı');
+  if (pers.greed > 1.1) add(cand.gold / 9000, 'cömertlik beklentisi');
+  if (el.kind === 'marshal') add((cand.skillTactics + cand.skillStrategy) / 3.2, 'komuta yeteneği');
+  const elec = el.electors.find(e => e.lordId === voter.id);
+  if (elec && elec.pledged === cand.id) add(2.2, 'verilmiş söz');
+  parts.sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
+  return { total, why: parts.length ? parts[0].why : 'kararsızlık', parts };
+}
+
+function resolveElection(el, forcedWinnerId) {
+  const fac = S.factions[el.faction];
+  if (!fac) { el.stage = 'done'; return; }
+  const cands = el.candidates.filter(c => S.lords[c.lordId] && S.lords[c.lordId].state !== 'dead');
+  if (!cands.length) { el.stage = 'done'; return; }
+  cands.forEach(c => { c.votes = 0; c.backers = []; });
+  el.electors.forEach(e => {
+    const voter = S.lords[e.lordId];
+    if (!voter || voter.state === 'dead') return;
+    let best = null, bestSc = -1e9, bestWhy = '';
+    cands.forEach(c => {
+      const cl = S.lords[c.lordId];
+      const s = voteScore(voter, cl, el);
+      const jitter = rf(-0.9, 0.9);
+      if (s.total + jitter > bestSc) { bestSc = s.total + jitter; best = c; bestWhy = s.why; }
+    });
+    if (!best) return;
+    e.votedFor = best.lordId; e.reason = bestWhy;
+    best.votes += e.weight; best.backers.push(e.lordId);
+  });
+  cands.sort((a, b) => b.votes - a.votes);
+  const forced = forcedWinnerId || el.forcedWinner;
+  let winner = cands[0];
+  if (forced) {
+    const f = cands.find(c => c.lordId === forced) || el.candidates.find(c => c.lordId === forced);
+    if (f) { winner = f; el.rigged = true; }
+  }
+  const total = cands.reduce((a, c) => a + c.votes, 0) || 1;
+  el.tally = cands.map(c => ({ lordId: c.lordId, votes: Math.round(c.votes * 10) / 10, pct: Math.round(c.votes / total * 100), backers: c.backers.slice() }));
+  el.winnerId = winner.lordId;
+  el.margin = cands.length > 1 ? Math.round((cands[0].votes - cands[1].votes) / total * 100) : 100;
+  el.stage = 'done';
+  S.stats.elections++;
+
+  const wl = S.lords[winner.lordId];
+  const kn = ELECTION_KINDS[el.kind];
+  if (el.kind === 'throne') {
+    const old = fac.kingId ? S.lords[fac.kingId] : null;
+    makeKing(wl, true);
+    applyRulingHouseColor(fac);
+    addLog(`${kn.icon} ${fac.name} kurultayı: ${lordShort(wl)} (${houseName(wl.houseId)}) oyların %${el.tally[0].pct}'ini alarak tahta çıktı.${el.rigged ? ' (Sonuç dışarıdan değiştirildi.)' : ''}`, 'peace', 2);
+    const runner = el.tally[1] ? S.lords[el.tally[1].lordId] : null;
+    if (runner) talk('victory', { a: wl, b: runner, f: fac.id, h: houseOf(wl) });
+  } else if (el.kind === 'marshal') {
+    fac.marshalId = wl.id;
+    addLog(`${kn.icon} ${fac.name} mareşalliğine ${lordShort(wl)} seçildi (%${el.tally[0].pct}).`, 'siege', 2);
+  } else if (el.kind === 'fief') {
+    const s = S.settlements[el.settlementId];
+    if (s) {
+      applyFiefGrant(s, wl, el.tally.slice(1).map(t => S.lords[t.lordId]).filter(Boolean));
+      const king = fac.kingId ? S.lords[fac.kingId] : null;
+      if (king) talk('reward', { a: king, b: wl, x: s.name });
+    }
+  }
+  electionAftermath(el);
+  uiDirty.kra = uiDirty.sel = true;
+  return el;
+}
+
+function electionAftermath(el) {
+  const fac = S.factions[el.faction];
+  const winner = S.lords[el.winnerId];
+  const runner = el.tally && el.tally[1] ? S.lords[el.tally[1].lordId] : null;
+  let kind = el.forcedAftermath;
+  if (!kind) {
+    const closeRace = el.margin < 12;
+    const loserHouse = runner ? houseOf(runner) : null;
+    const loserPower = loserHouse ? housePower(loserHouse.id) : 0;
+    const pers = runner ? (PERSONALITIES.find(p => p.id === runner.personality) || PERSONALITIES[0]) : PERSONALITIES[0];
+    const anger = (closeRace ? 0.35 : 0.1) + (1 - pers.loyal) * 0.35 + (el.rigged ? 0.3 : 0) + loserPower / 60;
+    const roll = rnd() * Math.max(0.5, anger);
+    if (!runner) kind = 'none';
+    else if (roll < 0.16) kind = 'none';
+    else if (roll < 0.34) kind = 'grudge';
+    else if (roll < 0.52) kind = 'feud';
+    else if (roll < 0.70) kind = 'banner';
+    else if (roll < 0.86) kind = 'exile';
+    else kind = 'civil';
+    if (el.kind !== 'throne' && (kind === 'civil' || kind === 'banner') && rnd() < 0.6) kind = 'feud';
+  }
+  el.aftermath = kind;
+  if (!runner || kind === 'none') {
+    if (winner && runner) talk('oath', { a: runner, b: winner, f: el.faction, h: houseOf(winner) });
+    return;
+  }
+  const lh = houseOf(runner), wh = houseOf(winner);
+  if (kind === 'grudge') {
+    runner.relKing = clamp(runner.relKing - ri(18, 35), -100, 100);
+    houseMembers(lh ? lh.id : '').forEach(m => { m.relKing = clamp(m.relKing - ri(5, 15), -100, 100); });
+    addLog(`😠 ${lh ? lh.name : lordShort(runner)} hanedanı seçim sonucunu içine sindiremedi.`, '', 2);
+  } else if (kind === 'feud') {
+    if (lh && wh && lh.id !== wh.id) {
+      addFeud(lh.id, wh.id, 45, 'seçim husumeti');
+      addLog(`⚔ Seçim sonrası ${lh.name} ile ${wh.name} hanedanları arasında husumet alevlendi.`, 'war', 2);
+    } else runner.relKing -= 20;
+  } else if (kind === 'banner') {
+    raiseBanner(lh, runner, el.faction);
+  } else if (kind === 'exile') {
+    const others = Object.values(S.factions).filter(f => !f.isBandit && f.alive && f.id !== el.faction);
+    if (others.length) {
+      const to = pick(others);
+      addLog(`🚪 ${lordShort(runner)} seçimi kaybedince krallığı terk edip ${to.name} hizmetine girdi.`, '', 2);
+      transferLord(runner, to.id);
+    } else runner.relKing -= 30;
+  } else if (kind === 'civil') {
+    const backers = S.order.lords.map(i => S.lords[i]).filter(l =>
+      l.faction === el.faction && l.state === 'active' && !l.isKing &&
+      (l.id === runner.id || (lh && l.houseId === lh.id) || lordRel(l, runner) > 15));
+    if (backers.length >= 2) {
+      runner.relKing = -80;
+      startCivilWar(fac, runner, backers);
+    } else raiseBanner(lh, runner, el.faction);
+  }
+}
+
+/* =====================  İSYAN BAYRAĞI  ===================== */
+function raiseBanner(house, leader, factionId) {
+  if (!leader) return;
+  const parent = S.factions[factionId];
+  const hs = house || houseOf(leader);
+  const id = uid('f');
+  const nf = {
+    id, name: `${hs ? hs.name : leader.name} İsyanı`,
+    short: (hs ? hs.name : leader.name).split(' ')[0].slice(0, 10),
+    color: hs ? hs.color : '#b03030', baseColor: hs ? hs.color : '#b03030',
+    culture: parent ? parent.culture : 'sw',
+    rulerTitle: 'Bey', lordTitle: 'Ağa', capital: null, aggr: 1.2, kingId: null,
+    treasury: ri(4000, 12000), rel: {}, warWeariness: {}, target: null, marshalId: null,
+    alive: true, isBandit: false, isBanner: true, succession: 'hereditary',
+    prestige: 20, warPlan: null, stance: 'attack', founded: calendar(S.day).year,
+    rebelOf: factionId, rulingHouseId: hs ? hs.id : null
+  };
+  S.factions[id] = nf;
+  Object.keys(S.factions).forEach(o => {
+    if (o === id) return;
+    nf.rel[o] = o === factionId ? -85 : -10;
+    S.factions[o].rel[id] = o === factionId ? -85 : -10;
+  });
+  const joiners = S.order.lords.map(i => S.lords[i]).filter(l =>
+    l.faction === factionId && l.state === 'active' && !l.isKing &&
+    (l.id === leader.id || (hs && l.houseId === hs.id && rnd() < 0.7)));
+  joiners.forEach(l => {
+    l.faction = id; l.relKing = 70; l.title = nf.lordTitle;
+    if (l.partyId && S.parties[l.partyId]) S.parties[l.partyId].faction = id;
+    /* isyancılar tımarlarını bırakır: bayrak topraksızdır */
+    l.fiefs.slice().forEach(f => {
+      const s = S.settlements[f];
+      if (s) { s.lordId = null; }
+    });
+    l.fiefs = [];
+  });
+  makeKing(leader, true);
+  leader.title = nf.rulerTitle;
+  declareWar(id, factionId, true);
+  addLog(`🏴 ${nf.name}! ${lordShort(leader)} seçim sonucunu tanımayıp ${joiners.length} lordla isyan bayrağı açtı.`, 'war', 2);
+  const king = parent && parent.kingId ? S.lords[parent.kingId] : null;
+  if (king) talk('banner', { a: leader, b: king, x: (capitalOf(factionId) || {}).name || 'Kalradya', h: hs, force: true });
+  /* tımarları kalan lordlara dağıt */
+  S.order.settlements.forEach(i => {
+    const s = S.settlements[i];
+    if (s.faction === factionId && !s.lordId) grantConquest(s, null);
+  });
+  territoryDirty = true; uiDirty.kra = true;
+  return nf;
+}
+
+/* bayrak bir şehir alırsa gerçek krallığa dönüşür, ordusu biterse dağılır */
+function bannerTick() {
+  Object.values(S.factions).forEach(f => {
+    if (!f.isBanner || !f.alive) return;
+    const own = ownSettlements(f.id);
+    if (own.length) {
+      f.isBanner = false;
+      f.rulerTitle = 'Kral'; f.lordTitle = 'Lord';
+      f.capital = own.find(s => s.type === 'town') ? own.find(s => s.type === 'town').id : own[0].id;
+      addLog(`👑 ${f.name} bir yerleşim ele geçirdi ve gerçek bir krallığa dönüştü!`, 'war', 2);
+      return;
+    }
+    const parties = S.order.parties.filter(i => S.parties[i] && S.parties[i].faction === f.id);
+    if (!parties.length) {
+      f.alive = false;
+      const back = S.factions[f.rebelOf];
+      S.order.lords.map(i => S.lords[i]).filter(l => l.faction === f.id).forEach(l => {
+        if (back && back.alive && rnd() < 0.5) { transferLord(l, back.id); l.relKing = -20; }
+        else { l.state = 'exile'; if (l.partyId) removeParty(l.partyId); l.partyId = null; }
+      });
+      addLog(`🏳 ${f.name} bastırıldı.`, 'war', 2);
+      uiDirty.kra = true;
+    }
+  });
+}
+
+/* =====================  SEÇİM DÖNGÜSÜ  ===================== */
+function electionTick(day) {
+  /* süren seçimler */
+  S.elections.forEach(el => {
+    if (el.stage === 'done') return;
+    if (el.stage === 'campaign') {
+      campaignStep(el);
+      if (S.day >= el.endsAt) { el.stage = 'vote'; }
+    }
+    if (el.stage === 'vote') resolveElection(el);
+  });
+  if (day % 10 !== 0) return;
+  /* boşta kalan tımarlar için divan */
+  Object.values(S.factions).forEach(fac => {
+    if (fac.isBandit || fac.isBanner || !fac.alive) return;
+    const vacant = ownSettlements(fac.id).filter(s => s.type !== 'village' && !s.lordId);
+    if (!vacant.length) return;
+    if (S.elections.some(e => e.faction === fac.id && e.stage !== 'done')) return;
+    if (rnd() < 0.5) startElection(fac.id, 'fief', { settlementId: vacant[0].id });
+  });
+  /* mareşal seçimi: savaş varsa ve mareşal yoksa */
+  Object.values(S.factions).forEach(fac => {
+    if (fac.isBandit || fac.isBanner || !fac.alive) return;
+    if (!enemyFactions(fac.id).length) return;
+    if (fac.marshalId && S.lords[fac.marshalId] && S.lords[fac.marshalId].state === 'active') return;
+    if (S.elections.some(e => e.faction === fac.id && e.stage !== 'done')) return;
+    if (rnd() < 0.3) startElection(fac.id, 'marshal', {});
+  });
+}
+
+/* =====================  KRALLIK İÇİ DİYALOGLAR  ===================== */
+function courtTick(day) {
+  if (day % 8 !== 0) return;
+  Object.values(S.factions).forEach(fac => {
+    if (fac.isBandit || !fac.alive || !fac.kingId) return;
+    const king = S.lords[fac.kingId]; if (!king) return;
+    const lords = S.order.lords.map(i => S.lords[i]).filter(l => l.faction === fac.id && l.id !== king.id && l.state === 'active');
+    if (!lords.length) return;
+    const l = pick(lords);
+    if (l.relKing < -30 && rnd() < 0.4) {
+      talk('reprimand', { a: king, b: l, x: (l.fiefs.map(f => S.settlements[f]).find(Boolean) || {}).name || 'sınır' });
+    } else if (l.relKing > 55 && rnd() < 0.25) {
+      talk('oath', { a: l, b: king, f: fac.id, h: houseOf(king) });
+    }
+  });
+  /* krallar arası: barış ve savaş konuşmaları */
+  const live = Object.values(S.factions).filter(f => !f.isBandit && f.alive && f.kingId);
+  if (live.length > 1 && rnd() < 0.3) {
+    const a = pick(live), b = pick(live.filter(x => x.id !== a.id));
+    if (a && b) {
+      const ka = S.lords[a.kingId], kb = S.lords[b.kingId];
+      if (ka && kb) {
+        if (atWar(a.id, b.id)) talk('peaceOffer', { a: ka, b: kb, f: a.id });
+        else if ((a.rel[b.id] || 0) < -25) talk('warDeclare', { a: ka, b: kb, f: a.id, x: (capitalOf(b.id) || {}).name || b.name });
+      }
+    }
+  }
+}
+
+/* =====================  YILLIK VAKAYİNAME  ===================== */
+function chronicleTick(day) {
+  if (day === 0 || day % 360 !== 0) return;
+  const year = calendar(S.day).year - 1;
+  const from = S.day - 360;
+  const evs = S.log.filter(l => l.d >= from && l.d < S.day);
+  const parts = [];
+  const captures = evs.filter(l => l.m.includes('DÜŞTÜ'));
+  const wars = evs.filter(l => l.m.includes('savaş ilan etti'));
+  const peaces = evs.filter(l => l.m.includes('barış imzalandı'));
+  const crowns = evs.filter(l => l.m.includes('tahta') || l.m.includes('kurultay'));
+  const deaths = evs.filter(l => l.m.startsWith('⚰'));
+  const houses = evs.filter(l => l.m.includes('hanedan'));
+  const biggest = S.battles.filter(b => b.day >= from).sort((a, b) => (b.a.start + b.b.start) - (a.a.start + a.b.start))[0];
+
+  const strongest = Object.values(S.factions).filter(f => !f.isBandit && f.alive)
+    .map(f => ({ f, n: ownSettlements(f.id).length })).sort((a, b) => b.n - a.n)[0];
+
+  if (wars.length) parts.push(`${year} yılı ${wars.length === 1 ? 'bir savaş ilanıyla' : wars.length + ' savaş ilanıyla'} sarsıldı.`);
+  else if (peaces.length) parts.push(`${year} yılı görece sakin geçti; ${peaces.length} barış anlaşması imzalandı.`);
+  else parts.push(`${year} yılında Kalradya kılıçları kınında bekledi.`);
+  if (captures.length) {
+    const names = captures.slice(0, 3).map(c => c.m.split(' ')[1]).join(', ');
+    parts.push(`${captures.length} yerleşim el değiştirdi${names ? ' (' + names + ')' : ''}.`);
+  }
+  if (biggest) parts.push(`Yılın en büyük çarpışması ${biggest.place} önünde oldu: ${biggest.a.name} ${fmt(biggest.a.start)} kişiyle ${biggest.b.name} ordusunun ${fmt(biggest.b.start)} askerine karşı durdu; ${biggest.winner === 'a' ? biggest.a.name : biggest.b.name} galip geldi.`);
+  if (crowns.length) parts.push(crowns[0].m.replace(/^[^\s]+\s/, ''));
+  if (deaths.length) parts.push(`${deaths.length} lord toprağa verildi.`);
+  if (houses.length) parts.push(houses[0].m.replace(/^[^\s]+\s/, ''));
+  if (strongest) parts.push(`Yıl kapanırken en geniş topraklar ${strongest.f.name} elindeydi (${strongest.n} yerleşim).`);
+
+  S.chronicle = S.chronicle || [];
+  S.chronicle.unshift({ year, text: parts.join(' ') });
+  if (S.chronicle.length > 120) S.chronicle.length = 120;
+  uiDirty.his = true;
+}
+/* =====================================================================
    Bölüm 5: Arayüz — dört sekme, seçim ekranı, krallıklar, savaşlar
    ===================================================================== */
 
@@ -4187,7 +5010,8 @@ function fSel(label, kind, id, key, opts) {
 }
 function getEnt(kind, id) {
   return kind === 'lord' ? S.lords[id] : kind === 'settlement' ? S.settlements[id]
-    : kind === 'faction' ? S.factions[id] : kind === 'party' ? S.parties[id] : null;
+    : kind === 'faction' ? S.factions[id] : kind === 'party' ? S.parties[id]
+    : kind === 'house' ? S.houses[id] : null;
 }
 const facOpts = () => Object.values(S.factions).filter(f => !f.isBandit).map(f => ({ v: f.id, t: f.name }));
 
@@ -4234,11 +5058,12 @@ function renderLegend() {
   const box = $('#legend');
   const facs = Object.values(S.factions).filter(f => !f.isBandit && f.alive)
     .map(f => ({ f, own: ownSettlements(f.id).length }))
+    .filter(o => o.own > 0 || o.f.isBanner)
     .sort((a, b) => b.own - a.own);
   const shown = facs.slice(0, 9), rest = facs.slice(9);
   const rows = shown.map(o => `<div class="lrow ${S.hidden[o.f.id] ? 'off' : ''}" data-act="toggleFac" data-id="${o.f.id}">
-      <span class="swatch" style="background:${o.f.color}"></span>
-      <span class="lname">${esc(o.f.short)}</span><span class="lval">${o.own}</span></div>`).join('')
+      <span class="swatch" style="background:${o.f.color}${o.f.isBanner ? ';border-radius:50%' : ''}"></span>
+      <span class="lname">${o.f.isBanner ? '🏴 ' : ''}${esc(o.f.short)}</span><span class="lval">${o.f.isBanner ? '⚔' : o.own}</span></div>`).join('')
     + (rest.length ? `<div class="lrow"><span class="swatch" style="background:transparent"></span>
       <span class="lname muted">+${rest.length} küçük devlet</span></div>` : '');
   const html = rows + `<div class="lrow ${S.hidden.bandit ? 'off' : ''}" data-act="toggleFac" data-id="bandit">
@@ -4266,6 +5091,7 @@ function viewSel() {
   if (S.sel.type === 'settlement') return viewSettlement(S.settlements[S.sel.id]);
   if (S.sel.type === 'faction') return viewFaction(S.factions[S.sel.id]);
   if (S.sel.type === 'party') return viewParty(S.parties[S.sel.id]);
+  if (S.sel.type === 'house') return viewHouse(S.houses[S.sel.id]);
   return viewDashboard();
 }
 
@@ -4283,6 +5109,7 @@ function viewDashboard() {
     <div class="grow"><h2>Kalradya</h2><div class="sub2">${c.dayOfMonth} ${c.month} ${c.year} · ${c.season}</div></div>
   </div>
   ${decisionCards()}
+  ${S.elections.filter(e => e.stage !== 'done').map(e => electionCard(e)).join('')}
   <div class="statgrid">
     ${stat('Savaş', wars.length)}${stat('Kuşatma', sieges.length)}${stat('Ordu', S.order.parties.length)}
   </div>
@@ -4330,7 +5157,7 @@ function viewLord(l) {
   const myBattles = S.battles.filter(b => b.a.lordId === l.id || b.b.lordId === l.id).slice(0, 3);
   return `
   <div class="hero">
-    <div class="crest" style="background:${hexRGBA(fac ? fac.color : '#888', .22)};border-color:${fac ? fac.color : '#888'}">${l.isKing ? '👑' : '⚔'}</div>
+    <div style="flex:none;position:relative">${houseArms(houseOf(l), 42)}${l.isKing ? '<div style="position:absolute;top:-6px;right:-6px;font-size:15px">👑</div>' : ''}</div>
     <div class="grow">
       <h2>${esc(l.title)} ${esc(lordFullName(l))}</h2>
       <div class="sub2">${esc(facName(l.faction))} · ${esc(pers.name)} · ${esc(stateLabel(l))}${isMarshal ? ' · Mareşal' : ''}${l.age ? ' · ' + l.age + ' yaşında' : ''}</div>
@@ -4359,7 +5186,8 @@ function viewLord(l) {
     <div class="btnrow" style="margin-top:6px"><button class="btn sm primary" data-act="lordSpawn" data-id="${l.id}">Ordu kur</button></div></div>`}
 
   <div class="card">
-    <h3>Hanedan <span class="sub">${esc(l.house || '—')}</span></h3>
+    <h3>Hanedan <span class="sub">${esc(l.house || '—')}</span>
+      ${l.houseId ? `<button class="btn sm" data-act="selHouse" data-id="${l.houseId}" style="float:right">Hanedanı aç</button>` : ''}</h3>
     <table class="tbl">
       <tr><td>Yaş</td><td class="n">${l.age || '?'}</td><td class="small muted">${l.sick > S.day ? 'hasta' : 'sağlıklı'}</td></tr>
       <tr><td>Eşi</td><td colspan="2">${l.spouse ? esc(l.spouse) : '<span class="muted">bekâr</span>'}</td></tr>
@@ -4540,8 +5368,8 @@ function viewFaction(f) {
   const cap = capitalOf(f.id);
   return `
   <div class="hero">
-    <div class="crest" style="background:${hexRGBA(f.color, .25)};border-color:${f.color}">🛡</div>
-    <div class="grow"><h2>${esc(f.name)}</h2>
+    <div style="flex:none">${factionArms(f, 44)}</div>
+    <div class="grow"><h2>${esc(f.name)}${f.isBanner ? ' <span class="tag war">isyan bayrağı</span>' : ''}</h2>
       <div class="sub2">${king ? esc(king.title) + ' ' + esc(king.name) : 'hükümdarsız'} · ${lords.length} lord${f.alive ? '' : ' · yıkıldı'}</div></div>
   </div>
   <div class="statgrid">
@@ -4553,7 +5381,9 @@ function viewFaction(f) {
     <table class="tbl">
       <tr><td>Askerî güç</td><td class="n">${fmt(factionStrength(f.id))}</td></tr>
       <tr><td>Başkent</td><td>${cap ? `<span class="tag gold" data-act="selStl" data-id="${cap.id}" style="cursor:pointer">${esc(cap.name)}</span>${cap.besiegedBy ? ' <span class="tag war">kuşatma altında!</span>' : ''}` : '—'}</td></tr>
-      <tr><td>Veraset</td><td>${f.succession === 'elective' ? '<span class="tag">Seçimli (kurultay)</span>' : '<span class="tag">Babadan oğula</span>'}</td></tr>
+      <tr><td>Veraset</td><td>${f.succession === 'elective' ? '<span class="tag">Seçimli (kurultay)</span>' : '<span class="tag">Babadan oğula</span>'}${f.interregnum ? ' <span class="tag war">fetret</span>' : ''}</td></tr>
+      <tr><td>Hüküm süren hanedan</td><td>${f.rulingHouseId && S.houses[f.rulingHouseId]
+        ? `<span class="tag" data-act="selHouse" data-id="${f.rulingHouseId}" style="cursor:pointer;border-color:${houseColor(f.rulingHouseId)};color:${houseColor(f.rulingHouseId)}">${esc(houseName(f.rulingHouseId))}</span>` : '—'}</td></tr>
       <tr><td>Prestij</td><td class="n">${Math.round(f.prestige || 0)}</td></tr>
       <tr><td>Mareşal</td><td>${marshal ? `<span class="tag" data-act="selLord" data-id="${marshal.id}" style="cursor:pointer">${esc(marshal.title)} ${esc(marshal.name)}</span>` : '—'}</td></tr>
       <tr><td>Savaş planı</td><td>${f.warPlan && S.settlements[f.warPlan.settlementId]
@@ -4571,6 +5401,18 @@ function viewFaction(f) {
       <button class="btn sm" data-act="gfArmyFor" data-id="${f.id}">Orduları tamamla</button>
     </div>
   </div>
+  ${(() => { const els = S.elections.filter(e => e.faction === f.id).slice(0, 3);
+    return els.length ? els.map(e => electionCard(e, true)).join('') : ''; })()}
+  ${(() => { const hs = S.order.houses.map(i => S.houses[i]).filter(h => h && !h.extinct && h.faction === f.id)
+      .sort((a, b) => housePower(b.id) - housePower(a.id));
+    return hs.length ? `<div class="card"><h3>Hanedanlar <span class="sub">${hs.length}</span></h3><div class="list">
+      ${hs.slice(0, 8).map(h => `<div class="item" data-act="selHouse" data-id="${h.id}">
+        <span class="dot" style="background:${h.color}"></span>
+        <div class="grow"><div class="t">${esc(h.name)}${f.rulingHouseId === h.id ? ' 👑' : ''}</div>
+        <div class="s">${houseMembers(h.id).length} lord · ${houseMembers(h.id).reduce((a, m) => a + m.fiefs.length, 0)} tımar</div></div>
+        <div class="num small">${Math.round(housePower(h.id))}</div></div>`).join('')}</div></div>` : ''; })()}
+  ${(() => { const ds = S.dialogues.filter(d => d.aFaction === f.id || d.bFaction === f.id).slice(0, 5);
+    return ds.length ? `<div class="card"><h3>Divan <span class="sub">son konuşmalar</span></h3><div class="list">${ds.map(dialogueItem).join('')}</div></div>` : ''; })()}
   <div class="card"><h3>Lordları</h3><div class="list">
     ${lords.sort((a, b) => (b.isKing ? 1e6 : 0) + b.renown - ((a.isKing ? 1e6 : 0) + a.renown)).slice(0, 20).map(l => lordItem(l)).join('')}
   </div></div>
@@ -4618,8 +5460,13 @@ function viewKra() {
   if (ui.lordQuery) { const q = ui.lordQuery.toLocaleLowerCase('tr'); lords = lords.filter(l => l.name.toLocaleLowerCase('tr').includes(q)); }
   lords.sort((a, b) => (b.isKing ? 1e6 : 0) + b.renown - ((a.isKing ? 1e6 : 0) + a.renown));
 
+  const liveEls = S.elections.filter(e => e.stage !== 'done');
+  const doneEls = S.elections.filter(e => e.stage === 'done').slice(0, 4);
+  const topHouses = S.order.houses.map(i => S.houses[i]).filter(h => h && !h.extinct)
+    .sort((a, b) => housePower(b.id) - housePower(a.id)).slice(0, 10);
   return `
   ${decisionCards()}
+  ${liveEls.map(e => electionCard(e)).join('')}
   <div class="card">
     <h3>Krallıklar</h3>
     <div class="list">
@@ -4649,6 +5496,20 @@ function viewKra() {
       <button class="btn sm danger" data-act="allWar">Herkesi savaştır</button>
     </div>
   </div>
+
+  <div class="card">
+    <h3>Hanedanlar <span class="sub">en güçlü ${topHouses.length}</span></h3>
+    <div class="list">${topHouses.map(h => `<div class="item" data-act="selHouse" data-id="${h.id}">
+      <span class="dot" style="background:${h.color}"></span>
+      <div class="grow"><div class="t">${esc(h.name)}${S.factions[h.faction] && S.factions[h.faction].rulingHouseId === h.id ? ' 👑' : ''}</div>
+      <div class="s">${esc(facShort(h.faction))} · ${houseMembers(h.id).length} lord · prestij ${Math.round(h.prestige)}</div></div>
+      <div class="num small">${Math.round(housePower(h.id))}</div></div>`).join('')}</div>
+  </div>
+
+  ${doneEls.length ? `<div class="card"><h3>Son seçimler</h3>${doneEls.map(e => electionCard(e, true)).join('')}</div>` : ''}
+
+  ${S.dialogues.length ? `<div class="card"><h3>Divan <span class="sub">konuşmalar</span></h3>
+    <div class="list">${S.dialogues.slice(0, 8).map(dialogueItem).join('')}</div></div>` : ''}
 
   <div class="card">
     <h3>Anlaşmalar <span class="sub">${Object.keys(S.pacts).length}</span></h3>
@@ -4795,6 +5656,12 @@ function viewHis() {
     ${lineChart(mk('g'))}
   </div>
 
+  ${(S.chronicle && S.chronicle.length) ? `<div class="card">
+    <h3>Yıllıklar <span class="sub">tarihçinin kalemiyle</span></h3>
+    ${S.chronicle.slice(0, 12).map(c => `<div style="margin-bottom:10px">
+      <div style="font-weight:700;color:var(--accent)">${c.year}</div>
+      <div class="small" style="line-height:1.5">${esc(c.text)}</div></div>`).join('')}
+  </div>` : ''}
   <div class="card">
     <h3>Vakayiname <span class="sub">yıl yıl büyük olaylar</span></h3>
     ${years.length ? years.map(y => `<div style="margin-bottom:8px">
@@ -4803,6 +5670,158 @@ function viewHis() {
         <span class="d">${shortDate(l.d)}</span><span class="m">${esc(l.m)}</span></div>`).join('')}
     </div>`).join('') : '<div class="small muted">Henüz kayda değer bir olay yok.</div>'}
   </div>`;
+}
+
+/* =====================  ARMA ÇİZİMİ  ===================== */
+let ARMS_UID = 0;
+function armsSVG(arms, colA, colB, size) {
+  arms = arms || { pattern: 'solid', charge: 'sword' };
+  const id = 'ar' + (++ARMS_UID);
+  const A = colA || '#8a6d3b', B = colB || '#efe3c4';
+  const shield = 'M 6 6 L 94 6 L 94 56 Q 94 92 50 108 Q 6 92 6 56 Z';
+  let field = `<rect x="0" y="0" width="100" height="112" fill="${A}"/>`;
+  const p = arms.pattern;
+  if (p === 'fess') field += `<rect x="0" y="40" width="100" height="26" fill="${B}"/>`;
+  else if (p === 'pale') field += `<rect x="37" y="0" width="26" height="112" fill="${B}"/>`;
+  else if (p === 'bend') field += `<path d="M 0 0 L 34 0 L 100 96 L 100 112 L 66 112 L 0 20 Z" fill="${B}"/>`;
+  else if (p === 'chevron') field += `<path d="M 50 30 L 100 82 L 100 108 L 50 56 L 0 108 L 0 82 Z" fill="${B}"/>`;
+  else if (p === 'saltire') field += `<path d="M 0 0 L 20 0 L 100 96 L 100 112 L 80 112 L 0 16 Z M 100 0 L 100 16 L 20 112 L 0 112 L 0 96 L 80 0 Z" fill="${B}"/>`;
+  else if (p === 'quarterly') field += `<rect x="50" y="0" width="50" height="56" fill="${B}"/><rect x="0" y="56" width="50" height="56" fill="${B}"/>`;
+  else if (p === 'bordure') field += `<path d="M 0 0 H 100 V 112 H 0 Z M 12 12 V 100 H 88 V 12 Z" fill="${B}" fill-rule="evenodd"/>`;
+  else if (p === 'chief') field += `<rect x="0" y="0" width="100" height="30" fill="${B}"/>`;
+  const chargeColor = (p === 'solid' || p === 'bordure') ? B : '#f6ecd2';
+  const charge = ARMS_CHARGES[arms.charge] || ARMS_CHARGES.sword;
+  const s = size || 34;
+  return `<svg viewBox="0 0 100 112" width="${s}" height="${Math.round(s * 1.12)}" style="display:block;flex:none">
+    <defs><clipPath id="${id}"><path d="${shield}"/></clipPath></defs>
+    <g clip-path="url(#${id})">${field}
+      <g transform="translate(50 58) scale(0.62) translate(-50 -50)">
+        <path d="${charge}" fill="${chargeColor}" stroke="rgba(0,0,0,.45)" stroke-width="2"/></g>
+    </g>
+    <path d="${shield}" fill="none" stroke="rgba(0,0,0,.7)" stroke-width="4"/>
+  </svg>`;
+}
+function houseArms(h, size) { return h ? armsSVG(h.arms, h.color, '#efe3c4', size) : ''; }
+function factionArms(f, size) {
+  const rh = f.rulingHouseId ? S.houses[f.rulingHouseId] : null;
+  return rh ? houseArms(rh, size) : armsSVG(makeArms(f.id), f.color, '#efe3c4', size);
+}
+
+/* =====================  HANEDAN KARTI  ===================== */
+function viewHouse(h) {
+  if (!h) return '<div class="card">Hanedan bulunamadı.</div>';
+  const mem = houseMembers(h.id);
+  const head = houseHead(h.id);
+  const fac = S.factions[h.faction];
+  const feuds = Object.keys(S.feuds).filter(k => k.split('|').includes(h.id))
+    .map(k => ({ o: k.split('|').find(x => x !== h.id), f: S.feuds[k] }))
+    .filter(o => S.houses[o.o]);
+  const allies = Object.keys(h.allies || {}).filter(x => S.houses[x]);
+  const ruling = fac && fac.rulingHouseId === h.id;
+  return `
+  <div class="hero">
+    <div style="flex:none">${houseArms(h, 44)}</div>
+    <div class="grow"><h2>${esc(h.name)}</h2>
+      <div class="sub2">${esc(facName(h.faction))} · ${h.founded} yılından beri${ruling ? ' · <b style="color:var(--accent)">hüküm süren hanedan</b>' : ''}${h.extinct ? ' · tükendi' : ''}</div></div>
+  </div>
+  <div class="statgrid">
+    ${stat('Üye', mem.length)}
+    ${stat('Güç', Math.round(housePower(h.id)))}
+    ${stat('Prestij', Math.round(h.prestige))}
+  </div>
+  <div class="card">
+    <table class="tbl">
+      <tr><td>Hanedan başı</td><td>${head ? `<span class="tag" data-act="selLord" data-id="${head.id}" style="cursor:pointer">${esc(lordShort(head))}</span>` : '—'}</td></tr>
+      <tr><td>Toplam tımar</td><td class="n">${mem.reduce((a, m) => a + m.fiefs.length, 0)}</td></tr>
+      <tr><td>Renk</td><td><span style="display:inline-block;width:34px;height:14px;border-radius:4px;border:1px solid rgba(0,0,0,.5);background:${h.color}"></span></td></tr>
+      ${allies.length ? `<tr><td>Evlilik bağı</td><td>${allies.map(x => `<span class="tag peace" data-act="selHouse" data-id="${x}" style="cursor:pointer">💍 ${esc(houseName(x))}</span>`).join(' ')}</td></tr>` : ''}
+      ${feuds.length ? `<tr><td>Kan davası</td><td>${feuds.map(o => `<span class="tag ${o.f.open ? 'war' : ''}" data-act="selHouse" data-id="${o.o}" style="cursor:pointer">${o.f.open ? '⚔' : '⚡'} ${esc(houseName(o.o))} ${Math.round(o.f.level)}</span>`).join(' ')}</td></tr>` : ''}
+    </table>
+    <div class="btnrow" style="margin-top:8px">
+      ${head && !head.isKing ? `<button class="btn sm" data-act="makeKing" data-id="${head.id}">Hanedanı tahta çıkar</button>` : ''}
+      <button class="btn sm" data-act="houseFeud" data-id="${h.id}">Kan davası başlat</button>
+      <button class="btn sm" data-act="houseMarry" data-id="${h.id}">Evlilik ayarla</button>
+      <button class="btn sm" data-act="houseBanner" data-id="${h.id}">İsyan bayrağı açtır</button>
+    </div>
+  </div>
+  <div class="card"><h3>Üyeler</h3><div class="list">
+    ${mem.sort((a, b) => b.renown - a.renown).map(l => lordItem(l)).join('') || '<div class="small muted">Yaşayan üye yok.</div>'}
+  </div></div>
+  ${sect('edit', '✎ Hanedanı düzenle', `
+    <label class="f"><span>Hanedan adı</span><input type="text" value="${esc(h.name)}" data-edit="house|${h.id}|name|text"></label>
+    <label class="f"><span>Renk</span><input type="color" value="${h.color}" data-edit="house|${h.id}|color|color"></label>
+    ${fSelH('Arma deseni', h.id, 'pattern', ARMS_PATTERNS.map(p => ({ v: p, t: p })))}
+    ${fSelH('Arma sembolü', h.id, 'charge', ARMS_CHARGE_IDS.map(c => ({ v: c, t: c })))}
+    <label class="f"><span>Prestij</span><input type="number" value="${Math.round(h.prestige)}" min="0" max="100" data-edit="house|${h.id}|prestige|num"></label>`)}`;
+}
+function fSelH(label, hid, key, opts) {
+  const h = S.houses[hid]; if (!h) return '';
+  const cur = h.arms ? h.arms[key] : '';
+  return `<label class="f"><span>${esc(label)}</span><select data-edit="house|${hid}|arms.${key}|sel">${
+    opts.map(o => `<option value="${esc(o.v)}" ${o.v === cur ? 'selected' : ''}>${esc(o.t)}</option>`).join('')}</select></label>`;
+}
+
+/* =====================  SEÇİM EKRANI  ===================== */
+function electionCard(el, compact) {
+  const fac = S.factions[el.faction];
+  const kn = ELECTION_KINDS[el.kind];
+  const stl = el.settlementId ? S.settlements[el.settlementId] : null;
+  if (el.stage !== 'done') {
+    const pledges = {};
+    el.electors.forEach(e => { if (e.pledged) pledges[e.pledged] = (pledges[e.pledged] || 0) + 1; });
+    return `<div class="card" style="border-color:var(--accent)">
+      <h3 style="color:var(--accent)">${kn.icon} ${esc(fac ? fac.name : '')} — ${esc(kn.name)}</h3>
+      <div class="small muted" style="margin-bottom:8px">${stl ? esc(stl.name) + ' · ' : ''}Kampanya sürüyor, ${Math.max(0, Math.ceil(el.endsAt - S.day))} gün sonra oylama. ${el.electors.length} seçici.</div>
+      <div class="list">
+        ${el.candidates.map(c => { const l = S.lords[c.lordId]; if (!l) return '';
+          const h = houseOf(l);
+          return `<div class="item" data-act="selLord" data-id="${l.id}">
+            <span class="dot" style="background:${h ? h.color : facColor(l.faction)}"></span>
+            <div class="grow"><div class="t">${esc(lordShort(l))}</div>
+            <div class="s">${esc(h ? h.name : '')} · şöhret ${fmt(l.renown)} · ${l.fiefs.length} tımar</div></div>
+            <div class="num small">${pledges[c.lordId] || 0} söz</div></div>`; }).join('')}
+      </div>
+      <div class="btnrow" style="margin-top:8px">
+        <button class="btn sm primary" data-act="electionResolve" data-id="${el.id}">Oylamayı şimdi yap</button>
+        <button class="btn sm" data-act="electionRig" data-id="${el.id}">Kazananı belirle</button>
+        <button class="btn sm" data-act="electionAfter" data-id="${el.id}">Sonrasını belirle</button>
+      </div>
+    </div>`;
+  }
+  const win = S.lords[el.winnerId];
+  const wh = win ? houseOf(win) : null;
+  const after = ELECTION_AFTERMATH[el.aftermath] || ELECTION_AFTERMATH.none;
+  return `<div class="card">
+    <h3>${kn.icon} ${esc(fac ? fac.short : '')} ${esc(kn.name)} <span class="sub">${shortDate(el.day)}</span></h3>
+    <div class="row" style="gap:8px;margin-bottom:8px">
+      ${wh ? houseArms(wh, 30) : ''}
+      <div class="grow"><b>${esc(win ? lordShort(win) : '—')}</b> kazandı${el.rigged ? ' <span class="tag gold">müdahale</span>' : ''}
+      <div class="small muted">${esc(wh ? wh.name : '')}${stl ? ' · ' + esc(stl.name) : ''}</div></div>
+    </div>
+    <table class="tbl">
+      ${(el.tally || []).map(t => { const l = S.lords[t.lordId]; const h = l ? houseOf(l) : null;
+        return `<tr class="clk" data-act="selLord" data-id="${t.lordId}">
+          <td><span class="dot" style="background:${h ? h.color : '#888'}"></span> ${esc(l ? lordShort(l) : '?')}</td>
+          <td class="n">%${t.pct}</td>
+          <td style="width:38%">${bar(t.pct, 100, h ? h.color : 'var(--accent)')}</td></tr>`; }).join('')}
+    </table>
+    <div class="small" style="margin-top:8px"><b>Sonuç:</b> ${esc(after.name)} — ${esc(after.desc)}</div>
+    ${compact ? '' : sect('elv' + el.id, 'Kim kime oy verdi?', `<table class="tbl">
+      ${el.electors.filter(e => e.votedFor).map(e => {
+        const v = S.lords[e.lordId], c = S.lords[e.votedFor];
+        return `<tr><td>${esc(v ? lordShort(v) : '?')}</td><td>${esc(c ? c.name : '?')}</td>
+          <td class="small muted">${esc(e.reason || '')}</td><td class="n small">${e.weight}</td></tr>`;
+      }).join('')}</table>`)}
+  </div>`;
+}
+
+/* =====================  DİYALOG OKUYUCU  ===================== */
+function dialogueItem(d) {
+  return `<div class="item" data-act="openDialogue" data-id="${d.id}">
+    <span class="dot" style="background:${facColor(d.aFaction)}"></span>
+    <div class="grow"><div class="t">💬 ${esc(d.title)}</div>
+    <div class="s">${esc(d.aName)} — ${esc(d.bName)}</div></div>
+    <div class="num small">${shortDate(d.day)}</div></div>`;
 }
 /* =====================================================================
    Bölüm 6: Sandbox, savaş raporu/izleme ve komutlar
@@ -4824,6 +5843,7 @@ function renderBox() {
       <button class="btn sm" data-act="newArmy">⚔ Yeni ordu</button>
       <button class="btn sm" data-act="spawnBanditBtn">🏴 Haydut çetesi</button>
       <button class="btn sm" data-act="newBuild">🧱 İnşaat başlat</button>
+      <button class="btn sm primary" data-act="newElection">🗳 Seçim başlat</button>
     </div>
     <div class="small muted" style="margin-top:6px">Yerleşim, ordu ve inşaat için haritadan yer seçmen istenir.</div>
   </div>
@@ -4916,8 +5936,11 @@ function renderBox() {
     ${rangeRow('İnşa hevesi', 'buildRate', 0, 4, 0.1)}
     ${rangeRow('Olay sıklığı', 'eventRate', 0, 4, 0.1)}
     ${rangeRow('Ölümlülük', 'mortality', 0, 4, 0.1)}
+    ${rangeRow('Diyalog sıklığı', 'dialogueRate', 0, 3, 0.1)}
     <div class="grid2 small" style="margin-top:6px">
       ${chk('askFief', 'Fetihte tımarı bana sor')}
+      ${chk('houseColors', 'Krallık rengi hanedanla değişsin')}
+      ${chk('pauseOnElection', 'Seçim başlayınca duraklat')}
       ${chk('autoSnapshot', 'Otomatik kayıt noktası')}
       ${chk('pauseOnDecision', 'Kararda duraklat')}
       ${chk('autoPeace', 'Yapay zekâ barış yapsın')}
@@ -4951,7 +5974,10 @@ function renderBox() {
     };
   });
   $$('#paneBox input[type="checkbox"]').forEach(c => {
-    c.onchange = e => { S.opts[e.target.dataset.opt] = e.target.checked; };
+    c.onchange = e => {
+      S.opts[e.target.dataset.opt] = e.target.checked;
+      if (e.target.dataset.opt === 'houseColors') refreshAllColors();
+    };
   });
 }
 
@@ -5459,6 +6485,8 @@ function searchDialog() {
       if (l.name.toLocaleLowerCase('tr').includes(q)) res.push({ t: 'lord', id: l.id, n: `${l.title} ${l.name}`, s: `${facName(l.faction)} · ${stateLabel(l)}`, c: facColor(l.faction) }); });
     S.order.settlements.forEach(i => { const s = S.settlements[i];
       if (s.name.toLocaleLowerCase('tr').includes(q)) res.push({ t: 'settlement', id: s.id, n: s.name, s: `${TYPE_TR[s.type]} · ${facName(s.faction)}`, c: facColor(s.faction) }); });
+    S.order.houses.forEach(i => { const h = S.houses[i];
+      if (h && !h.extinct && h.name.toLocaleLowerCase('tr').includes(q)) res.push({ t: 'house', id: h.id, n: h.name, s: `Hanedan · ${facName(h.faction)}`, c: h.color }); });
     box.innerHTML = res.slice(0, 40).map(r => `<div class="item" data-act="searchPick" data-t="${r.t}" data-id="${r.id}">
       <span class="dot" style="background:${r.c}"></span><div class="grow"><div class="t">${esc(r.n)}</div><div class="s">${esc(r.s)}</div></div></div>`).join('')
       || '<div class="small muted">Sonuç yok.</div>';
@@ -5511,7 +6539,7 @@ const ACTIONS = {
   selParty: el2 => select({ type: 'party', id: el2.dataset.id }),
   selFac: el2 => { S.sel = { type: 'faction', id: el2.dataset.id }; uiDirty.sel = true; setTab('sel'); },
   searchPick: el2 => { dlg.close(); const t = el2.dataset.t;
-    if (t === 'faction') { S.sel = { type: 'faction', id: el2.dataset.id }; uiDirty.sel = true; setTab('sel'); }
+    if (t === 'faction' || t === 'house') { S.sel = { type: t, id: el2.dataset.id }; uiDirty.sel = true; setTab('sel'); }
     else select({ type: t, id: el2.dataset.id });
     setTimeout(focusSel, 30); },
   openBattle: el2 => openBattle(el2.dataset.id),
@@ -5731,10 +6759,14 @@ function createLord(faction, opt) {
     wounded: 0, kills: 0, battlesWon: 0, battlesLost: 0,
     age: opt.age != null ? opt.age : ri(22, 50),
     house: opt.house || pick(HOUSES[faction] || HOUSES.swadia),
+    houseId: null,
     spouse: opt.spouse !== undefined ? opt.spouse : (rnd() < 0.6 ? pick(FEMALE_NAMES[faction] || FEMALE_NAMES.swadia) : null),
     children: [], rel: {}, health: 100, tactic: 'balanced', sick: 0
   };
   S.order.lords.push(id);
+  const hs = ensureHouse(faction, S.lords[id].house);
+  S.lords[id].houseId = hs.id; S.lords[id].house = hs.name;
+  refreshHouses();
   uiDirty.kra = true;
   return S.lords[id];
 }
@@ -5745,6 +6777,9 @@ function makeKing(l, silent) {
   if (old && old !== l) { old.isKing = false; old.title = fac.lordTitle; old.relKing = -30; }
   l.isKing = true; l.title = fac.rulerTitle; l.relKing = 100;
   fac.kingId = l.id;
+  fac.interregnum = false;
+  if (l.houseId) fac.rulingHouseId = l.houseId;
+  if (typeof applyRulingHouseColor === 'function') applyRulingHouseColor(fac);
   if (!silent) addLog(`👑 ${l.title} ${lordFullName(l)}, ${fac.name} tahtına oturdu.`, 'peace', 2);
   uiDirty.kra = true; uiDirty.sel = true;
 }
@@ -5785,6 +6820,14 @@ function applyEdit(kind, id, key, raw, type) {
     if (v === 'village') { obj.walls = 0; obj.garrison = {}; }
     territoryDirty = true; rebuildSettlementNodes(); requestDraw(); renderUI(true); return;
   }
+  if (kind === 'house') {
+    if (key.startsWith('arms.')) { obj.arms = obj.arms || {}; obj.arms[key.slice(5)] = v; }
+    else if (key === 'color') { obj.color = v; const fc = S.factions[obj.faction]; if (fc && fc.rulingHouseId === obj.id) applyRulingHouseColor(fc); territoryDirty = true; }
+    else obj[key] = v;
+    if (key === 'name') houseMembers(obj.id).forEach(m => { m.house = v; });
+    uiDirty.sel = uiDirty.kra = true; requestDraw(); return;
+  }
+  if (kind === 'faction' && key === 'succession') { obj.succession = v; uiDirty.sel = true; return; }
   if (kind === 'faction' && key === 'kingId') { const l = S.lords[v]; if (l) makeKing(l); renderUI(true); return; }
   if (kind === 'faction' && key === 'color') { obj.color = v; territoryDirty = true; requestDraw(); renderLegend(); return; }
 
@@ -5987,6 +7030,157 @@ ACTIONS.preset = el2 => {
   }
   dlg.close(); territoryDirty = true; renderUI(true); requestDraw();
 };
+
+/* =====================================================================
+   v4 komutları: hanedanlar, seçimler, diyaloglar
+   ===================================================================== */
+Object.assign(ACTIONS, {
+  selHouse: el2 => { S.sel = { type: 'house', id: el2.dataset.id }; uiDirty.sel = true; setTab('sel'); },
+  openDialogue: el2 => {
+    const d = S.dialogues.find(x => x.id === el2.dataset.id); if (!d) return;
+    openDlg(d.title, `
+      <div class="small muted" style="margin-bottom:10px">${shortDate(d.day)} · ${esc(facName(d.aFaction))}${d.aFaction !== d.bFaction ? ' — ' + esc(facName(d.bFaction)) : ''}</div>
+      ${d.lines.map(ln => {
+        const isA = ln.who === d.a;
+        const col = isA ? facColor(d.aFaction) : facColor(d.bFaction);
+        return `<div style="margin-bottom:10px;padding-left:${isA ? 0 : 18}px">
+          <div class="small" style="color:${col};font-weight:700">${esc(ln.name)}</div>
+          <div style="border-left:3px solid ${col};padding:4px 0 4px 9px">${esc(ln.text)}</div></div>`;
+      }).join('')}`, [
+      { t: 'Konuşanı aç', fn: () => { dlg.close(); if (S.lords[d.a]) select({ type: 'lord', id: d.a }); } },
+      { t: 'Kapat', cls: 'primary', fn: () => dlg.close() }]);
+  },
+  electionResolve: el2 => {
+    const el = S.elections.find(x => x.id === el2.dataset.id); if (!el) return;
+    resolveElection(el);
+    renderUI(true); requestDraw();
+    openElectionResult(el);
+  },
+  electionRig: el2 => {
+    const el = S.elections.find(x => x.id === el2.dataset.id); if (!el) return;
+    openDlg('Kazananı belirle', `
+      <div class="small muted" style="margin-bottom:8px">Seçimi kimin kazanacağını sen belirle. Oylar yine sayılır ama sonuç senin dediğin olur.</div>
+      <label class="f"><span>Kazanan</span><select id="rgW">${el.candidates.map(c => {
+        const l = S.lords[c.lordId]; return l ? `<option value="${l.id}">${esc(lordShort(l))} — ${esc(houseName(l.houseId))}</option>` : ''; }).join('')}</select></label>`,
+      [{ t: 'Uygula', cls: 'primary', fn: () => {
+        el.forcedWinner = $('#rgW').value; dlg.close();
+        toast('Kazanan belirlendi'); uiDirty.sel = uiDirty.kra = true; renderUI(true);
+      } }, { t: 'Vazgeç', fn: () => dlg.close() }]);
+  },
+  electionAfter: el2 => {
+    const el = S.elections.find(x => x.id === el2.dataset.id); if (!el) return;
+    openDlg('Seçim sonrası ne olsun?', `
+      <div class="list">${Object.values(ELECTION_AFTERMATH).map(a => `
+        <div class="item" data-act="setAftermath" data-id="${el.id}" data-a="${a.id}">
+          <div class="grow"><div class="t">${esc(a.name)}</div><div class="s">${esc(a.desc)}</div></div></div>`).join('')}
+      <div class="item" data-act="setAftermath" data-id="${el.id}" data-a="">
+        <div class="grow"><div class="t">🎲 Kadere bırak</div><div class="s">Sonucu simülasyon belirlesin.</div></div></div></div>`,
+      [{ t: 'Kapat', fn: () => dlg.close() }]);
+  },
+  setAftermath: el2 => {
+    const el = S.elections.find(x => x.id === el2.dataset.id); if (!el) return;
+    el.forcedAftermath = el2.dataset.a || null;
+    dlg.close(); toast(el.forcedAftermath ? 'Sonuç ayarlandı' : 'Kadere bırakıldı');
+    uiDirty.sel = uiDirty.kra = true; renderUI(true);
+  },
+  newElection: () => {
+    const live = Object.values(S.factions).filter(f => !f.isBandit && f.alive && !f.isBanner);
+    openDlg('Seçim başlat', `
+      <div class="grid2">
+        <label class="f"><span>Krallık</span><select id="neFac">${live.map(f => `<option value="${f.id}">${esc(f.name)}</option>`).join('')}</select></label>
+        <label class="f"><span>Tür</span><select id="neKind">${Object.values(ELECTION_KINDS).map(k => `<option value="${k.id}">${k.icon} ${esc(k.name)}</option>`).join('')}</select></label>
+      </div>
+      <label class="f"><span>Tımar seçimiyse hangi yerleşim?</span><select id="neStl">
+        <option value="">— gerekmiyor —</option>
+        ${S.order.settlements.map(i => S.settlements[i]).filter(s => s.type !== 'village')
+          .map(s => `<option value="${s.id}">${esc(s.name)} — ${esc(facName(s.faction))}</option>`).join('')}</select></label>
+      <label class="f"><span>Sonrasında ne olsun?</span><select id="neAfter">
+        <option value="">🎲 Kadere bırak</option>
+        ${Object.values(ELECTION_AFTERMATH).map(a => `<option value="${a.id}">${esc(a.name)} — ${esc(a.desc)}</option>`).join('')}</select></label>
+      <label class="row" style="gap:6px"><input type="checkbox" id="neNow" style="width:auto"> <span>Kampanyayı atla, hemen oyla</span></label>`,
+      [{ t: 'Başlat', cls: 'primary', fn: () => {
+        const f = $('#neFac').value, kind = $('#neKind').value;
+        const stl = $('#neStl').value, after = $('#neAfter').value, now = $('#neNow').checked;
+        dlg.close();
+        const el = startElection(f, kind, { settlementId: stl || null, forcedAftermath: after || null, instant: now });
+        if (!el) { toast('Yeterli aday yok'); return; }
+        uiDirty.sel = uiDirty.kra = true; setTab('sel'); renderUI(true);
+        if (now) openElectionResult(el);
+      } }, { t: 'Vazgeç', fn: () => dlg.close() }]);
+  },
+  houseFeud: el2 => {
+    const h = S.houses[el2.dataset.id]; if (!h) return;
+    const others = S.order.houses.map(i => S.houses[i]).filter(x => x && !x.extinct && x.id !== h.id);
+    openDlg('Kan davası başlat', `<label class="f"><span>Karşı hanedan</span><select id="fdB">${
+      others.map(o => `<option value="${o.id}">${esc(o.name)} — ${esc(facShort(o.faction))}</option>`).join('')}</select></label>
+      <label class="f"><span>Şiddet (0-100)</span><input type="number" id="fdL" value="70" min="0" max="100"></label>`,
+      [{ t: 'Başlat', cls: 'danger', fn: () => {
+        addFeud(h.id, $('#fdB').value, +$('#fdL').value || 60, 'dışarıdan kışkırtma');
+        dlg.close(); renderUI(true);
+      } }, { t: 'Vazgeç', fn: () => dlg.close() }]);
+  },
+  houseMarry: el2 => {
+    const h = S.houses[el2.dataset.id]; if (!h) return;
+    const others = S.order.houses.map(i => S.houses[i]).filter(x => x && !x.extinct && x.id !== h.id);
+    openDlg('Evlilik ayarla', `<label class="f"><span>Hangi hanedanla?</span><select id="mrB">${
+      others.map(o => `<option value="${o.id}">${esc(o.name)} — ${esc(facShort(o.faction))}</option>`).join('')}</select></label>`,
+      [{ t: 'Nikâhı kıy', cls: 'primary', fn: () => {
+        const b = S.houses[$('#mrB').value];
+        if (b) forceMarriage(h, b);
+        dlg.close(); renderUI(true);
+      } }, { t: 'Vazgeç', fn: () => dlg.close() }]);
+  },
+  houseBanner: el2 => {
+    const h = S.houses[el2.dataset.id]; if (!h) return;
+    const head = houseHead(h.id);
+    if (!head) { toast('Hanedanın başı yok'); return; }
+    raiseBanner(h, head, h.faction);
+    renderUI(true); requestDraw();
+  }
+});
+
+function forceMarriage(a, b) {
+  a.allies = a.allies || {}; b.allies = b.allies || {};
+  a.allies[b.id] = S.day; b.allies[a.id] = S.day;
+  delete S.feuds[feudKey(a.id, b.id)];
+  houseMembers(a.id).forEach(m => houseMembers(b.id).forEach(n => addLordRel(m, n, ri(8, 18))));
+  const ha = houseHead(a.id), hb = houseHead(b.id);
+  if (ha && hb) talk('marriage', { a: ha, b: hb, x: (capitalOf(a.faction) || {}).name || 'saray', force: true });
+  if (a.faction !== b.faction) {
+    a.claims = a.claims || {}; a.claims[b.faction] = S.day;
+    b.claims = b.claims || {}; b.claims[a.faction] = S.day;
+    const fa = S.factions[a.faction], fb = S.factions[b.faction];
+    if (fa && fb) { fa.rel[b.faction] = clamp((fa.rel[b.faction] || 0) + 25, -100, 100); fb.rel[a.faction] = clamp((fb.rel[a.faction] || 0) + 25, -100, 100); }
+  }
+  addLog(`💍 ${a.name} ile ${b.name} hanedanları evlilikle birleşti.`, 'peace', 2);
+  uiDirty.kra = uiDirty.sel = true;
+}
+
+function openElectionResult(el) {
+  if (!el || el.stage !== 'done') return;
+  const fac = S.factions[el.faction];
+  const kn = ELECTION_KINDS[el.kind];
+  const win = S.lords[el.winnerId];
+  const after = ELECTION_AFTERMATH[el.aftermath] || ELECTION_AFTERMATH.none;
+  openDlg(`${kn.icon} ${kn.name} sonucu`, `
+    <div class="row" style="gap:10px;margin-bottom:10px">
+      ${win && houseOf(win) ? houseArms(houseOf(win), 44) : ''}
+      <div class="grow"><h2 style="margin:0;font-size:17px">${esc(win ? lordShort(win) : '—')}</h2>
+        <div class="small muted">${esc(fac ? fac.name : '')} · ${esc(win ? houseName(win.houseId) : '')}${el.rigged ? ' · <b>sonuç dışarıdan belirlendi</b>' : ''}</div></div>
+    </div>
+    <table class="tbl"><tr><th>Aday</th><th class="n">Oy</th><th style="width:34%"></th></tr>
+      ${(el.tally || []).map(t => { const l = S.lords[t.lordId], h = l ? houseOf(l) : null;
+        return `<tr><td><span class="dot" style="background:${h ? h.color : '#888'}"></span> ${esc(l ? lordShort(l) : '?')}</td>
+          <td class="n">%${t.pct}</td><td>${bar(t.pct, 100, h ? h.color : 'var(--accent)')}</td></tr>`; }).join('')}
+    </table>
+    <div class="card" style="margin-top:10px"><h3>Seçicilerin oyu</h3>
+      <table class="tbl">${el.electors.filter(e => e.votedFor).map(e => {
+        const v = S.lords[e.lordId], c = S.lords[e.votedFor];
+        return `<tr><td>${esc(v ? lordShort(v) : '?')}</td><td>${esc(c ? c.name : '?')}</td>
+          <td class="small muted">${esc(e.reason || '')}</td></tr>`; }).join('')}</table></div>
+    <div class="card"><h3>Sonrası</h3><b>${esc(after.name)}</b> — ${esc(after.desc)}</div>`,
+    [{ t: 'Kapat', cls: 'primary', fn: () => dlg.close() }]);
+}
 /* =====================================================================
    Bölüm 7: Kayıt, olaylar, ana döngü ve açılış
    ===================================================================== */
@@ -6000,7 +7194,8 @@ function snapshot() {
     day: S.day, factions: S.factions, settlements: S.settlements, lords: S.lords,
     parties: S.parties, order: S.order, wars: S.wars, log: S.log, battles: S.battles,
     opts: S.opts, stats: S.stats,
-    pacts: S.pacts, roads: S.roads, history: S.history, decisions: S.decisions, builds: S.builds
+    pacts: S.pacts, roads: S.roads, history: S.history, decisions: S.decisions, builds: S.builds,
+    houses: S.houses, elections: S.elections, dialogues: S.dialogues, feuds: S.feuds, chronicle: S.chronicle
   });
 }
 function restore(json) {
@@ -6011,6 +7206,10 @@ function restore(json) {
   S.battles = d.battles || [];
   S.pacts = d.pacts || {}; S.roads = d.roads || []; S.history = d.history || [];
   S.decisions = d.decisions || []; S.builds = d.builds || [];
+  S.houses = d.houses || {}; S.elections = d.elections || []; S.dialogues = d.dialogues || []; S.feuds = d.feuds || {};
+  S.chronicle = d.chronicle || [];
+  if (!S.order.houses) S.order.houses = Object.keys(S.houses);
+  if (!Object.keys(S.houses).length) buildHouses();
   S.opts = Object.assign(S.opts, d.opts || {});
   S.stats = Object.assign({ battles: 0, sieges: 0, days: 0, built: 0, deaths: 0, elections: 0 }, d.stats || {});
   if (!S.roads.length) buildRoads();

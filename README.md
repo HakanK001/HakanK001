@@ -93,7 +93,7 @@ Depodaki ikinci oyun ailesi: Mount & Blade **Warband** esintili, tek dosyalık b
 
 ### Dünya
 
-- **Altı krallık + doğan yenileri** — Swadya, Vaegir, Kherjit Hanlığı, Nord, Rodok, Sarranid Sultanlığı. Her krallığın **başkenti** vardır (haritada altın taçla işaretlenir); başkent kuşatılırsa prestij düşer, lordlar savunmaya koşar, halk huzursuzlanır, düşerse krallık sarsılır ve başkent taşınır
+- **Altı krallık + doğan yenileri** — Swadya (turuncu), Vaegir (soluk gri), Kherjit Hanlığı (mor), Nord (mavi), Rodok (yeşil), Sarranid Sultanlığı (sarı). Her krallığın **başkenti** vardır (haritada altın taçla işaretlenir); başkent kuşatılırsa prestij düşer, lordlar savunmaya koşar, halk huzursuzlanır, düşerse krallık sarsılır ve başkent taşınır
 - **84 lord, hanedanlarıyla** — her lordun hanesi, yaşı, eşi ve çocukları vardır. Yaşlanır, hastalanır, savaşta yaralanır ve **ölürler**; yetişkin çocuk varsa tımarları devralır, yoksa krala kalır
 - **Veraset ve seçim** — Swadya, Vaegir, Rodok ve Sarranid'de taht babadan oğula geçer; Nord ve Kherjit'te **kurultay toplanır ve lordlar oy verir** (oy ağırlığı tımar ve şöhretle, tercih akrabalık ve dostlukla belirlenir). Kaybeden adaylar küser, kazanan meşruiyet kazanır. Veraset düzeni krallık kartından değiştirilebilir
 - **Tımar siyaseti** — fethedilen her şehir/kale bir lorda verilmek zorundadır. Adaylar şöhret, sadakat, topraksızlık ve fethi yapan olma durumuna göre sıralanır; seçilen lordun sadakati artar, es geçilenler küser. Ayarlardan "**fetihte tımarı bana sor**" seçeneğini açarsan kararı sen verirsin
@@ -105,6 +105,19 @@ Depodaki ikinci oyun ailesi: Mount & Blade **Warband** esintili, tek dosyalık b
 - **İnşaat** — zengin ve barış içindeki krallıklar boş arazilere **yeni köy, kale ve şehir** kurar. Şantiye haritada ilerleme çubuğuyla görünür, düşman yaklaşırsa inşaat durur. Sandbox'tan sen de istediğin yere inşaat başlatabilirsin
 - **Deniz akınları** — Nord ve Sarranid savaştayken denize açılıp kıyı köylerini vuran akıncı filoları gönderir
 - **Yaşayan simülasyon** — köy yağmaları, meydan savaşları, kuşatmalar, esirler, huzursuzluktan doğan köylü isyanları, veba/kıtlık/yangın gibi olaylar, krallık hazineleri, garnizon takviyeleri ve barış görüşmeleri. Kışın ordular yavaşlar
+
+### Hanedanlar, seçimler ve saray
+
+- **Hanedanlar birinci sınıf** — her lord bir hanedana bağlıdır; hanedanın kendi **rengi**, **arması** (desen + sembol, üretilmiş heraldik kalkan), prestiji, başı ve üyeleri vardır. Güç, üyelerinin tımarına ve şöhretine göre hesaplanır. Şöhretli lordlar kendi hanedanlarını kurup ana koldan kopar; son üyesi ölen hanedanın soyu tükenir
+- **Krallık rengi hüküm süren hanedanın rengidir** — Kherjit moru taşırken kırmızı bir hanedan tahta çıkarsa krallık kırmızıya döner, harita ve efsane anında güncellenir. Ayarlardan kapatılabilir
+- **Detaylı seçimler** — üç tür: **taht (kurultay)**, **tımar divanı**, **mareşal seçimi**. Seçim bir süreçtir: önce **kampanya** günleri (adaylar lordlarla pazarlık eder, söz alır, reddedilir — bunlar diyalog olarak okunabilir), sonra oylama. Her seçicinin oy ağırlığı tımarı ve şöhretiyle, tercihi ise **hanedan bağı, kişisel dostluk, krala sadakat, evlilik bağı, kan davası, verilmiş söz, cömertlik beklentisi** gibi gerekçelerle belirlenir. Sonuç ekranında **kim kime, hangi gerekçeyle oy verdi** tek tek yazar
+- **Seçim sonrası** — sonucun ardından altı ayrı yol açılabilir: sükûnet, kırgınlık, **hanedan kan davası**, **isyan bayrağı**, sürgün ya da **iç savaş**. Yakın yarış, güçlü kaybeden hanedan ve dışarıdan yapılan müdahale bu ihtimalleri artırır
+- **İsyan bayrağı** — seçimi kaybeden hanedan, krallık kurmadan bayrak açabilir: topraksız ama gerçek bir asi ordusu haritada dolaşır, bir şehir alırsa gerçek krallığa dönüşür, ordusu biterse dağılır
+- **Kan davası** — hanedanlar arasında husumet birikir; eşik aşılınca **aynı krallığın içindeyken bile** birbirlerinin ordularına saldırırlar. Savaş meydanında dökülen kan ve seçim husumeti davayı besler, zamanla soğur
+- **Evlilikler** — hanedanlar çocuklarını evlendirir: husumet siler, ilişkileri yükseltir, prestij kazandırır. Krallıklar arası evlilik yakınlaşma ve saldırmazlık getirir, ayrıca **taht üzerinde hak** doğurur — varissiz ölen bir kralın tahtını yabancı hanedan talep edip savaş açabilir
+- **Diyaloglar** — krallar, hanedan başları ve lordlar arasında gerçek konuşmalar üretilir: seçim pazarlığı, reddedilen ittifak, tahta çıkış, kan davası, evlilik teklifi, azarlama, tımar bahşi, savaş ilanı, barış görüşmesi, isyan ve bağlılık yemini. Krallık kartındaki **Divan** bölümünden ya da Krallıklar sekmesinden açılıp okunur
+- **Sandbox'tan seçim yönetimi** — istediğin krallıkta istediğin türde seçim başlat, kampanyayı atlayıp hemen oylat, **kazananı sen belirle** (sonuç "müdahale" damgasıyla kaydedilir) ve **seçim sonrasında ne olacağını** önceden seç. Hanedan kartından kan davası başlat, evlilik ayarla, isyan bayrağı açtır
+- **Yıllık vakayiname** — her yılın sonunda tarihçi kalemiyle birkaç cümlelik özet yazılır ve Tarih sekmesinde birikir
 
 ### Diplomasi ve yapay zekâ
 
