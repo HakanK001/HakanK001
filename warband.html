@@ -474,16 +474,17 @@
    Bölüm 1: Dünya verisi (krallıklar, birlikler, harita, yerleşimler)
    ===================================================================== */
 
-const MAP_W = 1200, MAP_H = 800;
+const MAP_SCALE = 1.42;                       // harita büyütme çarpanı
+const MAP_W = Math.round(1200 * MAP_SCALE), MAP_H = Math.round(800 * MAP_SCALE);
 
 /* ---------------- Krallıklar ---------------- */
 const FACTION_DEFS = [
-  { id:'swadia',   name:'Swadya Krallığı',    short:'Swadya',   color:'#e07b2a', culture:'sw', rulerTitle:'Kral',   lordTitle:'Kont',  capital:'praven',   aggr:0.55, banner:'shield' },
-  { id:'vaegir',   name:'Vaegir Krallığı',    short:'Vaegir',   color:'#c8d4dd', culture:'vg', rulerTitle:'Kral',   lordTitle:'Boyar', capital:'reyvadin', aggr:0.55, banner:'star' },
-  { id:'khergit',  name:'Kherjit Hanlığı',    short:'Kherjit',  color:'#9160c9', culture:'kh', rulerTitle:'Han',    lordTitle:'Noyan', capital:'tulga',    aggr:0.70, banner:'horse' },
-  { id:'nord',     name:'Nord Krallığı',      short:'Nord',     color:'#3d6bb5', culture:'nd', rulerTitle:'Kral',   lordTitle:'Jarl',  capital:'sargoth',  aggr:0.65, banner:'axe' },
-  { id:'rhodok',   name:'Rodok Krallığı',     short:'Rodok',    color:'#4f9146', culture:'rh', rulerTitle:'Kral',   lordTitle:'Lord',  capital:'jelkala',  aggr:0.35, banner:'bolt' },
-  { id:'sarranid', name:'Sarranid Sultanlığı',short:'Sarranid', color:'#e6c536', culture:'sr', rulerTitle:'Sultan', lordTitle:'Emir',  capital:'shariz',   aggr:0.50, banner:'moon' }
+  { id:'swadia',   name:'Swadya Krallığı',    short:'Swadya',   color:'#e07b2a', culture:'sw', rulerTitle:'Kral',   lordTitle:'Kont',  ladyTitle:'Leydi',    capital:'praven',   aggr:0.55, banner:'shield' },
+  { id:'vaegir',   name:'Vaegir Krallığı',    short:'Vaegir',   color:'#c8d4dd', culture:'vg', rulerTitle:'Kral',   lordTitle:'Boyar', ladyTitle:'Boyarina', capital:'reyvadin', aggr:0.55, banner:'star' },
+  { id:'khergit',  name:'Kherjit Hanlığı',    short:'Kherjit',  color:'#9160c9', culture:'kh', rulerTitle:'Han',    lordTitle:'Noyan', ladyTitle:'Hatun',    capital:'tulga',    aggr:0.70, banner:'horse' },
+  { id:'nord',     name:'Nord Krallığı',      short:'Nord',     color:'#3d6bb5', culture:'nd', rulerTitle:'Kral',   lordTitle:'Jarl',  ladyTitle:'Fru',      capital:'sargoth',  aggr:0.65, banner:'axe' },
+  { id:'rhodok',   name:'Rodok Krallığı',     short:'Rodok',    color:'#4f9146', culture:'rh', rulerTitle:'Kral',   lordTitle:'Lord',  ladyTitle:'Donna',    capital:'jelkala',  aggr:0.35, banner:'bolt' },
+  { id:'sarranid', name:'Sarranid Sultanlığı',short:'Sarranid', color:'#e6c536', culture:'sr', rulerTitle:'Sultan', lordTitle:'Emir',  ladyTitle:'Hatun',    capital:'shariz',   aggr:0.50, banner:'moon' }
 ];
 const BANDIT_FACTION = { id:'bandit', name:'Haydutlar', short:'Haydut', color:'#8a7a68', culture:'bd', rulerTitle:'Reis', lordTitle:'Reis', aggr:1 };
 
@@ -626,7 +627,29 @@ const SETTLEMENT_DEFS = [
   { id:'ushkuru',  name:'Ushkuru Kalesi',  type:'castle', f:'sarranid', x:898, y:686 },
   { id:'weyyah',   name:'Weyyah Kalesi',   type:'castle', f:'sarranid', x:700, y:734 },
   { id:'jameyyed', name:'Jameyyed Kalesi', type:'castle', f:'sarranid', x:948, y:530 },
-  { id:'chaeza',   name:'Chaeza Kalesi',   type:'castle', f:'sarranid', x:610, y:646 }
+  { id:'chaeza',   name:'Chaeza Kalesi',   type:'castle', f:'sarranid', x:610, y:646 },
+
+  /* --- büyüyen harita: yeni şehirler --- */
+  { id:'zendar',    name:'Zendar',    type:'town', f:'swadia',   x:150, y:520 },
+  { id:'kolgrim',   name:'Kolgrim',   type:'town', f:'vaegir',   x:880, y:100 },
+  { id:'ordubad',   name:'Ordubad',   type:'town', f:'khergit',  x:1120, y:430 },
+  { id:'vaerholm',  name:'Vaerholm',  type:'town', f:'nord',     x:372, y:60 },
+  { id:'montefiore',name:'Montefiore',type:'town', f:'rhodok',   x:520, y:700 },
+  { id:'zubeyra',   name:'Zubeyra',   type:'town', f:'sarranid', x:960, y:640 },
+
+  /* --- yeni kaleler --- */
+  { id:'verlune',   name:'Verlune Kalesi',   type:'castle', f:'swadia',   x:236, y:300 },
+  { id:'marnid',    name:'Marnid Kalesi',    type:'castle', f:'swadia',   x:470, y:470 },
+  { id:'ryzhavo',   name:'Ryzhavo Kalesi',   type:'castle', f:'vaegir',   x:800, y:250 },
+  { id:'tovgrad',   name:'Tovgrad Kalesi',   type:'castle', f:'vaegir',   x:960, y:230 },
+  { id:'kaskur',    name:'Kaskur Kalesi',    type:'castle', f:'khergit',  x:1030, y:340 },
+  { id:'tegrit',    name:'Tegrit Kalesi',    type:'castle', f:'khergit',  x:900, y:470 },
+  { id:'skagen',    name:'Skagen Kalesi',    type:'castle', f:'nord',     x:214, y:130 },
+  { id:'hornvik',   name:'Hornvik Kalesi',   type:'castle', f:'nord',     x:596, y:80 },
+  { id:'valdero',   name:'Valdero Kalesi',   type:'castle', f:'rhodok',   x:180, y:660 },
+  { id:'pietra',    name:'Pietra Kalesi',    type:'castle', f:'rhodok',   x:452, y:614 },
+  { id:'kasremir',  name:'Kasr Emir Kalesi', type:'castle', f:'sarranid', x:840, y:620 },
+  { id:'nasriyye',  name:'Nasriyye Kalesi',  type:'castle', f:'sarranid', x:672, y:592 }
 ];
 
 /* Köy isim havuzu */
@@ -726,6 +749,17 @@ const MOUNTAINS = [
   { x:960,y:220,n:8,w:150 }, { x:840,y:250,n:6,w:110 },
   { x:520,y:200,n:6,w:110 }, { x:1080,y:470,n:6,w:120 }, { x:640,y:500,n:5,w:100 }
 ];
+
+/* --- harita verisini yeni ölçeğe taşı --- */
+(function scaleMapData() {
+  const s = MAP_SCALE;
+  COAST.forEach(p => { p[0] = Math.round(p[0] * s); p[1] = Math.round(p[1] * s); });
+  BIOMES.forEach(b => { b.x = Math.round(b.x * s); b.y = Math.round(b.y * s); b.r = Math.round(b.r * s); });
+  RIVERS.forEach(r => r.forEach(p => { p[0] = Math.round(p[0] * s); p[1] = Math.round(p[1] * s); }));
+  MOUNTAINS.forEach(m => { m.x = Math.round(m.x * s); m.y = Math.round(m.y * s); m.w = Math.round(m.w * s); });
+  SETTLEMENT_DEFS.forEach(d => { d.x = Math.round(d.x * s); d.y = Math.round(d.y * s); });
+})();
+
 
 /* =====================================================================
    v3 verileri: ticaret malları, hanedanlar, olaylar, yapılar
@@ -982,7 +1016,9 @@ const rf = (a, b) => a + rnd() * (b - a);
 const pick = arr => arr[Math.floor(rnd() * arr.length)];
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-const dist2 = (x1, y1, x2, y2) => Math.hypot(x1 - x2, y1 - y2);
+const distRaw = (x1, y1, x2, y2) => Math.hypot(x1 - x2, y1 - y2);
+/* mesafeler "eski harita birimi" cinsinden döner; büyüyen haritada denge korunur */
+const dist2 = (x1, y1, x2, y2) => distRaw(x1, y1, x2, y2) / MAP_SCALE;
 let UIDN = 0;
 function uid(p) { return `${p}${++UIDN}`; }
 function fmt(n) { return Math.round(n).toLocaleString('tr-TR'); }
@@ -1163,7 +1199,7 @@ function buildWorld(seed) {
   allFac.forEach(d => {
     S.factions[d.id] = {
       id: d.id, name: d.name, short: d.short, color: d.color, culture: d.culture,
-      rulerTitle: d.rulerTitle, lordTitle: d.lordTitle, capital: d.capital || null,
+      rulerTitle: d.rulerTitle, lordTitle: d.lordTitle, ladyTitle: d.ladyTitle || 'Leydi', capital: d.capital || null,
       aggr: d.aggr, kingId: null, treasury: d.id === 'bandit' ? 0 : ri(9000, 26000),
       baseColor: d.color, rulingHouseId: null,
       rel: {}, warWeariness: {}, target: null, marshalId: null, alive: true, isBandit: d.id === 'bandit',
@@ -1198,7 +1234,7 @@ function buildWorld(seed) {
       let bx = 0, by = 0, ok = false;
       for (let tries = 0; tries < 40 && !ok; tries++) {
         const ang = (di * 1.7 + i * 2.3 + tries * 0.55) % (Math.PI * 2);
-        const rad = 34 + (tries % 5) * 7 + (i * 6);
+        const rad = (34 + (tries % 5) * 7 + (i * 6)) * MAP_SCALE;
         bx = d.x + Math.cos(ang) * rad; by = d.y + Math.sin(ang) * rad * 0.85;
         if (bx < 40 || bx > MAP_W - 40 || by < 30 || by > MAP_H - 30) continue;
         if (!isLand(bx, by)) continue;
@@ -1220,36 +1256,63 @@ function buildWorld(seed) {
     }
   });
 
-  /* --- lordlar --- */
+  /* --- hanedanlar ve lordlar --- */
   FACTION_DEFS.forEach(fd => {
-    const names = LORD_NAMES[fd.id].slice();
     const fac = S.factions[fd.id];
-    const n = 14;
-    for (let i = 0; i < n; i++) {
-      const isKing = i === 0;
-      const nm = names[i % names.length];
-      const p = pick(PERSONALITIES);
-      const id = `l_${fd.id}_${i}`;
-      S.lords[id] = {
-        id, name: nm, faction: fd.id,
-        title: isKing ? fd.rulerTitle : fd.lordTitle,
-        isKing, personality: isKing ? 'martial' : p.id,
-        renown: isKing ? ri(700, 900) : ri(80, 520),
-        relKing: isKing ? 100 : ri(-25, 55),
-        gold: isKing ? ri(12000, 24000) : ri(800, 6000),
-        skillTactics: isKing ? ri(4, 7) : ri(1, 6),
-        skillLeadership: isKing ? ri(7, 10) : ri(3, 8),
-        skillStrategy: isKing ? ri(4, 8) : ri(1, 7),
-        fiefs: [], partyId: null, state: 'active', prisonerOf: null, freeAt: 0,
-        wounded: 0, kills: 0, battlesWon: 0, battlesLost: 0,
-        age: isKing ? ri(38, 58) : ri(22, 56),
-        house: pick(HOUSES[fd.id] || HOUSES.swadia),
-        spouse: rnd() < 0.7 ? pick(FEMALE_NAMES[fd.id] || FEMALE_NAMES.swadia) : null,
-        children: [], rel: {}, health: 100, tactic: 'balanced', sick: 0
-      };
-      S.order.lords.push(id);
-      if (isKing) fac.kingId = id;
-    }
+    const pool = shuffle((HOUSES[fd.id] || HOUSES.swadia).slice());
+    const houseCount = Math.min(pool.length, 6);
+    const houses = [];
+    for (let i = 0; i < houseCount; i++) houses.push(ensureHouse(fd.id, pool[i]));
+    const names = shuffle((LORD_NAMES[fd.id] || LORD_NAMES.swadia).slice());
+    const fem = (FEMALE_NAMES[fd.id] || FEMALE_NAMES.swadia).slice();
+    let ni = 0, fi = 0, li = 0;
+    const nextName = () => names[(ni++) % names.length] + (ni > names.length ? ' ' + Math.ceil(ni / names.length) : '');
+    const nextFem = () => fem[(fi++) % fem.length] + (fi > fem.length ? ' ' + Math.ceil(fi / fem.length) : '');
+
+    houses.forEach((hs, hi) => {
+      const nLords = hi === 0 ? ri(4, 5) : ri(3, 4);
+      for (let i = 0; i < nLords; i++) {
+        const isKing = hi === 0 && i === 0;
+        const p = pick(PERSONALITIES);
+        const id = `l_${fd.id}_${li++}`;
+        S.lords[id] = {
+          id, name: fd.id === 'swadia' && isKing ? 'Harlaus' : nextName(), faction: fd.id,
+          title: isKing ? fd.rulerTitle : fd.lordTitle,
+          isKing, isLady: false, personality: isKing ? 'martial' : p.id,
+          renown: isKing ? ri(700, 900) : ri(80, 520),
+          relKing: isKing ? 100 : ri(-25, 55),
+          gold: isKing ? ri(12000, 24000) : ri(800, 6000),
+          skillTactics: isKing ? ri(4, 7) : ri(1, 6),
+          skillLeadership: isKing ? ri(7, 10) : ri(3, 8),
+          skillStrategy: isKing ? ri(4, 8) : ri(1, 7),
+          fiefs: [], partyId: null, state: 'active', prisonerOf: null, freeAt: 0,
+          wounded: 0, kills: 0, battlesWon: 0, battlesLost: 0,
+          age: isKing ? ri(38, 58) : ri(22, 56),
+          houseId: hs.id, house: hs.name,
+          spouse: rnd() < 0.7 ? nextFem() : null,
+          children: [], rel: {}, health: 100, tactic: 'balanced', sick: 0
+        };
+        S.order.lords.push(id);
+        if (isKing) fac.kingId = id;
+      }
+      /* hanedanın leydileri */
+      const nLadies = ri(1, 2);
+      for (let i = 0; i < nLadies; i++) {
+        const id = `l_${fd.id}_${li++}`;
+        S.lords[id] = {
+          id, name: nextFem(), faction: fd.id, title: fd.ladyTitle || 'Leydi',
+          isKing: false, isLady: true, personality: pick(PERSONALITIES).id,
+          renown: ri(40, 260), relKing: ri(0, 60), gold: ri(500, 4000),
+          skillTactics: ri(0, 3), skillLeadership: ri(1, 5), skillStrategy: ri(1, 6),
+          fiefs: [], partyId: null, state: 'court', prisonerOf: null, freeAt: 0,
+          wounded: 0, kills: 0, battlesWon: 0, battlesLost: 0,
+          age: ri(18, 54), houseId: hs.id, house: hs.name,
+          spouse: rnd() < 0.5 ? nextName() : null,
+          children: [], rel: {}, health: 100, tactic: 'balanced', sick: 0
+        };
+        S.order.lords.push(id);
+      }
+    });
   });
 
   /* --- tımarların dağıtımı --- */
@@ -1277,8 +1340,8 @@ function buildWorld(seed) {
     fac.treasury += towns.length * 2000;
   });
 
-  /* --- ordular --- */
-  S.order.lords.forEach(id => spawnLordParty(S.lords[id]));
+  /* --- ordular (leydiler saha dışıdır) --- */
+  S.order.lords.forEach(id => { if (isFieldLord(S.lords[id])) spawnLordParty(S.lords[id]); });
   S.order.settlements.forEach(id => { const s = S.settlements[id]; if (s.type !== 'village') refillGarrison(s, true); });
 
   /* --- başlangıç savaşları --- */
@@ -1338,7 +1401,8 @@ function spawnLordParty(l) {
   const q = clamp(0.28 + l.renown / 1400 + (l.isKing ? 0.22 : 0), 0.2, 0.85);
   const p = {
     id: uid('p'), type: 'lord', lordId: l.id, faction: l.faction,
-    x: home ? home.x + rf(-14, 14) : 600, y: home ? home.y + rf(-14, 14) : 400,
+    x: home ? home.x + Math.cos(rnd() * 6.28) * rf(14, 44) * MAP_SCALE : MAP_W / 2,
+    y: home ? home.y + Math.sin(rnd() * 6.28) * rf(14, 44) * MAP_SCALE : MAP_H / 2,
     tx: null, ty: null, goal: 'patrol', targetId: null,
     troops: makeStack(fac.culture, size, q), prisoners: {},
     morale: ri(60, 90), speed: 1, besieging: null, path: [], lastFight: -99, cooldown: 0
@@ -1580,7 +1644,7 @@ function nearRoad(x, y) {
     let t = ((x - a.x) * dx + (y - a.y) * dy) / len2;
     t = clamp(t, 0, 1);
     const px = a.x + dx * t, py = a.y + dy * t;
-    if (dist2(px, py, x, y) < 16) return true;
+    if (distRaw(px, py, x, y) < 22) return true;
   }
   return false;
 }
@@ -1645,9 +1709,9 @@ function ensureHouse(faction, name) {
 }
 
 function buildHouses() {
-  S.houses = {}; S.order.houses = []; HOUSE_COLOR_I = 0;
   S.order.lords.forEach(id => {
     const l = S.lords[id];
+    if (l.houseId && S.houses[l.houseId]) return;
     const hs = ensureHouse(l.faction, l.house || pick(HOUSES[l.faction] || HOUSES.swadia));
     l.houseId = hs.id; l.house = hs.name;
   });
@@ -1668,6 +1732,9 @@ function buildHouses() {
 function houseMembers(hid) {
   return S.order.lords.map(i => S.lords[i]).filter(l => l.houseId === hid && l.state !== 'dead');
 }
+function isFieldLord(l) { return l && !l.isLady && l.state !== 'dead'; }
+function houseLords(hid) { return houseMembers(hid).filter(isFieldLord); }
+function houseLadies(hid) { return houseMembers(hid).filter(l => l.isLady); }
 function housePower(hid) {
   return houseMembers(hid).reduce((a, l) => a + 1 + l.fiefs.length * 2 + l.renown / 260 + (l.isKing ? 6 : 0), 0);
 }
@@ -1893,7 +1960,7 @@ function buildTerritory() {
 
   const stl = S.order.settlements.map(id => S.settlements[id])
     .filter(s => s && S.factions[s.faction] && !S.factions[s.faction].isBandit);
-  const reach = s => s.type === 'town' ? 175 : s.type === 'castle' ? 120 : 62;
+  const reach = s => (s.type === 'town' ? 175 : s.type === 'castle' ? 120 : 62) * MAP_SCALE;
 
   stl.forEach(s => {
     const rr = reach(s);
@@ -1904,7 +1971,7 @@ function buildTerritory() {
       const y = r * CELL + CELL / 2;
       for (let c = c0; c <= c1; c++) {
         const x = c * CELL + CELL / 2;
-        const d = Math.hypot(s.x - x, s.y - y);
+        const d = distRaw(s.x, s.y, x, y);
         if (d > rr) continue;
         const sc = (1 - d / rr) * w;
         const i = r * cols + c;
@@ -2113,7 +2180,7 @@ function rebuildSettlementNodes() {
 
 function partyIconSize(p, inv) {
   const cnt = stackCount(p.troops);
-  const base = clamp(4.4 + Math.sqrt(cnt) * 0.42, 4.4, 10);
+  const base = clamp(4.4 + Math.sqrt(cnt) * 0.42, 4.4, 10) * MAP_SCALE;
   return base * clamp(inv, 0.42, 1.5);
 }
 
@@ -2131,7 +2198,7 @@ function updateSvg() {
     n.g.style.display = hidden ? 'none' : '';
     n.lbl.style.display = 'none';
     if (hidden) return;
-    const base = s.type === 'town' ? 11 : s.type === 'castle' ? 8.5 : 5.4;
+    const base = (s.type === 'town' ? 11 : s.type === 'castle' ? 8.5 : 5.4) * MAP_SCALE;
     const r = base * clamp(inv, 0.4, 1.45);
     const col = S.factions[s.faction] ? S.factions[s.faction].color : '#888';
     n.g.setAttribute('transform', `translate(${s.x},${s.y}) scale(${r})`);
@@ -2216,7 +2283,7 @@ function updateSvg() {
   (S.builds || []).forEach(b => {
     if (S.hidden[b.faction]) return;
     const col = facColor(b.faction);
-    const r = 8 * clamp(inv, 0.4, 1.45);
+    const r = 8 * MAP_SCALE * clamp(inv, 0.4, 1.45);
     const g = el('g', { transform: `translate(${b.x},${b.y})`, class: 'party', 'data-buildid': b.id, style: 'cursor:pointer' }, gBuild);
     el('ellipse', { rx: r * 0.95, ry: r * 0.3, cy: r * 0.72, fill: 'rgba(0,0,0,.3)' }, g);
     el('path', { d: `M ${-r * 0.75} ${r * 0.7} L ${-r * 0.75} ${-r * 0.15} L 0 ${-r * 0.72} L ${r * 0.75} ${-r * 0.15} L ${r * 0.75} ${r * 0.7} Z`,
@@ -2241,7 +2308,7 @@ function updateSvg() {
     if (!s.besiegedBy || S.hidden[s.faction]) return;
     const bp = S.parties[s.besiegedBy];
     const col = bp && S.factions[bp.faction] ? S.factions[bp.faction].color : '#d1503f';
-    const r = 9 * clamp(inv, 0.4, 1.45);
+    const r = 9 * MAP_SCALE * clamp(inv, 0.4, 1.45);
     const g = el('g', { transform: `translate(${s.x},${s.y})` }, gSiege);
     for (let i = 0; i < 3; i++) {
       const a = (i / 3) * Math.PI * 2 + 0.6;
@@ -2345,7 +2412,7 @@ function updateSvg() {
   S.battles.forEach(b => {
     const age = S.day - b.day;
     if (age > 4 || age < 0) return;
-    const sz = 9 * clamp(inv, 0.45, 1.5);
+    const sz = 9 * MAP_SCALE * clamp(inv, 0.45, 1.5);
     const op = clamp(1 - age / 4, 0.25, 1);
     const g = el('g', { transform: `translate(${b.x},${b.y})`, opacity: op, class: 'party', 'data-bid': b.id,
       style: 'cursor:pointer' }, gBattle);
@@ -2358,8 +2425,8 @@ function updateSvg() {
   gSel.innerHTML = '';
   const target = selectedPoint();
   if (target) {
-    el('circle', { class: 'sel-ring', cx: target.x, cy: target.y, r: 17 * inv, 'stroke-width': 2 * inv }, gSel);
-    el('circle', { class: 'sel-ring', cx: target.x, cy: target.y, r: 23 * inv, 'stroke-width': 1 * inv, opacity: .4 }, gSel);
+    el('circle', { class: 'sel-ring', cx: target.x, cy: target.y, r: 17 * inv * MAP_SCALE, 'stroke-width': 2 * inv }, gSel);
+    el('circle', { class: 'sel-ring', cx: target.x, cy: target.y, r: 23 * inv * MAP_SCALE, 'stroke-width': 1 * inv, opacity: .4 }, gSel);
   }
 }
 
@@ -2442,7 +2509,7 @@ function zoomAt(sx, sy, factor) {
 
 function hitTest(sx, sy) {
   const p = s2w(sx, sy);
-  const tol = 15 / view.k;
+  const tol = 15 / view.k / MAP_SCALE;
   let best = null, bestD = 1e9;
   S.battles.forEach(b => {
     if (S.day - b.day > 4) return;
@@ -2762,7 +2829,7 @@ function banditGoal(p) {
     return setGoal(p, 'raid', vils[Math.min(vils.length - 1, ri(0, 4))]);
   }
   for (let i = 0; i < 30; i++) {
-    const a = rnd() * Math.PI * 2, r = rf(40, 180);
+    const a = rnd() * Math.PI * 2, r = rf(40, 180) * MAP_SCALE;
     const x = clamp(p.x + Math.cos(a) * r, 40, MAP_W - 40), y = clamp(p.y + Math.sin(a) * r, 40, MAP_H - 40);
     if (isLand(x, y)) { p.goal = 'roam'; p.targetId = null; p.tx = x; p.ty = y; return; }
   }
@@ -2787,12 +2854,12 @@ function raiderGoal(p) {
 function isCoastal(s) {
   for (let a = 0; a < 8; a++) {
     const ang = a / 8 * Math.PI * 2;
-    if (!isLand(s.x + Math.cos(ang) * 52, s.y + Math.sin(ang) * 52)) return true;
+    if (!isLand(s.x + Math.cos(ang) * 52 * MAP_SCALE, s.y + Math.sin(ang) * 52 * MAP_SCALE)) return true;
   }
   return false;
 }
 function nearestSea(x, y, maxR) {
-  for (let r = 30; r <= (maxR || 300); r += 22) {
+  for (let r = 30 * MAP_SCALE; r <= (maxR || 300) * MAP_SCALE; r += 22 * MAP_SCALE) {
     for (let a = 0; a < 12; a++) {
       const ang = a / 12 * Math.PI * 2;
       const px = clamp(x + Math.cos(ang) * r, 8, MAP_W - 8), py = clamp(y + Math.sin(ang) * r, 8, MAP_H - 8);
@@ -2895,8 +2962,9 @@ function checkEncounters() {
 function fleeFrom(weak, strong) {
   const dx = weak.x - strong.x, dy = weak.y - strong.y;
   const d = Math.hypot(dx, dy) || 1;
-  let nx = clamp(weak.x + dx / d * 90, 30, MAP_W - 30), ny = clamp(weak.y + dy / d * 90, 30, MAP_H - 30);
-  if (!isLand(nx, ny)) { nx = clamp(weak.x - dx / d * 40, 30, MAP_W - 30); ny = clamp(weak.y - dy / d * 40, 30, MAP_H - 30); }
+  const flee = 90 * MAP_SCALE;
+  let nx = clamp(weak.x + dx / d * flee, 30, MAP_W - 30), ny = clamp(weak.y + dy / d * flee, 30, MAP_H - 30);
+  if (!isLand(nx, ny)) { nx = clamp(weak.x - dx / d * flee * 0.45, 30, MAP_W - 30); ny = clamp(weak.y - dy / d * flee * 0.45, 30, MAP_H - 30); }
   weak.goal = 'flee'; weak.targetId = null; weak.tx = nx; weak.ty = ny;
   weak.morale = clamp(weak.morale - 4, 0, 100);
 }
@@ -3127,7 +3195,7 @@ function startSiege(p, s) {
     resolveBattle(p, S.parties[s.besiegedBy], 'siege'); return;
   }
   p.besieging = s.id; p.goal = 'siege'; p.tx = null;
-  p.x = s.x + rf(-10, 10); p.y = s.y + rf(-10, 10);
+  p.x = s.x + rf(-10, 10) * MAP_SCALE; p.y = s.y + rf(-10, 10) * MAP_SCALE;
   if (!s.besiegedBy) {
     s.besiegedBy = p.id; s.siegeProgress = 0;
     S.stats.sieges++;
@@ -3443,6 +3511,7 @@ function dailyTick() {
   capitalTick();
   seaRaidTick();
   houseTick(day);
+  houseUpkeep(day);
   electionTick(day);
   marriageTick(day);
   courtTick(day);
@@ -3540,7 +3609,7 @@ function diplomacyTick() {
 function defectionTick() {
   S.order.lords.forEach(id => {
     const l = S.lords[id];
-    if (l.isKing || l.state === 'dead' || l.state === 'exile') return;
+    if (l.isKing || l.isLady || l.state === 'dead' || l.state === 'exile') return;
     const pers = PERSONALITIES.find(p => p.id === l.personality) || PERSONALITIES[0];
     l.relKing += (l.fiefs.length ? 1.2 : -1.4) * pers.loyal * 0.6 + rf(-1.5, 1.5);
     l.relKing = clamp(l.relKing, -100, 100);
@@ -3606,6 +3675,20 @@ function lordDies(l, cause) {
     fiefs.forEach(f => { const s = S.settlements[f]; if (s && s.faction === l.faction) grantFief(s, heir); });
     giveChildren(heir);
     if (!heir.partyId) spawnLordParty(heir);
+    /* diğer yetişkin çocuklar da hanedana katılır */
+    const houseSize = l.houseId ? houseMembers(l.houseId).length : 9;
+    heirs.slice(1).forEach((c, i) => {
+      if (houseSize + i >= 6) return;
+      if (rnd() > 0.6) return;
+      const sib = createLord(l.faction, {
+        name: c.name, house: l.house, houseId: l.houseId, age: c.age,
+        renown: Math.round(l.renown * 0.2 + ri(20, 90)),
+        tactics: ri(1, 6), lead: ri(2, 7)
+      });
+      if (!c.male) { sib.isLady = true; sib.state = 'court'; sib.title = (fac && fac.ladyTitle) || 'Leydi'; if (sib.partyId) removeParty(sib.partyId); sib.partyId = null; }
+      else if (!sib.partyId) spawnLordParty(sib);
+      giveChildren(sib);
+    });
   } else {
     fiefs.forEach(f => { const s = S.settlements[f]; if (s) { s.lordId = null; } });
     l.fiefs = [];
@@ -3712,7 +3795,7 @@ function fiefClaimScore(l, s, capturer) {
 function grantConquest(s, capturer) {
   const fac = S.factions[s.faction]; if (!fac) return;
   const cands = S.order.lords.map(i => S.lords[i])
-    .filter(l => l.faction === s.faction && l.state !== 'dead' && l.state !== 'exile');
+    .filter(l => l.faction === s.faction && isFieldLord(l) && l.state !== 'exile');
   if (!cands.length) return;
   const scored = cands.map(l => ({ l, sc: fiefClaimScore(l, s, capturer) })).sort((a, b) => b.sc - a.sc);
   const top = scored.slice(0, 4);
@@ -4096,7 +4179,7 @@ function findBuildSpot(f, type, enemies) {
   let best = null, bestScore = -1e9;
   for (let i = 0; i < 260; i++) {
     const anchor = pick(own);
-    const ang = rnd() * Math.PI * 2, r = rf(def.minGap, def.minGap + 95);
+    const ang = rnd() * Math.PI * 2, r = rf(def.minGap, def.minGap + 95) * MAP_SCALE;
     const x = anchor.x + Math.cos(ang) * r, y = anchor.y + Math.sin(ang) * r;
     if (x < 45 || x > MAP_W - 45 || y < 40 || y > MAP_H - 40) continue;
     if (!isLand(x, y)) continue;
@@ -4532,15 +4615,17 @@ function electionCandidates(fac, kind, settlement) {
   const lords = S.order.lords.map(i => S.lords[i])
     .filter(l => l.faction === fac.id && l.state !== 'dead' && l.state !== 'exile');
   if (kind === 'throne') {
-    const pool = lords.filter(l => !l.isKing && (l.fiefs.length > 0 || l.renown > 250));
-    return (pool.length >= 2 ? pool : lords.filter(l => !l.isKing)).slice(0, 8);
+    const pool = lords.filter(l => !l.isKing && !l.isLady && (l.fiefs.length > 0 || l.renown > 250));
+    const ladies = lords.filter(l => l.isLady && l.renown > 180 && houseHead(l.houseId) === l);
+    const all = pool.concat(ladies);
+    return (all.length >= 2 ? all : lords.filter(l => !l.isKing)).slice(0, 8);
   }
   if (kind === 'marshal') {
-    return lords.filter(l => l.state === 'active' && l.partyId)
+    return lords.filter(l => isFieldLord(l) && l.state === 'active' && l.partyId)
       .sort((a, b) => b.renown - a.renown).slice(0, 5);
   }
   /* tımar */
-  return lords.map(l => ({ l, sc: fiefClaimScore(l, settlement, null) }))
+  return lords.filter(isFieldLord).map(l => ({ l, sc: fiefClaimScore(l, settlement, null) }))
     .sort((a, b) => b.sc - a.sc).slice(0, 5).map(o => o.l);
 }
 
@@ -4912,6 +4997,105 @@ function chronicleTick(day) {
   if (S.chronicle.length > 120) S.chronicle.length = 120;
   uiDirty.his = true;
 }
+
+/* =====================  HANEDAN BAKIMI  ===================== */
+/* tek kişilik hanedan olmaz: ya kuzen katılır ya da hanedan birleşir */
+function houseUpkeep(day) {
+  if (day % 20 !== 0) return;
+  S.order.houses.forEach(hid => {
+    const h = S.houses[hid];
+    if (!h || h.extinct) return;
+    const mem = houseMembers(hid);
+    if (mem.length >= 2) return;
+    const fac = S.factions[h.faction];
+    if (!fac || !fac.alive) return;
+    if (!mem.length) return;                       // refreshHouses zaten tüketecek
+    /* akraba çağır */
+    if (rnd() < 0.6) {
+      const male = rnd() < 0.6;
+      const kin = createLord(h.faction, {
+        houseId: h.id, house: h.name, isLady: !male,
+        age: ri(19, 42), renown: ri(60, 260),
+        tactics: ri(1, 6), lead: ri(2, 7)
+      });
+      giveChildren(kin);
+      if (male && !kin.partyId && fac.alive) spawnLordParty(kin);
+      addLog(`👥 ${h.name} hanedanına uzak akrabası ${kin.title} ${kin.name} katıldı.`, '', 1);
+    } else {
+      /* müttefik ya da aynı krallıktan büyük bir hanedana karış */
+      const target = S.order.houses.map(i => S.houses[i])
+        .filter(x => x && !x.extinct && x.id !== h.id && x.faction === h.faction)
+        .sort((a, b) => housePower(b.id) - housePower(a.id))[0];
+      if (!target) return;
+      mem.forEach(m => { m.houseId = target.id; m.house = target.name; });
+      h.extinct = true; h.endedYear = calendar(S.day).year;
+      addLog(`🔗 ${h.name} hanedanı tükenmemek için ${target.name} hanedanına katıldı.`, '', 2);
+    }
+    refreshHouses();
+  });
+}
+
+/* hanedan sandbox işlemleri */
+function createHouse(faction, opt) {
+  opt = opt || {};
+  const name = opt.name || (pick(HOUSES[faction] || HOUSES.swadia) + ' ' + ri(2, 9));
+  const h = ensureHouse(faction, name);
+  if (opt.color) h.color = opt.color;
+  if (opt.arms) h.arms = opt.arms;
+  h.prestige = opt.prestige != null ? opt.prestige : ri(30, 60);
+  const nLords = opt.lords != null ? opt.lords : 3;
+  const nLadies = opt.ladies != null ? opt.ladies : 1;
+  for (let i = 0; i < nLords; i++) {
+    const l = createLord(faction, { houseId: h.id, house: h.name, age: ri(22, 52), renown: ri(120, 480) });
+    giveChildren(l);
+    if (!l.partyId) spawnLordParty(l);
+  }
+  for (let i = 0; i < nLadies; i++) {
+    const la = createLord(faction, { houseId: h.id, house: h.name, isLady: true, age: ri(18, 50), renown: ri(40, 220) });
+    giveChildren(la);
+  }
+  refreshHouses();
+  addLog(`🏛 ${h.name} hanedanı kuruldu (${facName(faction)}).`, '', 2);
+  return h;
+}
+function dissolveHouse(hid, mode) {
+  const h = S.houses[hid]; if (!h) return;
+  const mem = houseMembers(hid);
+  const others = S.order.houses.map(i => S.houses[i])
+    .filter(x => x && !x.extinct && x.id !== hid && x.faction === h.faction);
+  mem.forEach(m => {
+    if (mode === 'kill') { lordDies(m, 'hanedan tasfiyesi'); return; }
+    if (mode === 'exile') { m.state = 'exile'; if (m.partyId) removeParty(m.partyId); m.partyId = null; return; }
+    const t = others.length ? pick(others) : null;
+    if (t) { m.houseId = t.id; m.house = t.name; }
+  });
+  h.extinct = true; h.endedYear = calendar(S.day).year;
+  refreshHouses();
+  const facs = Object.values(S.factions).filter(f => f.rulingHouseId === hid);
+  facs.forEach(f => { const k = f.kingId ? S.lords[f.kingId] : null; if (k) { f.rulingHouseId = k.houseId; applyRulingHouseColor(f); } });
+  addLog(`🕯 ${h.name} hanedanı dağıtıldı.`, 'war', 2);
+  uiDirty.kra = uiDirty.sel = true;
+}
+function moveLordToHouse(lordId, houseId) {
+  const l = S.lords[lordId], h = S.houses[houseId];
+  if (!l || !h) return;
+  const old = l.houseId;
+  l.houseId = h.id; l.house = h.name;
+  if (l.faction !== h.faction) transferLord(l, h.faction);
+  refreshHouses();
+  if (old && old !== h.id) addFeud(old, h.id, 10, 'hanedan değiştirme');
+  const fac = S.factions[l.faction];
+  if (fac && fac.kingId === l.id) { fac.rulingHouseId = h.id; applyRulingHouseColor(fac); }
+  addLog(`🏛 ${lordShort(l)} artık ${h.name} hanedanının üyesi.`, '', 1);
+  uiDirty.kra = uiDirty.sel = true;
+}
+function houseMoveFaction(hid, faction) {
+  const h = S.houses[hid]; if (!h) return;
+  houseMembers(hid).forEach(m => transferLord(m, faction));
+  h.faction = faction;
+  refreshHouses();
+  addLog(`🏛 ${h.name} hanedanı topluca ${facName(faction)} hizmetine geçti.`, '', 2);
+}
 /* =====================================================================
    Bölüm 5: Arayüz — dört sekme, seçim ekranı, krallıklar, savaşlar
    ===================================================================== */
@@ -4919,7 +5103,7 @@ function chronicleTick(day) {
 const ui = {
   tab: 'sel',
   open: { edit: false, dip: false, lords: true, stl: false },
-  lordQuery: '', lordFac: '', stlQuery: '', stlFac: '', stlType: '',
+  lordQuery: '', lordFac: '', stlQuery: '', stlFac: '', stlType: '', showLadies: false,
   logFilter: 'all'
 };
 
@@ -4976,7 +5160,7 @@ function facColorOfTroop(t) {
   return t.cls === 'cav' ? '#c98a3a' : t.cls === 'arch' ? '#6f9e5a' : '#7d90b8';
 }
 function stateLabel(l) {
-  return { active:'Sahada', prisoner:'Esir', regroup:'Toparlanıyor', dead:'Ölü', exile:'Sürgün' }[l.state] || l.state;
+  return { active:'Sahada', prisoner:'Esir', regroup:'Toparlanıyor', dead:'Ölü', exile:'Sürgün', court:'Sarayda' }[l.state] || l.state;
 }
 function goalLabel(p) {
   if (p.besieging) { const s = S.settlements[p.besieging]; return `${s ? s.name : '?'} kuşatmasında`; }
@@ -5241,6 +5425,9 @@ function viewLord(l) {
     ${fText('Unvan', 'lord', l.id, 'title')}
     ${fSel('Krallık', 'lord', l.id, 'faction', facOpts())}
     ${fSel('Kişilik', 'lord', l.id, 'personality', PERSONALITIES.map(x => ({ v: x.id, t: `${x.name} — ${x.desc}` })))}
+    ${fSel('Hanedan', 'lord', l.id, 'houseId', S.order.houses.map(i => S.houses[i]).filter(x => x && !x.extinct)
+      .map(x => ({ v: x.id, t: `${x.name} (${facShort(x.faction)})` })))}
+    ${fSel('Cinsiyet / rol', 'lord', l.id, 'isLady', [{ v: 'false', t: 'Lord (sahada)' }, { v: 'true', t: 'Leydi (sarayda)' }])}
     <div class="grid2">
       ${fNum('Şöhret', 'lord', l.id, 'renown', 0, 5000, 10)}
       ${fNum('Altın', 'lord', l.id, 'gold', 0, 9999999, 100)}
@@ -5441,10 +5628,12 @@ function viewFaction(f) {
 
 function lordItem(l) {
   const p = l.partyId ? S.parties[l.partyId] : null;
-  return `<div class="item" data-act="selLord" data-id="${l.id}">${facDot(l.faction)}
-    <div class="grow"><div class="t">${l.isKing ? '👑 ' : ''}${esc(l.title)} ${esc(l.name)}</div>
-    <div class="s">${esc(stateLabel(l))} · ${l.fiefs.length} tımar · şöhret ${fmt(l.renown)}</div></div>
-    <div class="num small">${p ? fmt(stackCount(p.troops)) : '—'}</div></div>`;
+  const h = houseOf(l);
+  return `<div class="item" data-act="selLord" data-id="${l.id}">
+    <span class="dot" style="background:${h ? h.color : facColor(l.faction)}"></span>
+    <div class="grow"><div class="t">${l.isKing ? '👑 ' : l.isLady ? '🌸 ' : ''}${esc(l.title)} ${esc(l.name)}</div>
+    <div class="s">${esc(stateLabel(l))}${l.age ? ' · ' + l.age + ' yaş' : ''} · ${l.fiefs.length} tımar · şöhret ${fmt(l.renown)}</div></div>
+    <div class="num small">${p ? fmt(stackCount(p.troops)) : (l.isLady ? '—' : '—')}</div></div>`;
 }
 
 /* =====================  KRALLIKLAR  ===================== */
@@ -5456,6 +5645,7 @@ function viewKra() {
   const wars = Object.entries(S.wars).map(([k, v]) => { const [a, b] = k.split('|'); return { a, b, days: Math.floor(S.day - v.since) }; });
 
   let lords = S.order.lords.map(i => S.lords[i]);
+  if (!ui.showLadies) lords = lords.filter(l => !l.isLady);
   if (ui.lordFac) lords = lords.filter(l => l.faction === ui.lordFac);
   if (ui.lordQuery) { const q = ui.lordQuery.toLocaleLowerCase('tr'); lords = lords.filter(l => l.name.toLocaleLowerCase('tr').includes(q)); }
   lords.sort((a, b) => (b.isKing ? 1e6 : 0) + b.renown - ((a.isKing ? 1e6 : 0) + a.renown));
@@ -5536,6 +5726,7 @@ function viewKra() {
       <label class="f"><span>Krallık</span><select id="lrdFac"><option value="">Hepsi</option>
         ${live.map(f => `<option value="${f.id}" ${ui.lordFac === f.id ? 'selected' : ''}>${esc(f.short)}</option>`).join('')}</select></label>
     </div>
+    <label class="row" style="gap:6px;margin-bottom:6px"><input type="checkbox" id="lrdLady" ${ui.showLadies ? 'checked' : ''} style="width:auto"> <span class="small">Leydileri de göster</span></label>
     <div class="list">${lords.slice(0, 60).map(l => lordItem(l)).join('')}</div>
   </div>`;
 }
@@ -5545,6 +5736,8 @@ function bindKraInputs() {
   if (q) q.oninput = e => { ui.lordQuery = e.target.value; uiDirty.kra = true; renderUI(true); const n = $('#lrdQ'); if (n) { n.focus(); n.setSelectionRange(n.value.length, n.value.length); } };
   const f = $('#lrdFac');
   if (f) f.onchange = e => { ui.lordFac = e.target.value; uiDirty.kra = true; renderUI(true); };
+  const la = $('#lrdLady');
+  if (la) la.onchange = e => { ui.showLadies = e.target.checked; uiDirty.kra = true; renderUI(true); };
 }
 
 /* =====================  SAVAŞLAR  ===================== */
@@ -5744,8 +5937,24 @@ function viewHouse(h) {
       <button class="btn sm" data-act="houseBanner" data-id="${h.id}">İsyan bayrağı açtır</button>
     </div>
   </div>
-  <div class="card"><h3>Üyeler</h3><div class="list">
-    ${mem.sort((a, b) => b.renown - a.renown).map(l => lordItem(l)).join('') || '<div class="small muted">Yaşayan üye yok.</div>'}
+  <div class="card"><h3>Lordlar <span class="sub">${houseLords(h.id).length}</span></h3><div class="list">
+    ${houseLords(h.id).sort((a, b) => b.renown - a.renown).map(l => lordItem(l)).join('') || '<div class="small muted">Sahada lord yok.</div>'}
+  </div></div>
+  <div class="card"><h3>Leydiler <span class="sub">${houseLadies(h.id).length}</span></h3><div class="list">
+    ${houseLadies(h.id).sort((a, b) => b.age - a.age).map(l => lordItem(l)).join('') || '<div class="small muted">Sarayda leydi yok.</div>'}
+  </div></div>
+  ${(() => {
+    const kids = mem.flatMap(m => (m.children || []).map(c => ({ c, p: m })));
+    return kids.length ? `<div class="card"><h3>Çocuklar <span class="sub">${kids.length}</span></h3>
+      <table class="tbl">${kids.sort((a, b) => b.c.age - a.c.age).slice(0, 24).map(o => `
+        <tr><td>${o.c.male ? '♂' : '♀'} ${esc(o.c.name)}</td><td class="n">${o.c.age}</td>
+        <td class="small muted">${esc(o.p.name)} çocuğu${o.c.age >= 16 ? ' · yetişkin' : ''}</td></tr>`).join('')}</table></div>` : '';
+  })()}
+  <div class="card"><h3>Hanedan araçları</h3><div class="btnrow">
+    <button class="btn sm" data-act="houseAddLord" data-id="${h.id}">+ Lord ekle</button>
+    <button class="btn sm" data-act="houseAddLady" data-id="${h.id}">+ Leydi ekle</button>
+    <button class="btn sm" data-act="houseMove" data-id="${h.id}">Krallık değiştir</button>
+    <button class="btn sm danger" data-act="houseDissolve" data-id="${h.id}">Hanedanı dağıt</button>
   </div></div>
   ${sect('edit', '✎ Hanedanı düzenle', `
     <label class="f"><span>Hanedan adı</span><input type="text" value="${esc(h.name)}" data-edit="house|${h.id}|name|text"></label>
@@ -5844,6 +6053,7 @@ function renderBox() {
       <button class="btn sm" data-act="spawnBanditBtn">🏴 Haydut çetesi</button>
       <button class="btn sm" data-act="newBuild">🧱 İnşaat başlat</button>
       <button class="btn sm primary" data-act="newElection">🗳 Seçim başlat</button>
+      <button class="btn sm primary" data-act="newHouse">🏛 Yeni hanedan</button>
     </div>
     <div class="small muted" style="margin-top:6px">Yerleşim, ordu ve inşaat için haritadan yer seçmen istenir.</div>
   </div>
@@ -6730,7 +6940,7 @@ const ACTIONS = {
 };
 
 function fillFactionArmies(f) {
-  S.order.lords.map(i => S.lords[i]).filter(l => l.faction === f && l.state !== 'dead').forEach(l => {
+  S.order.lords.map(i => S.lords[i]).filter(l => l.faction === f && isFieldLord(l)).forEach(l => {
     if (l.state === 'prisoner' || l.state === 'exile') l.state = 'active';
     const p = l.partyId && S.parties[l.partyId] ? S.parties[l.partyId] : spawnLordParty(l);
     const cap = lordPartyCap(l), cnt = stackCount(p.troops);
@@ -6764,15 +6974,29 @@ function createLord(faction, opt) {
     children: [], rel: {}, health: 100, tactic: 'balanced', sick: 0
   };
   S.order.lords.push(id);
-  const hs = ensureHouse(faction, S.lords[id].house);
+  if (opt.isLady) {
+    S.lords[id].isLady = true; S.lords[id].state = 'court';
+    S.lords[id].title = fac.ladyTitle || 'Leydi';
+    S.lords[id].name = opt.name || pick(FEMALE_NAMES[faction] || FEMALE_NAMES.swadia);
+  }
+  const hs = opt.houseId && S.houses[opt.houseId] ? S.houses[opt.houseId] : ensureHouse(faction, S.lords[id].house);
   S.lords[id].houseId = hs.id; S.lords[id].house = hs.name;
   refreshHouses();
   uiDirty.kra = true;
   return S.lords[id];
 }
 
+function promoteLady(l) {
+  if (!l || !l.isLady) return;
+  l.isLady = false; l.state = 'active';
+  const fac = S.factions[l.faction];
+  l.title = fac ? fac.lordTitle : 'Lord';
+  if (!l.partyId) spawnLordParty(l);
+  addLog(`⚜ ${l.title} ${lordFullName(l)} hanedanının başına geçip sahaya indi.`, '', 1);
+}
 function makeKing(l, silent) {
   const fac = S.factions[l.faction]; if (!fac) return;
+  if (l.isLady) promoteLady(l);
   const old = fac.kingId ? S.lords[fac.kingId] : null;
   if (old && old !== l) { old.isKing = false; old.title = fac.lordTitle; old.relKing = -30; }
   l.isKing = true; l.title = fac.rulerTitle; l.relKing = 100;
@@ -6799,6 +7023,17 @@ function applyEdit(kind, id, key, raw, type) {
   if (type === 'num') { v = +raw; if (isNaN(v)) return; }
 
   if (kind === 'lord' && key === 'faction' && v !== obj.faction) { transferLord(obj, v); renderUI(true); requestDraw(); return; }
+  if (kind === 'lord' && key === 'houseId') { moveLordToHouse(obj.id, v); renderUI(true); requestDraw(); return; }
+  if (kind === 'lord' && key === 'isLady') {
+    const want = v === 'true' || v === true;
+    if (want && !obj.isLady) {
+      obj.isLady = true; obj.state = 'court';
+      obj.title = (S.factions[obj.faction] || {}).ladyTitle || 'Leydi';
+      if (obj.partyId) removeParty(obj.partyId); obj.partyId = null;
+      if (obj.isKing) { obj.isKing = false; succession(obj.faction, obj); }
+    } else if (!want && obj.isLady) promoteLady(obj);
+    refreshHouses(); renderUI(true); requestDraw(); return;
+  }
   if (kind === 'lord' && key === 'state') {
     obj.state = v;
     if (v === 'dead' || v === 'prisoner' || v === 'exile') { if (obj.partyId) removeParty(obj.partyId); obj.partyId = null; }
@@ -7181,6 +7416,72 @@ function openElectionResult(el) {
     <div class="card"><h3>Sonrası</h3><b>${esc(after.name)}</b> — ${esc(after.desc)}</div>`,
     [{ t: 'Kapat', cls: 'primary', fn: () => dlg.close() }]);
 }
+
+/* ---------- hanedan sandbox komutları ---------- */
+Object.assign(ACTIONS, {
+  newHouse: () => {
+    const live = Object.values(S.factions).filter(f => !f.isBandit && f.alive);
+    openDlg('Yeni hanedan kur', `
+      <div class="grid2">
+        <label class="f"><span>Hanedan adı</span><input type="text" id="nhName" value="${esc(pick(HOUSES.swadia) + ' ' + ri(2, 9))}"></label>
+        <label class="f"><span>Krallık</span><select id="nhFac">${live.map(f => `<option value="${f.id}">${esc(f.name)}</option>`).join('')}</select></label>
+        <label class="f"><span>Lord sayısı</span><input type="number" id="nhLords" value="3" min="0" max="10"></label>
+        <label class="f"><span>Leydi sayısı</span><input type="number" id="nhLadies" value="2" min="0" max="8"></label>
+        <label class="f"><span>Arma deseni</span><select id="nhPat">${ARMS_PATTERNS.map(p => `<option value="${p}">${p}</option>`).join('')}</select></label>
+        <label class="f"><span>Arma sembolü</span><select id="nhChg">${ARMS_CHARGE_IDS.map(c => `<option value="${c}">${c}</option>`).join('')}</select></label>
+      </div>
+      <label class="f"><span>Renk</span><input type="color" id="nhCol" value="${pick(HOUSE_COLORS)}"></label>`,
+      [{ t: 'Kur', cls: 'primary', fn: () => {
+        const h = createHouse($('#nhFac').value, {
+          name: $('#nhName').value.trim(), color: $('#nhCol').value,
+          arms: { pattern: $('#nhPat').value, charge: $('#nhChg').value },
+          lords: +$('#nhLords').value || 0, ladies: +$('#nhLadies').value || 0
+        });
+        dlg.close(); S.sel = { type: 'house', id: h.id }; uiDirty.sel = uiDirty.kra = true;
+        setTab('sel'); renderUI(true); requestDraw();
+      } }, { t: 'Vazgeç', fn: () => dlg.close() }]);
+  },
+  houseAddLord: el2 => {
+    const h = S.houses[el2.dataset.id]; if (!h) return;
+    const l = createLord(h.faction, { houseId: h.id, house: h.name, age: ri(20, 48), renown: ri(100, 420) });
+    giveChildren(l);
+    if (!l.partyId) spawnLordParty(l);
+    refreshHouses(); toast('Lord eklendi'); renderUI(true); requestDraw();
+  },
+  houseAddLady: el2 => {
+    const h = S.houses[el2.dataset.id]; if (!h) return;
+    const l = createLord(h.faction, { houseId: h.id, house: h.name, isLady: true, age: ri(18, 46), renown: ri(40, 220) });
+    giveChildren(l);
+    refreshHouses(); toast('Leydi eklendi'); renderUI(true);
+  },
+  houseMove: el2 => {
+    const h = S.houses[el2.dataset.id]; if (!h) return;
+    const live = Object.values(S.factions).filter(f => !f.isBandit && f.alive);
+    openDlg('Hanedanı taşı', `<label class="f"><span>Yeni krallık</span><select id="hmF">${
+      live.map(f => `<option value="${f.id}" ${f.id === h.faction ? 'selected' : ''}>${esc(f.name)}</option>`).join('')}</select></label>
+      <div class="small muted">Bütün üyeleri ve tımarları yeni krallığa geçer.</div>`,
+      [{ t: 'Taşı', cls: 'primary', fn: () => { houseMoveFaction(h.id, $('#hmF').value); dlg.close(); renderUI(true); requestDraw(); } },
+       { t: 'Vazgeç', fn: () => dlg.close() }]);
+  },
+  houseDissolve: el2 => {
+    const h = S.houses[el2.dataset.id]; if (!h) return;
+    openDlg('Hanedanı dağıt', `<div class="small muted" style="margin-bottom:8px"><b>${esc(h.name)}</b> hanedanı kapatılacak. Üyelerine ne olsun?</div>
+      <div class="list">
+        <div class="item" data-act="doDissolve" data-id="${h.id}" data-m="merge"><div class="grow">
+          <div class="t">Başka hanedanlara dağıt</div><div class="s">Üyeler aynı krallıktaki hanedanlara katılır.</div></div></div>
+        <div class="item" data-act="doDissolve" data-id="${h.id}" data-m="exile"><div class="grow">
+          <div class="t">Sürgüne gönder</div><div class="s">Üyeler sahadan çekilir, tımarları krala kalır.</div></div></div>
+        <div class="item" data-act="doDissolve" data-id="${h.id}" data-m="kill"><div class="grow">
+          <div class="t">Soyu kırılsın</div><div class="s">Bütün üyeler ölür; varisleri tımarları devralabilir.</div></div></div>
+      </div>`, [{ t: 'Vazgeç', fn: () => dlg.close() }]);
+  },
+  doDissolve: el2 => {
+    dissolveHouse(el2.dataset.id, el2.dataset.m);
+    dlg.close();
+    if (S.sel && S.sel.type === 'house' && S.sel.id === el2.dataset.id) S.sel = null;
+    renderUI(true); requestDraw();
+  }
+});
 /* =====================================================================
    Bölüm 7: Kayıt, olaylar, ana döngü ve açılış
    ===================================================================== */
