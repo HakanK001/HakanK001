@@ -84,9 +84,11 @@ Depodaki ikinci oyun ailesi: Mount & Blade **Warband** esintili, tek dosyalık b
 - **Okunur simgeler** — şehirler surlu şehir silueti, kaleler burçlu kule, köyler çatılı ev olarak çizilir; ordular **sancak** taşır, sancağın altında asker sayısı yazar, kralın sancağı ayrı görünür. Kuşatmalarda surların çevresine **çadırlar** dizilir ve kuşatma ilerlemesi halka olarak dolar
 - **Savaş izleri** — bir çarpışma olduğu yerde haritada birkaç gün duran **⚔ işareti** kalır; üstüne tıklayınca o savaşın raporu açılır
 - **İpucu balonu** — imleci bir şehrin ya da ordunun üstüne getirince adı, krallığı, asker sayısı ve ne yaptığı anında görünür
+- **Kim içeride?** — bir şehre ya da kaleye tıkladığında **içeride konaklayan lordların listesi** çıkar: kendi tımarında mı yoksa misafir mi, kaç askeri var, kaç gün daha kalacak
 - **Parşömen modu** — tek düğmeyle harita eski bir çizim haritasına döner: sepya araziler, kahverengi kıyı hâlesi, kağıt dokusu
 - **Yollar, kervanlar, şantiyeler** — yol ağı, yük arabası simgeleriyle kervanlar ve ilerleme çubuklu inşaat şantiyeleri haritada görünür
 - **Başkent tacı, kral yıldızı, mareşal işareti** — başkentin üstünde altın taç, kralın sancağında yıldız ve daha büyük simge, mareşalin sancağında çift şerit
+- **Konaklayan lord rozeti** — surların ardına çekilen ordular haritadan kalkar, yerine şehrin/kalenin kapısına **içerideki ordu sayısını gösteren küçük bir kalkan** asılır; kral içerideyse kalkan altın olur. Böyle harita kalabalıklaşmaz, kimin nerede olduğu tek bakışta okunur
 - **Kamera takibi** — bir orduyu seçip 🎥 ile kilitlersin, sefer boyunca kamera peşinden gider
 - **Krallık adları** — sol üstteki *Krallık adı* katmanı, her krallığın adını kendi topraklarının ortasına yazar; yazı bölgenin büyüklüğüne göre büyür, dar bölgelerde kısa ada düşer, sınırlar değiştikçe yeri ve boyu kendiliğinden güncellenir
 - **Geniş Kalradya, 190 yerleşim** — harita bir buçuk katına büyütüldü. **27 şehir** (Praven, Uxkhal, Suno, Dhirim, Zendar, Reyvadin, Curaw, Khudan, Rivacheg, Kolgrim, Sargoth, Tihr, Wercheg, Vaerholm, Jelkala, Yalen, Veluca, Montefiore, Shariz, Durquba, Ahmerrad, Zubeyra, Tulga, Halmar, Narra, Ichamur, Ordubad), **42 kale** ve **120 köy**; her şehir/kalenin bağlı köyleri vardır. Mesafeler ölçekle birlikte hesaplandığı için sefer süreleri ve yapay zekâ dengesi korunur
@@ -127,6 +129,11 @@ Depodaki ikinci oyun ailesi: Mount & Blade **Warband** esintili, tek dosyalık b
 
 - **Anlaşmalar** — Saldırmazlık Paktı, Savunma İttifakı ve Saldırı İttifakı. Müttefik saldırıya uğrayınca çağrıya uyar ya da paktı bozup itibarını yakar; güçlü ve gururlu krallıklar kimseye bağlanmaz, saldırmazlık paktları zamanla süresini doldurur
 - **Stratejik krallar** — her krallık dört günde bir **savaş planı** çıkarır: tehdit altındaki kendi toprağını mı savunacak, yoksa hangi düşman şehrini mi alacak. Hedef; mesafe, garnizon, sur, erzak, şehrin değeri ve başkent olup olmamasına göre puanlanır. Akıllı kral hedefinde ısrar eder, beceriksizi sık fikir değiştirir
+- **Seferberlik (sefer açılmadan ordu yürümez)** — barışta lordlar yollara dökülmez: **kral başkentinde**, tımarlı lord **kendi şehrinde ya da kalesinde** oturur; topraksız lord ya hanedanının kapısına konuk olur ya da sahada işine bakar — kimi **kervan korur**, kimi **haydut avlar**, kimi devriyeye çıkar. Bir sefer ancak **seferberlik ilan edilince** başlar
+- **Seferberliği mareşal ilan eder** — savaş çıkınca ordunun başına kral geçmez; **lordlar kendi aralarında mareşal seçer** ve çağrıyı o yapar. Mareşal, komuta yeteneği kadar **savaş görmüşlüğüne** (kaç galibiyet, kaç mağlubiyet) göre seçilir; sınanmamış aday ve seferden kaçınan kral oy kaybeder. Barış imzalanınca mareşallik görevi sona erer
+- **Kral sefere çıkmaz** — kral, krallık tehlikeye girmedikçe (kendi toprağında kuşatma, başkent tehdidi → **genel seferberlik**) sancağın ardından gitmez; tahtta kalır. Genel seferberlikte ise o da atına biner
+- **Çağrıya uymayan lord** — her lord seferberlik çağrısına uyup uymayacağına kendi karar verir (sadakat, kişilik, mareşalle ilişkisi); uymayan tımarında kalır, kralla ve mareşalle arası bozulur, bu bazen diyaloğa döner. Mareşal çağrısına neredeyse hep uyar
+- **Seferberliğin sonu** — savaş biterse, sefer mevsimi kapanırsa, hazine tükenirse ya da mareşal sahadan düşerse seferberlik dağılır ve lordlar tımarlarına döner. Kuşatma başlarsa **kapılar açılır**: içeride konaklayan lordlar surların önüne çıkıp savunmaya girer
 - **Disiplinli lordlar** — lordun krala sadakati ve strateji yeteneği, krallığın planına ne kadar uyacağını belirler. Tek başına yetmeyeceğini gören lord kuşatmaya girmez; mareşalin sancağı altında toplanır ya da hedefin çevresini yağmalayıp bekler
 - **Savaş taktikleri** — her komutan birliklerinin karışımına, araziye ve düşmanın diziliş türüne göre altı taktikten birini seçer (kalkan duvarı, ok yağmuru, süvari hücumu, sahte geri çekilme, tepeyi tut, dengeli). **Arazi** belirleyicidir: dağda ve ormanda süvari işe yaramaz, bozkırda uçar. Seçilen taktik savaş raporunda yazar
 
@@ -139,12 +146,13 @@ Depodaki ikinci oyun ailesi: Mount & Blade **Warband** esintili, tek dosyalık b
 - **Hazır senaryolar** — Büyük Savaş, Uzun Barış, Tek İmparatorluk, Karanlık Çağ, Veraset Krizi
 - **Toplu düzenleme** — "bütün Rodok kalelerinin suru 100" gibi tek hamlede yüzlerce yerleşim
 - **Birlik ağacı düzenleyici** — birliklerin adını, gücünü, sınıfını değiştir ya da kendi asker tipini yarat
+- **Seferberlik masası** — her krallık için tek düğmeyle **seferberlik ilan et** ya da **dağıt**, dilediğin an **mareşal seçimi** başlat (kampanya atlanır, oylar ve gerekçeleriyle sonuç anında çıkar). Krallık kartında da aynı düğmeler ve seferberliğin canlı durumu (kaç lord sancak altında, kaç gün kaldı) yazar
 - **Anlaşma masası** — istediğin iki krallığa istediğin paktı imzalat ya da bozdur
 - **Simülasyon ayarları** — ölümcüllük, asker toplama, ekonomi, saldırganlık, haydut yoğunluğu, **yapay zekâ keskinliği**, ticaret, inşa hevesi, olay sıklığı ve ölümlülük kaydırıcıları
 
 ### Arayüz
 
-Beş sekme: **Seçim** (tıkladığın birim ya da hiçbir şey seçili değilken Kalradya panosu), **Krallıklar** (güç sıralaması, savaş durumu, diplomasi tablosu, lord listesi), **Savaşlar** (savaş defteri ve vakayiname), **Tarih** (grafikler ve yıl yıl kronik), **Sandbox** (yaratma ve müdahale araçları). Kaydetme localStorage'da, JSON dışa/içe aktarma, tohumla yeni dünya kurma, açık/koyu tema, mobilde alttan yükselen panel ve PWA desteği (`warband-manifest.webmanifest`, `warband-sw.js`).
+Beş sekme: **Seçim** (tıkladığın birim ya da hiçbir şey seçili değilken Kalradya panosu), **Krallıklar** (güç sıralaması, savaş durumu, diplomasi tablosu, lord listesi), **Savaşlar** (seferberlik tablosu, savaş defteri ve vakayiname), **Tarih** (grafikler ve yıl yıl kronik), **Sandbox** (yaratma ve müdahale araçları). Kaydetme localStorage'da, JSON dışa/içe aktarma, tohumla yeni dünya kurma, açık/koyu tema, mobilde alttan yükselen panel ve PWA desteği (`warband-manifest.webmanifest`, `warband-sw.js`).
 
 Yerleşim adları ve krallıklar Warband'in Kalradya'sından esinlenmiştir; harita yerleşimi stilize edilmiş bir yeniden yorumdur, birebir kopya değildir.
 

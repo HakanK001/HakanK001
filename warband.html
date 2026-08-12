@@ -904,6 +904,24 @@ const ELECTION_AFTERMATH = {
 /* ---------------- Diyalog şablonları ---------------- */
 /* {A} konuşan, {B} muhatap, {X} yer/konu, {F} krallık, {H} hanedan */
 const DIALOGUES = {
+  muster: {
+    title: 'Seferberlik kararı',
+    lines: [
+      ['A', 'Ordular toplanıyor efendim. Sancakları {X} önünde açacağım.'],
+      ['B', 'Sefer senin {A}. Ben tahtı boş bırakamam — kral ordunun ardından gitmez, ordu kralın adına gider.'],
+      ['A', 'Lordları çağırdım. Gelmeyen olursa adını size bildiririm.'],
+      ['B', 'Bildir. Sancağa gelmeyenin tımarı da gelmez.']
+    ]
+  },
+  musterRefuse: {
+    title: 'Çağrıya uymayan lord',
+    lines: [
+      ['A', '{B}, mareşalin çağrısı sana da ulaştı. Sancak nerede, sen neredesin?'],
+      ['B', 'Tımarım sınırda {A}. Ben gidersem köylerimi kim koruyacak?'],
+      ['A', 'Kendi çitini kollayan, krallığın duvarını yıkar.'],
+      ['B', 'Duvarı yıkan benim çitim değil, mareşalin hırsıdır.']
+    ]
+  },
   campaign: {
     title: 'Seçim pazarlığı',
     lines: [
@@ -1173,7 +1191,7 @@ const S = {
     mapStyle: 'natural',
     logLimit: 300
   },
-  stats: { battles: 0, sieges: 0, days: 0, built: 0, deaths: 0, elections: 0 }
+  stats: { battles: 0, sieges: 0, days: 0, built: 0, deaths: 0, elections: 0, musters: 0 }
 };
 
 const warKey = (a, b) => a < b ? `${a}|${b}` : `${b}|${a}`;
@@ -1358,7 +1376,7 @@ function buildWorld(seed) {
   /* --- haydutlar --- */
   for (let i = 0; i < 16; i++) spawnBandit();
 
-  S.stats = { battles: 0, sieges: 0, days: 0, built: 0, deaths: 0, elections: 0 };
+  S.stats = { battles: 0, sieges: 0, days: 0, built: 0, deaths: 0, elections: 0, musters: 0 };
   addLog('Kalradya\'da yeni bir çağ başlıyor. Altı krallık, tek bir taht.', 'siege', 2);
   Object.keys(S.wars).forEach(k => {
     const [a, b] = k.split('|');
@@ -2221,6 +2239,25 @@ function updateSvg() {
       } else if (n.capMark) { n.capMark.remove(); n.capMark = null; }
     }
 
+    /* içeride konaklayan lordlar: haritayı boşaltıp kapıya rozet asarız */
+    const inside = (S.layers.parties && !isVil) ? partiesInside(id) : [];
+    if (inside.length) {
+      if (!n.occ) {
+        n.occ = el('g', {}, n.g);
+        n.occBg = el('path', {
+          d: 'M -.46 -.46 L .46 -.46 L .46 .06 Q .46 .42 0 .58 Q -.46 .42 -.46 .06 Z',
+          stroke: 'rgba(0,0,0,.85)', 'stroke-width': 0.1, 'stroke-linejoin': 'round'
+        }, n.occ);
+        n.occT = el('text', { 'text-anchor': 'middle', 'font-size': 0.8, 'font-weight': '700', y: 0.24 }, n.occ);
+      }
+      const hasKing = inside.some(q => q.lordId && S.lords[q.lordId] && S.lords[q.lordId].isKing);
+      n.occ.style.display = '';
+      n.occ.setAttribute('transform', `translate(${s.type === 'town' ? 1.05 : 0.86},-0.88) scale(${s.type === 'town' ? 0.82 : 1})`);
+      n.occBg.setAttribute('fill', hasKing ? '#ffd071' : '#e6d8b8');
+      n.occT.textContent = inside.length;
+      n.occT.setAttribute('fill', '#241b12');
+    } else if (n.occ) n.occ.style.display = 'none';
+
     const showLbl = S.layers.labels && (s.type === 'town' || (s.type === 'castle' && k > 0.7) || (isVil && k > 1.7));
     if (showLbl) {
       n.lbl.style.display = '';
@@ -2339,7 +2376,7 @@ function updateSvg() {
       const badge = el('text', { 'text-anchor': 'middle', class: 'stl-label' }, g);
       n = { g, shadow, pole, flag, body, badge }; svgNodes.party.set(id, n);
     }
-    const hidden = !S.layers.parties || S.hidden[p.faction] || p.besieging;
+    const hidden = !S.layers.parties || S.hidden[p.faction] || p.besieging || p.inside;
     n.g.style.display = hidden ? 'none' : '';
     if (hidden) return;
     const cnt = stackCount(p.troops);
@@ -2670,6 +2707,9 @@ function moveParties(dt) {
     const p = S.parties[id]; if (!p) return;
     if (p.cooldown > 0) p.cooldown -= dt;
     if (p.besieging) return;
+    if (p.inside) { const s = S.settlements[p.inside];
+      if (!s || s.faction !== p.faction) { p.inside = null; p.goal = 'idle'; p.tx = null; }
+      else { p.x = s.x; p.y = s.y; if (S.day >= (p.stayUntil || 0)) decideGoal(p); return; } }
     /* mareşali takip: hedef sürekli güncellenir */
     if (p.goal === 'follow') {
       const lead = p.targetId ? S.parties[p.targetId] : null;
@@ -2711,22 +2751,28 @@ function decideGoal(p) {
   const pers = PERSONALITIES.find(x => x.id === lord.personality) || PERSONALITIES[0];
   const cnt = stackCount(p.troops);
   const cap = lordPartyCap(lord);
+  const enemies = enemyFactions(p.faction);
+  const mustered = !!(fac.muster && fac.muster.active);
 
-  /* 1) zayıfsa tımara dön */
-  if (cnt < cap * 0.32 || p.morale < 30) {
-    const home = homeSettlement(lord);
-    if (home) return setGoal(p, 'return', home);
-  }
-  /* 2) kendi toprağında kuşatma varsa savun */
+  /* 1) kendi toprağında kuşatma varsa savun (seferberlik gerekmez) */
   const besieged = ownSettlements(p.faction).filter(s => s.besiegedBy);
   if (besieged.length) {
     besieged.sort((a, b) => dist2(a.x, a.y, p.x, p.y) - dist2(b.x, b.y, p.x, p.y));
     const t = besieged[0];
-    if (dist2(t.x, t.y, p.x, p.y) < 340) return setGoal(p, 'defend', t);
+    if (dist2(t.x, t.y, p.x, p.y) < 340 && cnt > cap * 0.3) return setGoal(p, 'defend', t);
   }
-  const enemies = enemyFactions(p.faction);
-  /* 3) süren dost kuşatmasına katıl */
-  if (enemies.length && cnt > cap * 0.3) {
+  /* 2) ordusu erimişse ya da morali bozuksa eve dön */
+  if (cnt < cap * 0.32 || p.morale < 30) {
+    const home = homeSettlement(lord) || nearestOwn(p);
+    if (home) return setGoal(p, 'return', home);
+  }
+
+  /* 3) seferberlik yoksa ya da çağrıya uymuyorsa: kral başkentte,
+        lord tımarında, topraksız lord yollarda */
+  if (!mustered || !enemies.length || !answersMuster(p, lord, fac)) return goHome(p, lord, fac);
+
+  /* 4) süren dost kuşatmasına katıl */
+  if (cnt > cap * 0.3) {
     const ongoing = S.order.settlements.map(i => S.settlements[i]).filter(s =>
       s.besiegedBy && S.parties[s.besiegedBy] && S.parties[s.besiegedBy].faction === p.faction && atWar(p.faction, s.faction));
     if (ongoing.length && rnd() < 0.9) {
@@ -2734,59 +2780,130 @@ function decideGoal(p) {
       return setGoal(p, 'siege', ongoing[0]);
     }
   }
-  /* 4) mareşalin ordusuna katıl */
-  if (enemies.length && fac.marshalId && fac.marshalId !== lord.id && cnt > cap * 0.35) {
+  /* 5) mareşalin ordusuna katıl */
+  if (fac.marshalId && fac.marshalId !== lord.id && cnt > cap * 0.35) {
     const m = S.lords[fac.marshalId];
     const mp = m && m.partyId ? S.parties[m.partyId] : null;
-    if (mp && dist2(mp.x, mp.y, p.x, p.y) < 420 && rnd() < 0.7) {
+    if (mp && !mp.inside && dist2(mp.x, mp.y, p.x, p.y) < 420 && rnd() < 0.75) {
+      if (p.inside) leaveSettlement(p);
       p.goal = 'follow'; p.targetId = mp.id; p.tx = mp.x; p.ty = mp.y;
       return;
     }
   }
-  /* 5) krallığın savaş planına uy */
-  if (enemies.length) {
-    const plan = fac.warPlan;
-    const disciplined = clamp(0.45 + (lord.relKing + 100) / 260 + (lord.skillStrategy || 4) / 24, 0.2, 0.95) * S.opts.aiSkill;
-    if (plan && rnd() < disciplined) {
-      const t = S.settlements[plan.settlementId];
-      if (t) {
-        if (plan.kind === 'defend' && t.faction === p.faction) return setGoal(p, 'defend', t);
-        if (plan.kind === 'attack' && enemies.includes(t.faction)) {
-          const myPw = partyPower(p);
-          const allied = S.order.parties.map(i => S.parties[i])
-            .filter(q => q && q.faction === p.faction && q !== p && (q.besieging === t.id || q.targetId === t.id))
-            .reduce((a, q) => a + partyPower(q), 0);
-          const def = settlementDefPower(t);
-          /* tek başına yetmiyorsa yaklaş ve bekle/yağmala, birlikte yeter oluyorsa kuşat */
-          if (myPw + allied > def * 0.85 || t.besiegedBy) return setGoal(p, 'siege', t);
-          const vil = pickRaidTarget(p, enemies);
-          if (vil && dist2(vil.x, vil.y, t.x, t.y) < 260) return setGoal(p, 'raid', vil);
-          return setGoal(p, 'siege', t);
-        }
-      }
-    }
-    const wantWar = rnd() < clamp(0.42 * pers.aggr * fac.aggr * S.opts.aggression + (lord.isKing ? 0.15 : 0), 0.05, 0.95);
-    if (wantWar && cnt > cap * 0.5) {
-      const target = pickCampaignTarget(p.faction, enemies);
-      if (target) {
+  /* 6) krallığın savaş planı */
+  const plan = fac.warPlan;
+  const disciplined = clamp(0.5 + (lord.relKing + 100) / 260 + (lord.skillStrategy || 4) / 24, 0.2, 0.95) * S.opts.aiSkill;
+  if (plan && rnd() < disciplined) {
+    const t = S.settlements[plan.settlementId];
+    if (t) {
+      if (plan.kind === 'defend' && t.faction === p.faction) {
+        /* gerçek bir tehdit varsa savun; yoksa sefere devam */
+        if (t.besiegedBy || threatAt(t, p.faction) > partyPower(p) * 0.6) return setGoal(p, 'defend', t);
+      } else
+      if (plan.kind === 'attack' && enemies.includes(t.faction)) {
         const myPw = partyPower(p);
-        if (target.type !== 'village' && myPw > settlementDefPower(target) * 0.45) return setGoal(p, 'siege', target);
+        const allied = S.order.parties.map(i => S.parties[i])
+          .filter(q => q && q.faction === p.faction && q !== p && (q.besieging === t.id || q.targetId === t.id))
+          .reduce((a, q) => a + partyPower(q), 0);
+        if (myPw + allied > settlementDefPower(t) * 0.85 || t.besiegedBy) return setGoal(p, 'siege', t);
         const vil = pickRaidTarget(p, enemies);
-        if (vil && pers.greed > 0.65) return setGoal(p, 'raid', vil);
-        return setGoal(p, 'siege', target);
+        if (vil && dist2(vil.x, vil.y, t.x, t.y) < 260) return setGoal(p, 'raid', vil);
+        return setGoal(p, 'siege', t);
       }
     }
-    const vil = pickRaidTarget(p, enemies);
-    if (vil && rnd() < 0.5) return setGoal(p, 'raid', vil);
   }
-  /* 6) barışta */
-  if (cnt < cap * 0.85 && rnd() < 0.7) {
-    const home = homeSettlement(lord) || nearestOwn(p);
-    if (home) return setGoal(p, 'return', home);
+  /* 7) plan yoksa yağma ya da hedef seç */
+  const wantWar = rnd() < clamp(0.45 * pers.aggr * fac.aggr * S.opts.aggression, 0.05, 0.95);
+  if (wantWar && cnt > cap * 0.5) {
+    const target = pickCampaignTarget(p.faction, enemies);
+    if (target && partyPower(p) > settlementDefPower(target) * 0.45) return setGoal(p, 'siege', target);
   }
-  const own = ownSettlements(p.faction).filter(s => s.type !== 'village');
-  if (own.length) return setGoal(p, 'patrol', pick(own));
-  p.goal = 'idle'; p.tx = null;
+  const vil = pickRaidTarget(p, enemies);
+  if (vil && rnd() < 0.6) return setGoal(p, 'raid', vil);
+  return goHome(p, lord, fac);
+}
+
+/* lord seferberliğe uyar mı? (karar seferberlik boyunca sabit kalır)
+   kral, krallık tehlikeye girmedikçe sefere çıkmaz — orduyu mareşal yönetir. */
+function answersMuster(p, lord, fac) {
+  const m = fac.muster;
+  if (!m || !m.active) return false;
+  if (p.musterKey !== m.since) {
+    p.musterKey = m.since;
+    const pers = PERSONALITIES.find(x => x.id === lord.personality) || PERSONALITIES[0];
+    let chance = 0.62 + lord.relKing / 160 + (pers.aggr - 1) * 0.3 + (lord.fiefs.length ? 0 : 0.15);
+    const marshal = fac.marshalId ? S.lords[fac.marshalId] : null;
+    if (marshal && marshal.id !== lord.id) chance += lordRel(lord, marshal) / 220;
+    if (fac.marshalId === lord.id) chance = 0.99;
+    else if (lord.isKing) chance = m.grand ? 0.65 : 0.08;   // kral sancağın ardından gitmez
+    p.answersMuster = rnd() < clamp(chance * S.opts.aiSkill, 0.04, 0.98);
+    if (!p.answersMuster && !lord.isKing) {
+      lord.relKing = clamp(lord.relKing - ri(2, 5), -100, 100);
+      if (marshal && marshal.id !== lord.id) {
+        addLordRel(lord, marshal, -ri(2, 6));
+        if (rnd() < 0.12) talk('musterRefuse', { a: marshal, b: lord, f: fac.id });
+      }
+    }
+  }
+  return p.answersMuster;
+}
+
+/* barışta / çağrıya uymayınca: evine dön ve içeride kal */
+function goHome(p, lord, fac) {
+  /* topraksız lordlar bazen görevde olur */
+  if (!lord.fiefs.length && rnd() < 0.35) {
+    const task = rnd();
+    if (task < 0.35) {
+      const car = S.order.parties.map(i => S.parties[i]).find(q => q && q.type === 'caravan' && q.faction === p.faction);
+      if (car) { if (p.inside) leaveSettlement(p); p.goal = 'escort'; p.targetId = car.targetId; const t = S.settlements[car.targetId]; if (t) { p.tx = t.x; p.ty = t.y; } return; }
+    } else if (task < 0.7) {
+      const bandit = S.order.parties.map(i => S.parties[i])
+        .filter(q => q && q.type === 'bandit' && dist2(q.x, q.y, p.x, p.y) < 260)
+        .sort((a, b) => dist2(a.x, a.y, p.x, p.y) - dist2(b.x, b.y, p.x, p.y))[0];
+      if (bandit) { if (p.inside) leaveSettlement(p); p.goal = 'hunt'; p.targetId = null; p.tx = bandit.x; p.ty = bandit.y; return; }
+    } else {
+      const own = ownSettlements(p.faction).filter(s => s.type !== 'village');
+      if (own.length) return setGoal(p, 'patrol', pick(own));
+    }
+  }
+  /* zaten uygun bir surun içindeyse yerinden kalkmaz */
+  if (p.inside) {
+    const cur = S.settlements[p.inside];
+    if (cur && cur.faction === p.faction && !cur.besiegedBy) {
+      const mine = lord.fiefs.includes(cur.id);
+      if (mine || lord.isKing || rnd() < 0.65) {
+        p.goal = 'garrison'; p.targetId = cur.id; p.tx = null; p.ty = null;
+        p.stayUntil = S.day + (mine || lord.isKing ? rf(25, 70) : rf(10, 30));
+        p.restUntil = p.stayUntil;
+        return;
+      }
+    }
+  }
+  const home = lodgingFor(p, lord, fac);
+  if (!home) { p.goal = 'idle'; p.tx = null; return; }
+  if (p.inside === home.id) { p.goal = 'garrison'; p.targetId = home.id; p.tx = null; p.stayUntil = S.day + rf(20, 60); p.restUntil = p.stayUntil; return; }
+  return setGoal(p, 'return', home);
+}
+
+/* konaklanabilir yer: kral başkentte, lord kendi şehrinde/kalesinde,
+   sadece köyü olan lord köyünün bağlı olduğu kalede ağırlanır */
+function lodgingFor(p, lord, fac) {
+  const ok = s => s && s.faction === lord.faction && s.type !== 'village' && !s.besiegedBy;
+  if (lord.isKing) { const c = capitalOf(fac.id); if (ok(c)) return c; }
+  const fiefs = lord.fiefs.map(x => S.settlements[x]).filter(Boolean);
+  const own = fiefs.find(s => ok(s) && s.type === 'town') || fiefs.find(ok);
+  if (own) return own;
+  const parent = fiefs.map(s => S.settlements[s.parentId]).find(ok);
+  if (parent) return parent;
+  const pool = ownSettlements(lord.faction).filter(ok);
+  if (!pool.length) return null;
+  /* topraksızlar hanedanının ya da kralının kapısına gider */
+  const kin = pool.filter(s => {
+    const l2 = s.lordId ? S.lords[s.lordId] : null;
+    return l2 && ((lord.houseId && l2.houseId === lord.houseId) || l2.isKing);
+  });
+  const list = kin.length && rnd() < 0.6 ? kin : pool;
+  return list.reduce((a, b) => dist2(a.x, a.y, p.x, p.y) < dist2(b.x, b.y, p.x, p.y) ? a : b);
 }
 
 function homeSettlement(lord) {
@@ -2896,7 +3013,38 @@ function seaRaidTick() {
     addLog(`⛵ ${fac.name} ${fmt(size)} kişilik bir akıncı filosu denize açtı.`, 'war', 1);
   });
 }
+/* ordu yerleşime girer: haritadan kalkar, garnizona katılır */
+function enterSettlement(p, s) {
+  if (!p || !s || s.type === 'village' || s.besiegedBy) return;
+  p.inside = s.id; p.goal = 'garrison'; p.targetId = s.id;
+  p.tx = null; p.ty = null; p.x = s.x; p.y = s.y;
+  const lord = p.lordId ? S.lords[p.lordId] : null;
+  const home = lord && lord.fiefs.includes(s.id);
+  p.stayUntil = S.day + (home ? rf(20, 60) : rf(4, 14));
+  p.restUntil = p.stayUntil;
+}
+function leaveSettlement(p) {
+  if (!p || !p.inside) return;
+  const s = S.settlements[p.inside];
+  if (s) { p.x = s.x + Math.cos(rnd() * 6.28) * 16 * MAP_SCALE; p.y = s.y + Math.sin(rnd() * 6.28) * 16 * MAP_SCALE; }
+  p.inside = null; p.stayUntil = 0;
+}
+function partiesInside(sid) {
+  return S.order.parties.map(i => S.parties[i]).filter(p => p && p.inside === sid);
+}
+/* içeridekileri dışarı çıkar (kuşatma, el değiştirme, yıkım) */
+function evictInside(s, why) {
+  if (!s) return;
+  partiesInside(s.id).forEach(p => {
+    leaveSettlement(p);
+    p.musterKey = null;
+    if (why === 'siege' && p.faction === s.faction) {
+      p.goal = 'defend'; p.targetId = s.id; p.tx = s.x; p.ty = s.y; p.morale = clamp(p.morale + 6, 0, 100);
+    } else { p.goal = 'idle'; p.tx = null; }
+  });
+}
 function setGoal(p, goal, target) {
+  if (p.inside) leaveSettlement(p);
   p.goal = goal; p.targetId = target ? target.id : null;
   p.tx = target ? target.x : null; p.ty = target ? target.y : null;
 }
@@ -2913,10 +3061,10 @@ function arriveAtTarget(p) {
     startSiege(p, t); return;
   }
   if (p.goal === 'sail') { removeParty(p.id); return; }
-  if (p.goal === 'return' || p.goal === 'patrol' || p.goal === 'defend') {
-    if (t.faction === p.faction) {
-      p.restUntil = S.day + (p.goal === 'defend' ? 1 : rf(2, 5));
-      p.goal = 'garrison'; p.tx = null;
+  if (p.goal === 'return' || p.goal === 'patrol' || p.goal === 'escort') {
+    /* kuşatma altındaki yere kapanılmaz — surların önünde savaşılır */
+    if (t.faction === p.faction && !t.besiegedBy && t.type !== 'village') {
+      enterSettlement(p, t);
       return;
     }
   }
@@ -2948,6 +3096,7 @@ function checkEncounters() {
         : (a.faction === 'bandit' || b.faction === 'bandit' || atWar(a.faction, b.faction));
       if (!hostile) continue;
       if (a.cooldown > 0 || b.cooldown > 0) continue;
+      if (a.inside || b.inside) continue;
       if (dist2(a.x, a.y, b.x, b.y) > ENCOUNTER_R) continue;
       const pa = partyPower(a), pb = partyPower(b);
       const weak = pa < pb ? a : b, strong = pa < pb ? b : a;
@@ -3197,6 +3346,10 @@ function startSiege(p, s) {
   p.besieging = s.id; p.goal = 'siege'; p.tx = null;
   p.x = s.x + rf(-10, 10) * MAP_SCALE; p.y = s.y + rf(-10, 10) * MAP_SCALE;
   if (!s.besiegedBy) {
+    /* içeride konaklayanlar kapıdan çıkar, surların önünde dizilir */
+    const out = partiesInside(s.id);
+    evictInside(s, 'siege');
+    if (out.length) addLog(`🛡 ${s.name} kapıları açıldı — ${out.map(q => partyLabel(q)).join(', ')} savunmaya çıktı.`, 'siege', 1);
     s.besiegedBy = p.id; s.siegeProgress = 0;
     S.stats.sieges++;
     addLog(`🏰 ${partyLabel(p)} ${fmt(stackCount(p.troops))} askerle ${s.name} önüne geldi — kuşatma başladı (garnizon ${fmt(settlementDefCount(s))}).`, 'siege', 2);
@@ -3304,6 +3457,7 @@ function captureSettlement(s, cap) {
 
 function changeOwner(s, newF, lord) {
   const old = s.faction;
+  evictInside(s, 'owner');
   s.faction = newF; s.lastOwnerChange = S.day;
   if (s.lordId && S.lords[s.lordId]) S.lords[s.lordId].fiefs = S.lords[s.lordId].fiefs.filter(f => f !== s.id);
   s.lordId = null;
@@ -3386,7 +3540,7 @@ function dailyTick() {
     mine.forEach(s => { inc += settlementIncome(s); });
     inc *= S.opts.economy;
     let wages = 0;
-    S.order.parties.forEach(i => { const p = S.parties[i]; if (p && p.faction === fac.id) wages += stackWage(p.troops) * 0.3; });
+    S.order.parties.forEach(i => { const p = S.parties[i]; if (p && p.faction === fac.id) wages += stackWage(p.troops) * (p.inside ? 0.12 : 0.3); });
     mine.forEach(s => { wages += stackWage(s.garrison) * 0.2; });
     S.order.lords.forEach(i => {
       const l = S.lords[i];
@@ -3477,13 +3631,13 @@ function dailyTick() {
       const mult = s.raidedUntil > S.day ? 0.2 : 1;
       return a + (s.type === 'town' ? 200 : s.type === 'castle' ? 70 : 40) * (s.prosperity / 70) * mult;
     }, 0));
-    lord.gold -= Math.round(stackWage(p.troops) * 0.3);
+    lord.gold -= Math.round(stackWage(p.troops) * (p.inside ? 0.12 : 0.3));
     if (lord.gold > 6000 && S.factions[lord.faction]) {
       const tax = Math.round((lord.gold - 6000) * 0.12);
       lord.gold -= tax; S.factions[lord.faction].treasury += tax;
     }
     if (lord.gold < 0) { lord.gold = 0; if (rnd() < 0.3) stackRemove(p.troops, Math.max(1, cnt * 0.03)); }
-    if (p.goal === 'idle' || (p.tx == null && !p.besieging && p.goal !== 'garrison')) decideGoal(p);
+    if (!p.inside && (p.goal === 'idle' || (p.tx == null && !p.besieging && p.goal !== 'garrison'))) decideGoal(p);
   });
 
   S.order.lords.forEach(id => {
@@ -3521,6 +3675,7 @@ function dailyTick() {
   buildTick();
   historyTick(day);
   if (day % 4 === 0) warPlanTick();
+  musterTick(day);
   if (day % 7 === 0) relationsTick();
   if (day % 12 === 0) pactTick();
   if (day % 15 === 0) { rebellionTick(); collapseTinyRebels(); }
@@ -3591,17 +3746,18 @@ function diplomacyTick() {
     if (en.length) {
       const t = pickCampaignTarget(fac.id, en);
       fac.target = t ? t.id : null;
-      /* mareşal seç: kral sahadaysa kral, değilse en şöhretli lord */
-      const cands = S.order.lords.map(i => S.lords[i])
-        .filter(l => l.faction === fac.id && l.state === 'active' && l.partyId);
-      if (cands.length) {
-        cands.sort((a, b) => (b.isKing ? 500 : 0) + b.renown - ((a.isKing ? 500 : 0) + a.renown));
-        if (fac.marshalId !== cands[0].id) {
-          fac.marshalId = cands[0].id;
-          if (rnd() < 0.5) addLog(`${cands[0].title} ${cands[0].name}, ${fac.name} ordularının mareşali oldu.`, '', 1);
-        }
-      } else fac.marshalId = null;
-    } else { fac.target = null; fac.marshalId = null; }
+      /* mareşal artık atanmaz — lordlar seçer (electionTick). sadece geçersizi düşür */
+      const m = fac.marshalId ? S.lords[fac.marshalId] : null;
+      if (m && (m.state === 'dead' || m.state === 'exile' || m.faction !== fac.id)) fac.marshalId = null;
+    } else {
+      fac.target = null;
+      /* barışta mareşallik görevi biter */
+      if (fac.marshalId) {
+        const m = S.lords[fac.marshalId];
+        if (m && rnd() < 0.5) addLog(`⚔ ${lordShort(m)}, barışla birlikte ${fac.name} mareşalliğini bıraktı.`, '', 0);
+        fac.marshalId = null;
+      }
+    }
   });
   uiDirty.kra = true;
 }
@@ -4047,6 +4203,7 @@ function threatAt(s, faction) {
   S.order.parties.forEach(i => {
     const p = S.parties[i];
     if (!p || p.faction === faction || p.type === 'bandit') return;
+    if (p.inside) return;                     // surların ardındaki ordu tehdit değildir
     if (!atWar(p.faction, faction)) return;
     const d = dist2(p.x, p.y, s.x, s.y);
     if (d < 200) t += partyPower(p) * (1 - d / 200);
@@ -4061,7 +4218,9 @@ function warPlanTick() {
     const king = fac.kingId ? S.lords[fac.kingId] : null;
     const skill = ((king ? king.skillStrategy || 4 : 4) / 10) * S.opts.aiSkill;
     const my = factionStrength(fac.id);
-    const foe = enemies.reduce((a, e) => a + factionStrength(e), 0);
+    /* en büyük düşman belirleyici; diğerleri yarım sayılır */
+    const foes = enemies.map(e => factionStrength(e)).sort((a, b) => b - a);
+    const foe = (foes[0] || 0) + foes.slice(1).reduce((a, v) => a + v, 0) * 0.5;
 
     /* tehdit altındaki kendi yerleşimleri */
     const mine = ownSettlements(fac.id).filter(s => s.type !== 'village');
@@ -4103,6 +4262,109 @@ function warPlanTick() {
     const target = keep ? S.settlements[fac.warPlan.settlementId] : cands[0].s;
     fac.warPlan = { kind: 'attack', settlementId: target.id, since: keep ? fac.warPlan.since : S.day };
     fac.target = target.id;
+  });
+}
+
+/* =====================  SEFERBERLİK  =====================
+   Sefer ordusunu kral değil mareşal toplar. Seferberlik yoksa
+   lordlar tımarlarında oturur, ordular yollara dökülmez.       */
+function musterLeader(fac) {
+  const m = fac.marshalId ? S.lords[fac.marshalId] : null;
+  if (m && m.state === 'active' && m.faction === fac.id) return m;
+  return null;
+}
+
+function startMuster(fac, leader, grand, reason) {
+  if (!fac || fac.muster && fac.muster.active) return;
+  const dur = grand ? ri(75, 130) : ri(45, 85);
+  fac.muster = {
+    active: true, since: Math.round(S.day * 100) / 100, until: S.day + dur,
+    leaderId: leader ? leader.id : null, grand: !!grand, reason: reason || '',
+    targetId: fac.warPlan && fac.warPlan.kind === 'attack' ? fac.warPlan.settlementId : null
+  };
+  /* çağrı: içerideki lordlar toplanma için yola çıkar */
+  S.order.parties.forEach(i => {
+    const p = S.parties[i];
+    if (!p || p.faction !== fac.id || p.type === 'caravan') return;
+    p.musterKey = null; p.answersMuster = null;
+    p.stayUntil = S.day + rf(0, 7);              // toplanma gecikmesi
+    if (!p.besieging && p.goal === 'garrison') { p.goal = 'idle'; p.tx = null; }
+  });
+  const who = leader ? `Mareşal ${lordShort(leader)}` : `${fac.name} tahtı`;
+  const t = fac.muster.targetId ? S.settlements[fac.muster.targetId] : null;
+  S.stats.musters = (S.stats.musters || 0) + 1;
+  addLog(`📯 ${who} ${grand ? 'genel seferberlik' : 'seferberlik'} ilan etti — ${fac.name} lordları sancak altına çağrıldı${t ? ' · hedef: ' + t.name : ''}.`, 'war', 2);
+  if (leader) {
+    const king = fac.kingId ? S.lords[fac.kingId] : null;
+    if (king && king.id !== leader.id && rnd() < 0.5) talk('muster', { a: leader, b: king, f: fac.id, x: t ? t.name : 'sınır boyu' });
+  }
+  uiDirty.kra = uiDirty.sel = true;
+}
+
+function endMuster(fac, why) {
+  if (!fac || !fac.muster || !fac.muster.active) return;
+  fac.muster.active = false;
+  fac.muster.endedAt = S.day;
+  fac.musterCooldown = S.day + ri(20, 55);
+  S.order.parties.forEach(i => {
+    const p = S.parties[i];
+    if (!p || p.faction !== fac.id || p.type === 'caravan') return;
+    p.musterKey = null; p.answersMuster = null;
+    if (p.besieging) return;                     // kuşatmayı bırakmaz
+    if (p.goal !== 'garrison') { p.goal = 'idle'; p.tx = null; }
+  });
+  addLog(`🏳 ${fac.name} seferberliği dağıldı (${why}). Lordlar tımarlarına döndü.`, '', 1);
+  uiDirty.kra = uiDirty.sel = true;
+}
+
+function musterTick(day) {
+  Object.values(S.factions).forEach(fac => {
+    if (fac.isBandit || !fac.alive) return;
+    const enemies = enemyFactions(fac.id);
+    const mine = ownSettlements(fac.id);
+    const besieged = mine.filter(s => s.besiegedBy);
+    const cap = capitalOf(fac.id);
+    const crisis = besieged.length > 0 || (cap && cap.besiegedBy);
+    const m = fac.muster;
+
+    if (m && m.active) {
+      const leader = m.leaderId ? S.lords[m.leaderId] : null;
+      let why = null;
+      if (!enemies.length) why = 'savaş sona erdi';
+      else if (leader && leader.state !== 'active' && !crisis) why = 'mareşal sahada değil';
+      else if (S.day >= m.until && !crisis) why = 'sefer mevsimi kapandı';
+      else if (fac.treasury < 150 && !crisis && S.day > m.since + 45) why = 'hazine tükendi';
+      if (why) endMuster(fac, why);
+      else if (crisis) { m.grand = true; m.until = Math.max(m.until, S.day + 30); }
+      return;
+    }
+    if (!enemies.length) return;
+
+    /* kuşatma altındaysak mareşal beklenmez: taht genel seferberlik ilan eder */
+    if (crisis) { startMuster(fac, musterLeader(fac) || (fac.kingId ? S.lords[fac.kingId] : null), true, 'kuşatma'); return; }
+    if (day % 5 !== 0) return;
+    if (S.day < (fac.musterCooldown || 0)) return;
+
+    const leader = musterLeader(fac);
+    if (!leader) return;                          // mareşalsiz krallık sefere çıkmaz
+
+    const my = factionStrength(fac.id);
+    /* en büyük düşman belirleyici; diğerleri yarım sayılır */
+    const foes = enemies.map(e => factionStrength(e)).sort((a, b) => b - a);
+    const foe = (foes[0] || 0) + foes.slice(1).reduce((a, v) => a + v, 0) * 0.5;
+    const pers = PERSONALITIES.find(x => x.id === leader.personality) || PERSONALITIES[0];
+    const cmd = ((leader.skillTactics || 3) + (leader.skillStrategy || 3)) / 20;
+    const weary = enemies.reduce((a, e) => a + (fac.warWeariness[e] || 0), 0) / 100;
+    const winter = calendar(S.day).season === 'Kış';
+    let chance = 0.22 + cmd * 0.55 + (pers.aggr - 1) * 0.3 + clamp(my / Math.max(1, foe) - 1, -0.35, 0.35);
+    chance -= weary * 0.25;
+    if (winter) chance *= 0.4;
+    if (fac.stance === 'defend') chance *= 0.6;
+    if (!fac.warPlan) chance *= 0.55;
+    if (fac.treasury < 2000) chance *= 0.7;       // boş hazine sefer iştahını kırar
+    if (rnd() < clamp(chance * S.opts.aggression * S.opts.aiSkill, 0.01, 0.7)) {
+      startMuster(fac, leader, false, 'sefer');
+    }
   });
 }
 
@@ -4611,6 +4873,13 @@ function foreignClaimCheck(faction, deadKing) {
 }
 
 /* =====================  SEÇİMLER  ===================== */
+/* mareşal adaylığında belirleyici olan: görmüş geçirmiş olmak */
+function warExperience(l) {
+  if (!l) return 0;
+  return (l.battlesWon || 0) * 3.2 + (l.battlesLost || 0) * 1.1 + (l.renown || 0) / 55
+    + (l.skillTactics || 0) + (l.skillStrategy || 0) + (l.isKing ? -6 : 0);
+}
+
 function electionCandidates(fac, kind, settlement) {
   const lords = S.order.lords.map(i => S.lords[i])
     .filter(l => l.faction === fac.id && l.state !== 'dead' && l.state !== 'exile');
@@ -4621,8 +4890,10 @@ function electionCandidates(fac, kind, settlement) {
     return (all.length >= 2 ? all : lords.filter(l => !l.isKing)).slice(0, 8);
   }
   if (kind === 'marshal') {
-    return lords.filter(l => isFieldLord(l) && l.state === 'active' && l.partyId)
-      .sort((a, b) => b.renown - a.renown).slice(0, 5);
+    const field = lords.filter(l => isFieldLord(l) && l.state === 'active' && l.partyId);
+    /* kral sefere çıkmaz: yeterli aday varsa aday listesine bile girmez */
+    const pool = field.filter(l => !l.isKing);
+    return (pool.length >= 2 ? pool : field).sort((a, b) => warExperience(b) - warExperience(a)).slice(0, 5);
   }
   /* tımar */
   return lords.filter(isFieldLord).map(l => ({ l, sc: fiefClaimScore(l, settlement, null) }))
@@ -4633,7 +4904,7 @@ function startElection(factionId, kind, opt) {
   opt = opt || {};
   const fac = S.factions[factionId];
   if (!fac || fac.isBandit || !fac.alive) return null;
-  if (S.elections.some(e => e.faction === factionId && e.stage !== 'done')) return null;
+  if (S.elections.some(e => e.faction === factionId && e.kind === kind && e.stage !== 'done')) return null;
   const settlement = opt.settlementId ? S.settlements[opt.settlementId] : null;
   const cands = electionCandidates(fac, kind, settlement);
   if (cands.length < 2) return null;
@@ -4703,7 +4974,13 @@ function voteScore(voter, cand, el) {
   const pers = PERSONALITIES.find(p => p.id === voter.personality) || PERSONALITIES[0];
   if (pers.id === 'custodian' || pers.id === 'upstanding') add(cand.relKing / 30, 'meşruiyete saygı');
   if (pers.greed > 1.1) add(cand.gold / 9000, 'cömertlik beklentisi');
-  if (el.kind === 'marshal') add((cand.skillTactics + cand.skillStrategy) / 3.2, 'komuta yeteneği');
+  if (el.kind === 'marshal') {
+    add((cand.skillTactics + cand.skillStrategy) / 3.6, 'komuta yeteneği');
+    add(clamp(((cand.battlesWon || 0) * 0.75 - (cand.battlesLost || 0) * 0.25), -2, 7), 'savaş tecrübesi');
+    if ((cand.battlesWon || 0) + (cand.battlesLost || 0) === 0) add(-1.6, 'sınanmamışlık');
+    if (cand.isKing) add(-2.4, 'kralın sefere çıkmaması');
+    if (cand.age && cand.age > 58) add(-1.1, 'yaş');
+  }
   const elec = el.electors.find(e => e.lordId === voter.id);
   if (elec && elec.pledged === cand.id) add(2.2, 'verilmiş söz');
   parts.sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
@@ -4755,7 +5032,12 @@ function resolveElection(el, forcedWinnerId) {
     if (runner) talk('victory', { a: wl, b: runner, f: fac.id, h: houseOf(wl) });
   } else if (el.kind === 'marshal') {
     fac.marshalId = wl.id;
-    addLog(`${kn.icon} ${fac.name} mareşalliğine ${lordShort(wl)} seçildi (%${el.tally[0].pct}).`, 'siege', 2);
+    wl.renown += 12;
+    const bw = wl.battlesWon || 0, bl = wl.battlesLost || 0;
+    addLog(`${kn.icon} ${fac.name} mareşalliğine ${lordShort(wl)} seçildi (%${el.tally[0].pct}` +
+      `${bw + bl ? `, ${bw}G/${bl}M savaş tecrübesi` : ', ilk seferi'}).`, 'siege', 2);
+    /* yeni mareşal seferberliği hemen düşünür */
+    fac.musterCooldown = Math.min(fac.musterCooldown || 0, S.day + 4);
   } else if (el.kind === 'fief') {
     const s = S.settlements[el.settlementId];
     if (s) {
@@ -4919,16 +5201,15 @@ function electionTick(day) {
     if (fac.isBandit || fac.isBanner || !fac.alive) return;
     const vacant = ownSettlements(fac.id).filter(s => s.type !== 'village' && !s.lordId);
     if (!vacant.length) return;
-    if (S.elections.some(e => e.faction === fac.id && e.stage !== 'done')) return;
     if (rnd() < 0.5) startElection(fac.id, 'fief', { settlementId: vacant[0].id });
   });
-  /* mareşal seçimi: savaş varsa ve mareşal yoksa */
+  /* mareşal seçimi: savaş varsa ve mareşal yoksa — sefer bunsuz açılmaz */
   Object.values(S.factions).forEach(fac => {
     if (fac.isBandit || fac.isBanner || !fac.alive) return;
     if (!enemyFactions(fac.id).length) return;
     if (fac.marshalId && S.lords[fac.marshalId] && S.lords[fac.marshalId].state === 'active') return;
-    if (S.elections.some(e => e.faction === fac.id && e.stage !== 'done')) return;
-    if (rnd() < 0.3) startElection(fac.id, 'marshal', {});
+    const urgent = ownSettlements(fac.id).some(s => s.besiegedBy);
+    if (rnd() < (urgent ? 0.95 : 0.65)) startElection(fac.id, 'marshal', urgent ? { instant: true } : {});
   });
 }
 
@@ -5164,6 +5445,14 @@ function stateLabel(l) {
 }
 function goalLabel(p) {
   if (p.besieging) { const s = S.settlements[p.besieging]; return `${s ? s.name : '?'} kuşatmasında`; }
+  if (p.inside) {
+    const s = S.settlements[p.inside];
+    const lord = p.lordId ? S.lords[p.lordId] : null;
+    if (!s) return 'Konaklıyor';
+    const own = lord && lord.fiefs.includes(s.id);
+    const cap = lord && lord.isKing && S.factions[lord.faction] && S.factions[lord.faction].capital === s.id;
+    return `${cap ? 'Sarayında' : own ? 'Tımarında konaklıyor' : 'Konuk olarak konaklıyor'} — ${s.name}`;
+  }
   const t = p.targetId ? S.settlements[p.targetId] : null;
   if (p.goal === 'follow') {
     const lead = S.parties[p.targetId];
@@ -5171,7 +5460,8 @@ function goalLabel(p) {
   }
   const m = {
     patrol:'Devriyede', raid:'Yağmaya gidiyor', siege:'Kuşatmaya gidiyor', defend:'Savunmaya koşuyor',
-    return:'Tımarına dönüyor', garrison:'Konaklıyor', flee:'Çekiliyor', roam:'Dolaşıyor', idle:'Bekliyor'
+    return:'Tımarına dönüyor', garrison:'Konaklıyor', flee:'Çekiliyor', roam:'Dolaşıyor', idle:'Bekliyor',
+    escort:'Kervan koruyor', hunt:'Haydut avında'
   };
   return (m[p.goal] || p.goal) + (t ? ` — ${t.name}` : '');
 }
@@ -5463,7 +5753,8 @@ function viewSettlement(s) {
   if (!s) return '<div class="card">Yerleşim bulunamadı.</div>';
   const owner = s.lordId ? S.lords[s.lordId] : null;
   const kids = S.order.settlements.map(i => S.settlements[i]).filter(v => v.parentId === s.id);
-  const nearby = S.order.parties.map(i => S.parties[i]).filter(p => p && dist2(p.x, p.y, s.x, s.y) < 50);
+  const lodged = partiesInside(s.id);
+  const nearby = S.order.parties.map(i => S.parties[i]).filter(p => p && !p.inside && dist2(p.x, p.y, s.x, s.y) < 50);
   const hist = S.battles.filter(b => b.placeId === s.id).slice(0, 3);
   const bp = s.besiegedBy ? S.parties[s.besiegedBy] : null;
   return `
@@ -5508,6 +5799,14 @@ function viewSettlement(s) {
       <button class="btn sm danger" data-act="stlDelete" data-id="${s.id}">Sil</button>
     </div>
   </div>
+  ${lodged.length ? `<div class="card"><h3>İçeride konaklayanlar
+    <span class="sub">${lodged.length} ordu · ${fmt(lodged.reduce((a, p) => a + stackCount(p.troops), 0))} asker</span></h3><div class="list">
+    ${lodged.map(p => { const l = p.lordId ? S.lords[p.lordId] : null;
+      const own = l && l.fiefs.includes(s.id);
+      return `<div class="item" data-act="${l ? 'selLord' : 'selParty'}" data-id="${l ? l.id : p.id}">${facDot(p.faction)}
+      <div class="grow"><div class="t">${l && l.isKing ? '👑 ' : ''}${esc(partyLabel(p))}</div>
+      <div class="s">${own ? 'kendi tımarında' : 'misafir'}${p.stayUntil > S.day ? ` · ${Math.ceil(p.stayUntil - S.day)} gün daha` : ' · yola çıkmak üzere'}</div></div>
+      <div class="num small">${fmt(stackCount(p.troops))}</div></div>`; }).join('')}</div></div>` : ''}
   ${s.type === 'village' && s.produce ? `<div class="card"><h3>Üretim</h3>
     <div class="row" style="gap:8px"><span class="tag gold">${esc(GOOD_BY_ID[s.produce] ? GOOD_BY_ID[s.produce].name : s.produce)}</span>
     <span class="small muted">bu köy ${esc(GOOD_BY_ID[s.produce] ? GOOD_BY_ID[s.produce].name.toLocaleLowerCase('tr') : '')} üretir; yakın şehirlerde fiyatı düşürür</span></div></div>` : ''}
@@ -5572,7 +5871,16 @@ function viewFaction(f) {
       <tr><td>Hüküm süren hanedan</td><td>${f.rulingHouseId && S.houses[f.rulingHouseId]
         ? `<span class="tag" data-act="selHouse" data-id="${f.rulingHouseId}" style="cursor:pointer;border-color:${houseColor(f.rulingHouseId)};color:${houseColor(f.rulingHouseId)}">${esc(houseName(f.rulingHouseId))}</span>` : '—'}</td></tr>
       <tr><td>Prestij</td><td class="n">${Math.round(f.prestige || 0)}</td></tr>
-      <tr><td>Mareşal</td><td>${marshal ? `<span class="tag" data-act="selLord" data-id="${marshal.id}" style="cursor:pointer">${esc(marshal.title)} ${esc(marshal.name)}</span>` : '—'}</td></tr>
+      <tr><td>Mareşal</td><td>${marshal ? `<span class="tag" data-act="selLord" data-id="${marshal.id}" style="cursor:pointer">${esc(marshal.title)} ${esc(marshal.name)}</span>
+        <span class="small muted">${marshal.battlesWon || 0}G/${marshal.battlesLost || 0}M</span>` : '<span class="muted">seçilmedi</span>'}</td></tr>
+      <tr><td>Seferberlik</td><td>${(() => {
+        const m = f.muster;
+        if (!m || !m.active) return `<span class="tag peace">Ordular dağınık</span>${f.musterCooldown > S.day ? ` <span class="small muted">${Math.ceil(f.musterCooldown - S.day)} gün dinleniyor</span>` : ''}`;
+        const ans = S.order.parties.map(i => S.parties[i]).filter(p => p && p.faction === f.id && p.lordId && p.answersMuster).length;
+        const all = S.order.parties.map(i => S.parties[i]).filter(p => p && p.faction === f.id && p.lordId).length;
+        return `<span class="tag war">📯 ${m.grand ? 'Genel seferberlik' : 'Seferberlik'}</span>
+          <span class="small muted">${ans}/${all} lord sancak altında · ${Math.max(0, Math.ceil(m.until - S.day))} gün</span>`;
+      })()}</td></tr>
       <tr><td>Savaş planı</td><td>${f.warPlan && S.settlements[f.warPlan.settlementId]
         ? `<span class="tag ${f.warPlan.kind === 'defend' ? 'war' : 'gold'}" data-act="selStl" data-id="${f.warPlan.settlementId}" style="cursor:pointer">${f.warPlan.kind === 'defend' ? '🛡 Savun' : '⚔ Al'}: ${esc(S.settlements[f.warPlan.settlementId].name)}</span>`
         : '<span class="muted">—</span>'}</td></tr>
@@ -5586,6 +5894,8 @@ function viewFaction(f) {
       <button class="btn sm" data-act="facFocus" data-id="${f.id}">Haritada göster</button>
       <button class="btn sm" data-act="facTreasury" data-id="${f.id}">+50.000 dinar</button>
       <button class="btn sm" data-act="gfArmyFor" data-id="${f.id}">Orduları tamamla</button>
+      <button class="btn sm" data-act="toggleMuster" data-id="${f.id}">${f.muster && f.muster.active ? '🏳 Seferberliği dağıt' : '📯 Seferberlik ilan et'}</button>
+      <button class="btn sm" data-act="electMarshal" data-id="${f.id}">⚔ Mareşal seç</button>
     </div>
   </div>
   ${(() => { const els = S.elections.filter(e => e.faction === f.id).slice(0, 3);
@@ -5744,7 +6054,23 @@ function bindKraInputs() {
 function viewWar() {
   const filters = [['all','Hepsi'],['war','Savaş'],['siege','Kuşatma'],['peace','Diplomasi']];
   const list = S.log.filter(l => ui.logFilter === 'all' ? true : l.k === ui.logFilter);
+  const armies = S.order.parties.map(i => S.parties[i]).filter(p => p && p.lordId);
+  const facs = Object.values(S.factions).filter(f => !f.isBandit && f.alive && enemyFactions(f.id).length);
   return `
+  <div class="card">
+    <h3>Seferberlik <span class="sub">${armies.filter(p => p.inside).length} ordu surlar ardında · ${armies.filter(p => !p.inside).length} ordu sahada</span></h3>
+    ${facs.length ? `<div class="list">${facs.map(f => {
+      const m = f.muster, on = !!(m && m.active);
+      const mr = f.marshalId ? S.lords[f.marshalId] : null;
+      const mine = armies.filter(p => p.faction === f.id);
+      const out = mine.filter(p => !p.inside).length;
+      return `<div class="item" data-act="selFaction" data-id="${f.id}"><span class="dot" style="background:${f.color}"></span>
+        <div class="grow"><div class="t">${esc(f.name)} ${on ? `<span class="tag war">📯 ${m.grand ? 'genel seferberlik' : 'seferberlik'}</span>` : '<span class="tag peace">ordular dağınık</span>'}</div>
+        <div class="s">${mr ? 'Mareşal ' + esc(mr.name) + ` · ${mr.battlesWon || 0}G/${mr.battlesLost || 0}M` : 'mareşal seçilmedi'}
+          · ${esc(Object.keys(S.factions).filter(o => atWar(f.id, o)).map(o => facShort(o)).join(', '))} ile savaşta</div></div>
+        <div class="num small">${out}/${mine.length}</div></div>`;
+    }).join('')}</div>` : '<div class="small muted">Krallıklar barış içinde; lordlar tımarlarında.</div>'}
+  </div>
   <div class="card">
     <h3>Savaş defteri <span class="sub">${S.battles.length} kayıt · toplam ${fmt(S.stats.battles)} çarpışma</span></h3>
     ${S.battles.length ? `<div class="list">${S.battles.slice(0, 25).map(b => battleItem(b)).join('')}</div>`
@@ -6069,6 +6395,26 @@ function renderBox() {
         .map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}</optgroup>
     </select></label>
     <div class="btnrow"><button class="btn sm primary" data-act="fireEvent">Olayı çalıştır</button></div>
+  </div>
+
+  <div class="card">
+    <h3>Seferberlik <span class="sub">orduları sen topla, sen dağıt</span></h3>
+    <div class="small muted" style="margin-bottom:8px">Seferberlik yoksa lordlar tımarlarında oturur; sefere ancak mareşalin çağrısıyla çıkarlar.</div>
+    <div class="list">
+      ${live.filter(f => f.alive && !f.isBanner).map(f => {
+        const m = f.muster, on = !!(m && m.active);
+        const mr = f.marshalId ? S.lords[f.marshalId] : null;
+        const wars = Object.keys(S.factions).filter(o => atWar(f.id, o)).length;
+        return `<div class="item"><span class="dot" style="background:${f.color}"></span>
+          <div class="grow"><div class="t">${esc(f.name)}</div>
+            <div class="s">${mr ? 'Mareşal: ' + esc(mr.name) + ` (${mr.battlesWon || 0}G/${mr.battlesLost || 0}M)` : 'mareşal yok'}
+              · ${wars ? wars + ' savaş' : 'barış'}${on ? ` · ${m.grand ? 'genel seferberlik' : 'seferberlik'} (${Math.max(0, Math.ceil(m.until - S.day))} gün)` : ''}</div></div>
+          <div class="btnrow" style="flex:none">
+            <button class="btn sm ${on ? 'danger' : 'primary'}" data-act="toggleMuster" data-id="${f.id}">${on ? 'Dağıt' : 'İlan et'}</button>
+            <button class="btn sm" data-act="electMarshal" data-id="${f.id}">Mareşal seç</button>
+          </div></div>`;
+      }).join('')}
+    </div>
   </div>
 
   <div class="card">
@@ -6570,6 +6916,7 @@ function createSettlement(opt, x, y, silent) {
 
 function deleteSettlement(id) {
   const s = S.settlements[id]; if (!s) return;
+  evictInside(s, 'delete');
   const kids = S.order.settlements.map(i => S.settlements[i]).filter(v => v.parentId === id);
   kids.forEach(v => { v.parentId = null; });
   if (s.lordId && S.lords[s.lordId]) S.lords[s.lordId].fiefs = S.lords[s.lordId].fiefs.filter(f => f !== id);
@@ -6746,6 +7093,7 @@ const ACTIONS = {
   focus: () => focusSel(),
   selStl: el2 => select({ type: 'settlement', id: el2.dataset.id }),
   selLord: el2 => select({ type: 'lord', id: el2.dataset.id }),
+  selFaction: el2 => { select({ type: 'faction', id: el2.dataset.id }); setTab('sel'); },
   selParty: el2 => select({ type: 'party', id: el2.dataset.id }),
   selFac: el2 => { S.sel = { type: 'faction', id: el2.dataset.id }; uiDirty.sel = true; setTab('sel'); },
   searchPick: el2 => { dlg.close(); const t = el2.dataset.t;
@@ -6795,12 +7143,13 @@ const ACTIONS = {
     if (!p) { toast('Önce ordu kur'); return; }
     startPlace(`${l.name} nereye gitsin?`, w => {
       if (p.besieging) liftSiege(p);
+      if (p.inside) leaveSettlement(p);
       p.x = w.x; p.y = w.y; p.goal = 'idle'; p.tx = null; requestDraw(); renderUI(true); toast('Taşındı');
     });
   },
   partyMove: el2 => {
     const p = S.parties[el2.dataset.id]; if (!p) return;
-    startPlace('Ordu nereye gitsin?', w => { if (p.besieging) liftSiege(p); p.x = w.x; p.y = w.y; p.goal = 'idle'; p.tx = null; requestDraw(); renderUI(true); });
+    startPlace('Ordu nereye gitsin?', w => { if (p.besieging) liftSiege(p); if (p.inside) leaveSettlement(p); p.x = w.x; p.y = w.y; p.goal = 'idle'; p.tx = null; requestDraw(); renderUI(true); });
   },
   cloneLord: el2 => newLordDialog(el2.dataset.id),
   lordKill: el2 => {
@@ -7318,6 +7667,26 @@ Object.assign(ACTIONS, {
     dlg.close(); toast(el.forcedAftermath ? 'Sonuç ayarlandı' : 'Kadere bırakıldı');
     uiDirty.sel = uiDirty.kra = true; renderUI(true);
   },
+  toggleMuster: el2 => {
+    const f = S.factions[el2.dataset.id]; if (!f) return;
+    if (f.muster && f.muster.active) { endMuster(f, 'tahtın emriyle'); toast(`${f.name} seferberliği dağıtıldı`); }
+    else {
+      const leader = musterLeader(f) || (f.kingId ? S.lords[f.kingId] : null);
+      f.musterCooldown = 0;
+      startMuster(f, leader, false, 'dışarıdan müdahale');
+      toast(`${f.name} seferberlik ilan etti`);
+    }
+    uiDirty.sel = uiDirty.kra = true; renderUI(true);
+  },
+  electMarshal: el2 => {
+    const f = S.factions[el2.dataset.id]; if (!f) return;
+    const cur = S.elections.find(e => e.faction === f.id && e.stage !== 'done');
+    if (cur) { toast('Bu krallıkta zaten bir seçim sürüyor'); return; }
+    const el3 = startElection(f.id, 'marshal', { instant: true });
+    if (!el3) { toast('Sahada yeterli komutan yok'); return; }
+    setTab('sel'); uiDirty.sel = uiDirty.kra = true; renderUI(true);
+    openElectionResult(el3);
+  },
   newElection: () => {
     const live = Object.values(S.factions).filter(f => !f.isBandit && f.alive && !f.isBanner);
     openDlg('Seçim başlat', `
@@ -7512,7 +7881,7 @@ function restore(json) {
   if (!S.order.houses) S.order.houses = Object.keys(S.houses);
   if (!Object.keys(S.houses).length) buildHouses();
   S.opts = Object.assign(S.opts, d.opts || {});
-  S.stats = Object.assign({ battles: 0, sieges: 0, days: 0, built: 0, deaths: 0, elections: 0 }, d.stats || {});
+  S.stats = Object.assign({ battles: 0, sieges: 0, days: 0, built: 0, deaths: 0, elections: 0, musters: 0 }, d.stats || {});
   if (!S.roads.length) buildRoads();
   S.sel = null; S.alert = null;
   const nums = [].concat(S.order.parties, S.order.lords, S.order.settlements)
@@ -7740,6 +8109,7 @@ boot();
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   navigator.serviceWorker.register('warband-sw.js').catch(function () {});
 }
+
 </script>
 </body>
 </html>
