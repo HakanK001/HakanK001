@@ -73,3 +73,33 @@ yapamadigi icin bunu reddediyor ("islenenler uyumsuz"); orijinal dosyada
 ayni durumdaki satirlar `sub_int_lvar_from_int_lvar` gibi tipi ada gomulmus
 biciminde yazilmis. Adim degiskeni kaldirildi; SHIFT durumuna gore
 `3@ += 10` veya `3@ += 1` sabitleri kullaniliyor. Davranis ayni.
+
+## Harita renkleri hakkinda (onemli)
+
+Oyunun kendisi cete bolgesi rengini `CTheZones::FillZonesWithGangColours`
+(1.0 US: `0x572440`) icinde hesaplar ve bu fonksiyon **sadece uc ceteyi**
+harmanlar: Ballas, Grove, Vagos. Toplam sifirsa `RadarMode` 0 olur ve bolge
+haritaya hic cizilmez. Yani vanilya oyunda Rifa / Da Nang / Mafya / Triad /
+Aztecas bolgeleri ped olarak dogar ama haritada renksiz kalir.
+
+Bu bir script sinirlamasi degil, motor sinirlamasi -- SA'da bolge rengini
+veya RadarMode'u ayarlayan bir opcode yoktur.
+
+Cozum: **Extended Gang Wars** .asi eklentisi kurulu olmalidir. O eklenti bu
+fonksiyonu hook'layip sekiz cetenin tamamini harmana katiyor. Rockstar zaten
+sekiz cetenin de rengini `gaGangColors` tablosunda tanimlamis, sadece
+kullanmiyor:
+
+| Cete | RGB | |
+|---|---|---|
+| Ballas | 200, 0, 200 | mor |
+| Grove | 70, 200, 0 | yesil |
+| Vagos | 255, 200, 0 | sari |
+| Rifa | 0, 0, 200 | mavi |
+| Da Nang Boys | 255, 220, 190 | krem |
+| Mafya | 200, 200, 200 | gri |
+| Triadlar | 240, 140, 240 | acik pembe |
+| Aztecas | 0, 200, 255 | turkuaz |
+
+Bu script Extended Gang Wars'a **bagimli degildir**; eklenti olmadan da
+calisir, sadece uc ana cete disindakiler haritada renksiz gorunur.
