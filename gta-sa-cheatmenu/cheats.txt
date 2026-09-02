@@ -6285,18 +6285,20 @@ wait 150
 goto @GangZone_Loop
 
 :GangZone_Step
-5@ = 1
-if
-  is_key_pressed KeyCode.Shift
-goto_if_false @GangZone_ChkUp
-5@ = 10
-
-:GangZone_ChkUp
 if and
   is_key_pressed KeyCode.Up
   3@ < 100
 goto_if_false @GangZone_ChkDown
-3@ += 5@
+if
+  is_key_pressed KeyCode.Shift
+goto_if_false @GangZone_UpSlow
+3@ += 10
+goto @GangZone_UpClamp
+
+:GangZone_UpSlow
+3@ += 1
+
+:GangZone_UpClamp
 if
   3@ > 100
 goto_if_false @GangZone_SetUp
@@ -6310,7 +6312,16 @@ if and
   is_key_pressed KeyCode.Down
   3@ > 0
 goto_if_false @GangZone_ChkExit
-3@ -= 5@
+if
+  is_key_pressed KeyCode.Shift
+goto_if_false @GangZone_DownSlow
+3@ -= 10
+goto @GangZone_DownClamp
+
+:GangZone_DownSlow
+3@ -= 1
+
+:GangZone_DownClamp
 if
   3@ < 0
 goto_if_false @GangZone_SetDown

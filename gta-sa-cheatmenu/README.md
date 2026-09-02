@@ -65,3 +65,11 @@ Sanny'de `$` + rakam "su indeksteki global degisken" anlamina geldigi icin
 derleyici `$1` adini indeks sanip "Global variable 1 is out of range" hatasi
 veriyordu. Degisken `$CM_ZONE_NAME` olarak yeniden adlandirildi (ayni indeks,
 411). Bu kusur orijinal decompile ciktisinda da vardi.
+
+### 6. Ikinci derleme hatasi duzeltmesi
+Yogunluk adimi once `5@` degiskeninde tutuluyor ve `3@ += 5@` ile
+uygulaniyordu. Sanny degisken-degisken aritmetikte int/float ayrimini
+yapamadigi icin bunu reddediyor ("islenenler uyumsuz"); orijinal dosyada
+ayni durumdaki satirlar `sub_int_lvar_from_int_lvar` gibi tipi ada gomulmus
+biciminde yazilmis. Adim degiskeni kaldirildi; SHIFT durumuna gore
+`3@ += 10` veya `3@ += 1` sabitleri kullaniliyor. Davranis ayni.
