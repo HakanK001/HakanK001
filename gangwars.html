@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gang Territory Simulator — Los Santos</title>
+<style>
+/* ============================================================
+   GANG TERRITORY SIMULATOR
+   Tek dosya: HTML + CSS + Vanilla JS. Harici kütüphane yok.
+   ------------------------------------------------------------
+   CSS BÖLÜMÜ
+   - Değişkenler (çete renkleri, tema)
+   - Header / Harita / Panel / Log yerleşimi (CSS Grid + Flexbox)
+   - Responsive kırılma noktaları
+   ============================================================ */
+
+:root{
+  /* Tema renkleri — koyu, sokak/asfalt estetiği */
+  --bg:#0b0d0c;
+  --bg-2:#121614;
+  --bg-3:#181d1a;
+  --panel:#141917;
+  --panel-2:#1b211e;
+  --line:#2a322d;
+  --line-2:#3a453e;
+  --txt:#e6ece7;
+  --txt-dim:#8b978e;
+  --txt-mute:#5f6c64;
+
+  /* Çete renkleri */
+  --grove:#4caf50;
+  --grove-dark:#1d3b21;
+  --ballas:#9b4dff;
+  --ballas-dark:#2e1a4d;
+  --vagos:#ffc832;
+  --vagos-dark:#4a3a0c;
+  --aztecas:#25d0d8;
+  --aztecas-dark:#0d3d40;
+  --rifa:#3d7bff;
+  --rifa-dark:#152a52;
+  --neutral:#6f7a73;
+  --neutral-dark:#242927;
+
+  --danger:#ff4444;
+  --gold:#ffd166;
+  --ok:#5cd66b;
+
+  --font: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: "Consolas", "SF Mono", "Courier New", monospace;
+}
+
+*{box-sizing:border-box; margin:0; padding:0;}
+
+html,body{height:100%;}
+
+body{
+  background:
+    radial-gradient(1200px 600px at 50% -10%, #17201b 0%, transparent 60%),
+    repeating-linear-gradient(45deg, rgba(255,255,255,.012) 0 2px, transparent 2px 8px),
+    var(--bg);
+  color:var(--txt);
+  font-family:var(--font);
+  font-size:14px;
+  min-height:100%;
+  padding-bottom:24px;
+}
+
+button{font-family:inherit; cursor:pointer; border:none; outline:none;}
+button:disabled{cursor:not-allowed; opacity:.4;}
+
+/* ---------------- HEADER / İSTATİSTİK PANELİ ---------------- */
+.topbar{
+  position:sticky; top:0; z-index:50;
+  background:linear-gradient(180deg, #10150fee, #0c100ee6);
+  backdrop-filter:blur(8px);
+  border-bottom:2px solid var(--line);
+  box-shadow:0 6px 20px rgba(0,0,0,.55);
+}
+.topbar-inner{
+  max-width:1500px; margin:0 auto;
+  display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+  padding:8px 14px;
+}
+.brand{display:flex; align-items:center; gap:10px; margin-right:6px;}
+.brand-tag{
+  width:34px;height:34px;border-radius:8px;flex:0 0 auto;
+  background:linear-gradient(135deg,var(--grove),#0e2c12);
+  display:grid;place-items:center;
+  font-weight:900;font-size:15px;color:#04120a;
+  border:1px solid #2f6b35; box-shadow:0 0 14px rgba(76,175,80,.35);
+}
+.brand h1{
+  font-size:15px; letter-spacing:1.6px; text-transform:uppercase;
+  font-weight:800; line-height:1.15;
+}
+.brand h1 small{display:block; font-size:9.5px; letter-spacing:2.4px; color:var(--txt-mute); font-weight:600;}
+
+.stats{display:flex; flex-wrap:wrap; gap:8px; flex:1 1 auto; justify-content:center;}
+.stat{
+  background:linear-gradient(180deg,var(--panel-2),#10140f);
+  border:1px solid var(--line);
+  border-radius:8px; padding:5px 11px; min-width:104px;
+  display:flex; flex-direction:column; gap:1px;
+}
+.stat .k{font-size:9px; letter-spacing:1.3px; text-transform:uppercase; color:var(--txt-mute); font-weight:700;}
+.stat .v{font-size:15px; font-weight:800; letter-spacing:.4px; font-variant-numeric:tabular-nums;}
+.stat.money .v{color:var(--ok);}
+.stat.rep .v{color:var(--gold);}
+.stat.crew .v{color:#7fd0ff;}
+.stat.gun .v{color:#ff9a5c; font-size:13px;}
+.stat.clock .v{color:#cfd8d2; font-size:13px;}
+.stat .sub{font-size:9.5px; color:var(--txt-mute);}
+
+.topbar-actions{display:flex; gap:6px;}
+.tb-btn{
+  background:var(--panel-2); color:var(--txt-dim);
+  border:1px solid var(--line); border-radius:7px;
+  padding:7px 11px; font-size:11px; font-weight:700; letter-spacing:.6px;
+  transition:.15s;
+}
+.tb-btn:hover{color:#fff; border-color:var(--line-2); background:#232a26;}
+.tb-btn.danger:hover{color:#fff; background:#4a1414; border-color:#7a2020;}
+
+/* ---------------- ANA YERLEŞİM ---------------- */
+.layout{
+  max-width:1500px; margin:0 auto; padding:14px;
+  display:grid; gap:14px;
+  grid-template-columns: minmax(0,1fr) 340px;
+  grid-template-areas:
+    "map side"
+    "log side";
+}
+.map-wrap{grid-area:map;}
+.side{grid-area:side; display:flex; flex-direction:column; gap:14px;}
+.log-wrap{grid-area:log;}
+
+.card{
+  background:linear-gradient(180deg,var(--panel),#0f1311);
+  border:1px solid var(--line);
+  border-radius:12px;
+  overflow:hidden;
+}
+.card-head{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:9px 13px;
+  background:linear-gradient(180deg,#1c2320,#141917);
+  border-bottom:1px solid var(--line);
+}
+.card-head h2{
+  font-size:11.5px; letter-spacing:1.8px; text-transform:uppercase;
+  color:#cbd6cf; font-weight:800;
+}
+.card-head .hint{font-size:10px; color:var(--txt-mute); letter-spacing:.5px;}
+.card-body{padding:13px;}
+
+/* ---------------- HARİTA GRID ---------------- */
+.map-grid{
+  display:grid;
+  grid-template-columns:repeat(6, minmax(0,1fr));
+  gap:7px;
+}
+.cell{
+  position:relative;
+  aspect-ratio:4/3;
+  border-radius:9px;
+  border:1px solid rgba(255,255,255,.08);
+  background:var(--neutral-dark);
+  padding:6px 6px 5px;
+  display:flex; flex-direction:column; justify-content:space-between;
+  text-align:left;
+  color:var(--txt);
+  transition:transform .12s, box-shadow .15s, filter .15s;
+  overflow:hidden;
+  min-height:74px;
+}
+.cell:hover{transform:translateY(-2px); filter:brightness(1.18); z-index:2;}
+.cell::after{
+  content:""; position:absolute; inset:0;
+  background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(0,0,0,.35));
+  pointer-events:none;
+}
+.cell .c-name{
+  font-size:10px; font-weight:800; line-height:1.15; letter-spacing:.2px;
+  text-shadow:0 1px 3px rgba(0,0,0,.85);
+  position:relative; z-index:1;
+  overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
+}
+.cell .c-bottom{position:relative; z-index:1; display:flex; align-items:center; justify-content:space-between; gap:4px;}
+.cell .c-troops{
+  font-size:11px; font-weight:900; font-variant-numeric:tabular-nums;
+  text-shadow:0 1px 3px rgba(0,0,0,.9);
+}
+.cell .c-type{font-size:12px; line-height:1; opacity:.9;}
+.cell .c-def{
+  position:absolute; top:5px; right:5px; z-index:1;
+  font-size:8px; font-weight:900; letter-spacing:.5px;
+  background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.18);
+  border-radius:4px; padding:1px 3px;
+}
+.cell.selected{
+  outline:2px solid #fff; outline-offset:-2px;
+  box-shadow:0 0 0 3px rgba(255,255,255,.12), 0 8px 22px rgba(0,0,0,.6);
+}
+.cell.attackable{box-shadow:inset 0 0 0 2px rgba(255,70,70,.9), 0 0 12px rgba(255,40,40,.22);}
+.cell.attackable::before{
+  content:"⚔"; position:absolute; top:4px; left:5px; z-index:2;
+  font-size:10px; color:#fff; text-shadow:0 0 5px rgba(255,0,0,.95), 0 1px 2px #000;
+}
+.cell.attackable .c-name{padding-left:13px;}   /* ⚔ işareti bölge adının üstüne binmesin */
+.cell.mine{border-color:rgba(140,255,150,.35);}
+.cell.under-attack{animation:sirens .8s infinite alternate;}
+@keyframes sirens{
+  from{box-shadow:inset 0 0 0 3px rgba(255,40,40,.9), 0 0 18px rgba(255,0,0,.35);}
+  to{box-shadow:inset 0 0 0 3px rgba(255,180,0,.85), 0 0 18px rgba(255,140,0,.3);}
+}
+.cell .siren-badge{
+  position:absolute; inset:auto 0 0 0; z-index:2;
+  background:rgba(180,0,0,.85); color:#fff;
+  font-size:8.5px; font-weight:900; letter-spacing:.6px;
+  text-align:center; padding:1px 0;
+}
+
+/* Çete renk sınıfları */
+.g-grove{background:linear-gradient(160deg,var(--grove),var(--grove-dark));}
+.g-ballas{background:linear-gradient(160deg,var(--ballas),var(--ballas-dark));}
+.g-vagos{background:linear-gradient(160deg,var(--vagos),var(--vagos-dark)); color:#1a1602;}
+.g-vagos .c-name,.g-vagos .c-troops{text-shadow:0 1px 2px rgba(255,255,255,.25);}
+.g-aztecas{background:linear-gradient(160deg,var(--aztecas),var(--aztecas-dark)); color:#04201f;}
+.g-aztecas .c-name,.g-aztecas .c-troops{text-shadow:0 1px 2px rgba(255,255,255,.2);}
+.g-rifa{background:linear-gradient(160deg,var(--rifa),var(--rifa-dark));}
+.g-neutral{background:linear-gradient(160deg,#3a423d,var(--neutral-dark));}
+
+/* Harita altı lejant */
+.legend{display:flex; flex-wrap:wrap; gap:8px; margin-top:11px; padding-top:11px; border-top:1px dashed var(--line);}
+.lg{display:flex; align-items:center; gap:5px; font-size:10.5px; color:var(--txt-dim);}
+.lg i{width:11px;height:11px;border-radius:3px;display:inline-block;}
+.lg b{color:var(--txt); font-variant-numeric:tabular-nums;}
+
+/* ---------------- BÖLGE BİLGİ KARTI ---------------- */
+.terr-title{display:flex; align-items:flex-start; justify-content:space-between; gap:8px;}
+.terr-title h3{font-size:16px; font-weight:800; letter-spacing:.3px;}
+.owner-chip{
+  font-size:9.5px; font-weight:900; letter-spacing:1px; text-transform:uppercase;
+  padding:3px 8px; border-radius:20px; white-space:nowrap;
+  border:1px solid rgba(255,255,255,.2);
+}
+.terr-type{font-size:11px; color:var(--txt-dim); margin-top:2px;}
+.terr-grid{display:grid; grid-template-columns:1fr 1fr; gap:7px; margin:11px 0;}
+.tstat{background:var(--bg-3); border:1px solid var(--line); border-radius:8px; padding:6px 9px;}
+.tstat .k{font-size:9px; text-transform:uppercase; letter-spacing:1px; color:var(--txt-mute); font-weight:700;}
+.tstat .v{font-size:14px; font-weight:800; font-variant-numeric:tabular-nums;}
+.bar{height:5px; background:#0a0d0b; border-radius:4px; overflow:hidden; margin-top:5px;}
+.bar > i{display:block; height:100%; border-radius:4px; transition:width .3s;}
+
+.act-grid{display:grid; gap:7px;}
+.btn{
+  border-radius:8px; padding:10px 12px;
+  font-size:12px; font-weight:800; letter-spacing:.7px;
+  border:1px solid var(--line-2); background:var(--panel-2); color:var(--txt);
+  transition:.15s; text-align:center;
+}
+.btn:hover:not(:disabled){background:#28312c; transform:translateY(-1px);}
+.btn.attack{background:linear-gradient(180deg,#8c1f1f,#5d1111); border-color:#b03030; color:#ffe9e9;}
+.btn.attack:hover:not(:disabled){background:linear-gradient(180deg,#a52626,#701515);}
+.btn.good{background:linear-gradient(180deg,#1f6b2a,#12441b); border-color:#2f8c3c; color:#e7ffe9;}
+.btn.good:hover:not(:disabled){background:linear-gradient(180deg,#268035,#175523);}
+.btn.warn{background:linear-gradient(180deg,#8a6410,#553d08); border-color:#b3841c; color:#fff3d8;}
+.btn.warn:hover:not(:disabled){background:linear-gradient(180deg,#a3760f,#66490a);}
+.btn.sm{padding:7px 9px; font-size:11px;}
+.note{font-size:10.5px; color:var(--txt-mute); line-height:1.5; margin-top:8px;}
+.note b{color:var(--txt-dim);}
+
+/* ---------------- MAĞAZA ---------------- */
+.shop-row{
+  display:flex; align-items:center; gap:9px;
+  padding:9px; border:1px solid var(--line); border-radius:9px;
+  background:var(--bg-3); margin-bottom:7px;
+}
+.shop-row:last-child{margin-bottom:0;}
+.shop-ico{
+  width:34px;height:34px;flex:0 0 auto;border-radius:8px;
+  display:grid;place-items:center;font-size:17px;
+  background:#0c100e; border:1px solid var(--line);
+}
+.shop-info{flex:1 1 auto; min-width:0;}
+.shop-info .t{font-size:12px; font-weight:800;}
+.shop-info .d{font-size:10px; color:var(--txt-mute); line-height:1.4;}
+.price{font-size:11.5px; font-weight:900; color:var(--ok); white-space:nowrap; font-variant-numeric:tabular-nums;}
+
+/* ---------------- LOG ---------------- */
+.log-box{
+  height:210px; overflow-y:auto;
+  font-family:var(--mono); font-size:11.5px; line-height:1.65;
+  padding:10px 13px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.018) 0 1px, transparent 1px 3px),
+    #080b09;
+}
+.log-box::-webkit-scrollbar{width:9px;}
+.log-box::-webkit-scrollbar-track{background:#0b0f0c;}
+.log-box::-webkit-scrollbar-thumb{background:#2a332d; border-radius:5px;}
+.log-line{display:flex; gap:7px; padding:1px 0; animation:fadeIn .25s;}
+@keyframes fadeIn{from{opacity:0; transform:translateX(-5px);} to{opacity:1; transform:none;}}
+.log-time{color:#4c5a51; flex:0 0 auto;}
+.log-msg{color:#b7c4bb; word-break:break-word;}
+.log-msg .hl{color:#fff; font-weight:700;}
+.l-win .log-msg{color:#6ee87c;}
+.l-lose .log-msg{color:#ff6b6b;}
+.l-money .log-msg{color:#79d98a;}
+.l-war .log-msg{color:#ffb454;}
+.l-info .log-msg{color:#8fb6d8;}
+.l-ai .log-msg{color:#c58aff;}
+
+/* ---------------- ALARM BANNER ---------------- */
+.alarm{
+  display:none; align-items:center; gap:10px;
+  margin-bottom:11px; padding:9px 13px;
+  border-radius:10px; border:1px solid #8c2020;
+  background:linear-gradient(90deg,#3a0d0d,#1a0808);
+  animation:pulseAlarm 1.1s infinite alternate;
+}
+.alarm.on{display:flex;}
+@keyframes pulseAlarm{from{box-shadow:0 0 0 rgba(255,0,0,0);} to{box-shadow:0 0 18px rgba(255,40,40,.35);}}
+.alarm .ico{font-size:20px;}
+.alarm .txt{flex:1 1 auto; font-size:12px; line-height:1.45;}
+.alarm .txt b{color:#ff8f8f;}
+.alarm .cd{
+  font-family:var(--mono); font-size:19px; font-weight:900; color:#ff5c5c;
+  min-width:44px; text-align:center;
+}
+
+/* ---------------- MODAL ---------------- */
+.overlay{
+  display:none; position:fixed; inset:0; z-index:100;
+  background:rgba(0,0,0,.78); backdrop-filter:blur(3px);
+  align-items:center; justify-content:center; padding:16px;
+}
+.overlay.on{display:flex;}
+.modal{
+  width:100%; max-width:470px; max-height:90vh; overflow-y:auto;
+  background:linear-gradient(180deg,#161c19,#0e1210);
+  border:1px solid var(--line-2); border-radius:14px;
+  box-shadow:0 24px 60px rgba(0,0,0,.75);
+  animation:pop .18s ease-out;
+}
+@keyframes pop{from{transform:scale(.94); opacity:0;} to{transform:scale(1); opacity:1;}}
+.modal-head{
+  padding:13px 16px; border-bottom:1px solid var(--line);
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+}
+.modal-head h3{font-size:14px; letter-spacing:1.2px; text-transform:uppercase; font-weight:800;}
+.x{background:none; color:var(--txt-mute); font-size:20px; line-height:1; padding:2px 6px; border-radius:6px;}
+.x:hover{color:#fff; background:#2a332d;}
+.modal-body{padding:16px;}
+.modal-foot{padding:13px 16px; border-top:1px solid var(--line); display:flex; gap:8px;}
+.modal-foot .btn{flex:1;}
+
+.slider-row{display:flex; align-items:center; gap:11px; margin:9px 0 4px;}
+input[type=range]{
+  -webkit-appearance:none; appearance:none;
+  flex:1; height:6px; border-radius:4px; background:#0a0d0b; border:1px solid var(--line); outline:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:19px; height:19px; border-radius:50%;
+  background:linear-gradient(180deg,#6ddc78,#2b7a35); border:2px solid #0b0f0c; cursor:pointer;
+  box-shadow:0 0 8px rgba(90,220,110,.5);
+}
+input[type=range]::-moz-range-thumb{
+  width:17px;height:17px;border-radius:50%;
+  background:#4caf50;border:2px solid #0b0f0c;cursor:pointer;
+}
+.slider-val{
+  font-family:var(--mono); font-size:19px; font-weight:900; color:#7fd0ff;
+  min-width:46px; text-align:right;
+}
+.odds{
+  margin-top:13px; padding:11px; border-radius:9px;
+  background:var(--bg-3); border:1px solid var(--line);
+}
+.odds-bar{display:flex; height:22px; border-radius:6px; overflow:hidden; border:1px solid var(--line); margin-top:7px;}
+.odds-bar > div{
+  display:grid; place-items:center;
+  font-size:10.5px; font-weight:900; transition:width .25s;
+  overflow:hidden; white-space:nowrap;
+}
+.odds-me{background:linear-gradient(180deg,#3aa04a,#1d5a26); color:#eaffec;}
+.odds-en{background:linear-gradient(180deg,#a03a3a,#5a1d1d); color:#ffeaea;}
+
+.wave-log{
+  font-family:var(--mono); font-size:11.5px; line-height:1.7;
+  background:#080b09; border:1px solid var(--line); border-radius:9px;
+  padding:11px; min-height:132px; max-height:250px; overflow-y:auto;
+}
+.wave-line{animation:fadeIn .3s;}
+.wave-line.w-hit{color:#ffb454;}
+.wave-line.w-ok{color:#6ee87c;}
+.wave-line.w-bad{color:#ff6b6b;}
+.wave-line.w-dim{color:#6b776f;}
+.result-banner{
+  margin-top:11px; padding:13px; border-radius:10px; text-align:center;
+  font-size:16px; font-weight:900; letter-spacing:2px; text-transform:uppercase;
+}
+.result-banner.win{background:linear-gradient(180deg,#1c6b2a,#0f3d18); color:#c7ffcf; border:1px solid #35a047;}
+.result-banner.lose{background:linear-gradient(180deg,#701c1c,#3d0f0f); color:#ffc7c7; border:1px solid #a03535;}
+
+/* Toast bildirimi */
+.toasts{position:fixed; right:14px; bottom:14px; z-index:200; display:flex; flex-direction:column; gap:8px;}
+.toast{
+  background:#1a211d; border:1px solid var(--line-2); border-left:4px solid var(--grove);
+  border-radius:9px; padding:9px 13px; font-size:12px; max-width:290px;
+  box-shadow:0 10px 26px rgba(0,0,0,.6); animation:slideIn .25s;
+}
+.toast.bad{border-left-color:var(--danger);}
+.toast.warn{border-left-color:var(--gold);}
+@keyframes slideIn{from{transform:translateX(40px); opacity:0;} to{transform:none; opacity:1;}}
+
+/* ---------------- RESPONSIVE ---------------- */
+@media (max-width:1080px){
+  .layout{
+    grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"map" "side" "log";
+  }
+}
+@media (max-width:560px){
+  .layout{padding:9px; gap:10px;}
+  .map-grid{gap:5px;}
+  .cell{min-height:60px; padding:4px;}
+  .cell .c-name{font-size:8.5px;}
+  .cell .c-troops{font-size:10px;}
+  .stat{min-width:88px; padding:4px 8px;}
+  .stat .v{font-size:13px;}
+  .brand h1{font-size:12px;}
+  .terr-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- ==================== HEADER / İSTATİSTİK PANELİ ==================== -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-tag">GSF</div>
+      <h1>Gang Territory Simulator<small>Grove Street Families — Los Santos</small></h1>
+    </div>
+
+    <div class="stats">
+      <div class="stat money"><span class="k">Para</span><span class="v" id="st-money">$0</span></div>
+      <div class="stat rep"><span class="k">Saygınlık</span><span class="v" id="st-rep">0</span><span class="sub" id="st-rank">Sokak Faresi</span></div>
+      <div class="stat crew"><span class="k">Çete Üyesi</span><span class="v" id="st-crew">0 / 0</span><span class="sub" id="st-pool">Boşta: 0</span></div>
+      <div class="stat gun"><span class="k">Silah</span><span class="v" id="st-gun">Tabanca</span><span class="sub" id="st-gunmul">x1.00</span></div>
+      <div class="stat clock"><span class="k">Zaman</span><span class="v" id="st-clock">Gün 1 — 08:00</span><span class="sub" id="st-terr">Bölge: 1/36</span></div>
+    </div>
+
+    <div class="topbar-actions">
+      <button class="tb-btn" id="btn-help" title="Nasıl oynanır">? YARDIM</button>
+      <button class="tb-btn danger" id="btn-reset" title="Tüm ilerlemeyi sil">SIFIRLA</button>
+    </div>
+  </div>
+</header>
+
+<!-- ==================== ANA YERLEŞİM ==================== -->
+<main class="layout">
+
+  <!-- ---------- HARİTA ---------- -->
+  <section class="map-wrap">
+    <div class="alarm" id="alarm">
+      <span class="ico">🚨</span>
+      <span class="txt" id="alarm-txt"></span>
+      <span class="cd" id="alarm-cd">--</span>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Los Santos — Bölge Haritası</h2>
+        <span class="hint">Bölgeye tıkla · Sadece komşu bölgelere saldırabilirsin</span>
+      </div>
+      <div class="card-body">
+        <div class="map-grid" id="map"></div>
+        <div class="legend" id="legend"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ---------- SAĞ PANEL: BÖLGE BİLGİSİ + MAĞAZA ---------- -->
+  <aside class="side">
+
+    <div class="card">
+      <div class="card-head"><h2>Bölge Detayı</h2><span class="hint" id="terr-index">—</span></div>
+      <div class="card-body" id="terr-panel">
+        <p class="note">Haritadan bir bölge seç.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Rekrutman &amp; Mağaza</h2></div>
+      <div class="card-body" id="shop-panel"></div>
+    </div>
+
+  </aside>
+
+  <!-- ---------- LOG ---------- -->
+  <section class="log-wrap">
+    <div class="card">
+      <div class="card-head">
+        <h2>Combat &amp; Event Log</h2>
+        <span class="hint" id="log-count">0 kayıt</span>
+      </div>
+      <div class="log-box" id="log"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ==================== MODAL ==================== -->
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal"></div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   1. SABİT VERİLER (CONFIG)
+   ============================================================ */
+
+/* --- Çeteler ve renk kodları --- */
+const GANGS = {
+  grove:   { id:"grove",   name:"Grove Street Families", short:"GROVE",   color:"#4caf50", cls:"g-grove",   bonus:1.00, aggression:0.00 },
+  ballas:  { id:"ballas",  name:"Ballas",                short:"BALLAS",  color:"#9b4dff", cls:"g-ballas",  bonus:1.18, aggression:0.42 },
+  vagos:   { id:"vagos",   name:"Los Santos Vagos",      short:"VAGOS",   color:"#ffc832", cls:"g-vagos",   bonus:1.12, aggression:0.34 },
+  aztecas: { id:"aztecas", name:"Varrios Los Aztecas",   short:"AZTECAS", color:"#25d0d8", cls:"g-aztecas", bonus:1.05, aggression:0.14 },
+  rifa:    { id:"rifa",    name:"San Fierro Rifa",       short:"RIFA",    color:"#3d7bff", cls:"g-rifa",    bonus:1.08, aggression:0.10 },
+  neutral: { id:"neutral", name:"Tarafsız Bölge",        short:"SAHİPSİZ",color:"#6f7a73", cls:"g-neutral", bonus:0.72, aggression:0.00 }
+};
+const PLAYER = "grove";
+const ENEMY_GANGS = ["ballas","vagos","aztecas","rifa"];
+
+/* --- Bölge tipleri: gelir ve savunma katsayıları --- */
+const TERRITORY_TYPES = {
+  resident: { id:"resident", name:"Sivil Yerleşim",   icon:"🏠", incomeMul:1.00, defMul:1.00 },
+  commerce: { id:"commerce", name:"Ticari Alan",      icon:"🏬", incomeMul:1.75, defMul:0.90 },
+  drugs:    { id:"drugs",    name:"Uyuşturucu Bölgesi",icon:"💊", incomeMul:2.40, defMul:1.10 },
+  weapons:  { id:"weapons",  name:"Silah Deposu",     icon:"🔫", incomeMul:1.20, defMul:1.45 }
+};
+
+/* --- Silah seviyeleri (hasar çarpanı) --- */
+const WEAPONS = [
+  { lvl:1, name:"Tabanca",      mul:1.00, cost:0     },
+  { lvl:2, name:"Micro Uzi",    mul:1.30, cost:2500  },
+  { lvl:3, name:"Pompalı Tüfek",mul:1.62, cost:7000  },
+  { lvl:4, name:"AK-47",        mul:2.05, cost:16000 },
+  { lvl:5, name:"M4 Karabina",  mul:2.55, cost:34000 }
+];
+
+/* --- Saygınlık rütbeleri --- */
+const RANKS = [
+  { min:0,    name:"Sokak Faresi" },
+  { min:60,   name:"Çaylak" },
+  { min:180,  name:"Gangster" },
+  { min:400,  name:"Sokak Lideri" },
+  { min:800,  name:"Mahalle Babası" },
+  { min:1500, name:"Los Santos Kralı" }
+];
+
+/* --- 6x6 harita tanımı (36 bölge) --- */
+const MAP_DEFS = [
+  /* Satır 1 — Kuzey / zengin bölgeler */
+  { n:"Vinewood",        t:"commerce", o:"neutral" },
+  { n:"Mulholland",      t:"resident", o:"neutral" },
+  { n:"Richman",         t:"commerce", o:"neutral" },
+  { n:"Rodeo",           t:"commerce", o:"neutral" },
+  { n:"Marina",          t:"resident", o:"neutral" },
+  { n:"Verona Beach",    t:"resident", o:"vagos"   },
+  /* Satır 2 — Şehir merkezi */
+  { n:"Market",          t:"commerce", o:"neutral" },
+  { n:"Downtown LS",     t:"commerce", o:"ballas"  },
+  { n:"Temple",          t:"resident", o:"ballas"  },
+  { n:"Santa Maria",     t:"resident", o:"neutral" },
+  { n:"Verdant Bluffs",  t:"resident", o:"vagos"   },
+  { n:"Conference Cntr", t:"commerce", o:"vagos"   },
+  /* Satır 3 — Ballas kuşağı */
+  { n:"Idlewood",        t:"drugs",    o:"ballas"  },
+  { n:"Jefferson",       t:"drugs",    o:"ballas"  },
+  { n:"Glen Park",       t:"resident", o:"ballas"  },
+  { n:"East Beach",      t:"resident", o:"vagos"   },
+  { n:"Playa del Seville",t:"commerce",o:"vagos"   },
+  { n:"Los Flores",      t:"drugs",    o:"vagos"   },
+  /* Satır 4 — Grove & Aztecas kuşağı */
+  { n:"Ganton",          t:"resident", o:"grove"   },
+  { n:"Willowfield",     t:"weapons",  o:"ballas"  },
+  { n:"East Los Santos", t:"drugs",    o:"vagos"   },
+  { n:"Little Mexico",   t:"commerce", o:"aztecas" },
+  { n:"El Corona",       t:"resident", o:"aztecas" },
+  { n:"Unity Station",   t:"weapons",  o:"aztecas" },
+  /* Satır 5 — Liman / sanayi */
+  { n:"Ocean Docks",     t:"weapons",  o:"neutral" },
+  { n:"LS Havaalanı",    t:"commerce", o:"neutral" },
+  { n:"Commerce",        t:"commerce", o:"neutral" },
+  { n:"Pershing Square", t:"resident", o:"neutral" },
+  { n:"Las Colinas",     t:"resident", o:"vagos"   },
+  { n:"Montgomery Yolu", t:"resident", o:"neutral" },
+  /* Satır 6 — San Fierro Rifa bölgesi */
+  { n:"Garcia",          t:"drugs",    o:"rifa"    },
+  { n:"Doherty",         t:"weapons",  o:"rifa"    },
+  { n:"Juniper Hollow",  t:"resident", o:"rifa"    },
+  { n:"Esplanade North", t:"commerce", o:"neutral" },
+  { n:"Queens",          t:"commerce", o:"rifa"    },
+  { n:"Foster Valley",   t:"resident", o:"neutral" }
+];
+
+const GRID_W = 6, GRID_H = 6;
+
+/* --- Ekonomi & denge ayarları --- */
+const CFG = {
+  saveKey:"gangTerritorySim_v1",
+  startMoney:1500,
+  startPool:12,
+  startCapacity:30,     // başlangıç: 12 boşta + 10 Ganton = 22 üye, işe alım için pay bırakır
+  incomeEveryTicks:5,      // 5 saniyede bir pasif gelir
+  minutesPerTick:10,       // 1 gerçek saniye = 10 oyun dakikası
+  recruitBaseCost:180,     // adam başına temel ücret (üye sayısıyla artar)
+  capacityStep:5,          // her kışla yükseltmesinde +5 kapasite
+  capacityBaseCost:1200,
+  defenseUpgradeMax:3,
+  defenseUpgradeBase:900,
+  aiTickChance:0.055,      // her tick düşman saldırısı ihtimali
+  aiWarChance:0.03,        // düşman çeteler kendi aralarında savaşır
+  counterAttackSeconds:22, // takviye için verilen süre
+  maxLog:220
+};
+
+/* ============================================================
+   2. OYUN DURUMU (STATE MANAGEMENT)
+   Tüm oyun durumu tek bir gameState objesinde tutulur.
+   ============================================================ */
+let gameState = null;
+let selectedId = null;
+let tickTimer = null;
+let battleBusy = false;   // savaş animasyonu sürerken çift tıklamayı engeller
+
+/* Yeni oyun state'i üretir */
+function createNewState(){
+  const terrs = MAP_DEFS.map(function(d, i){
+    const type = TERRITORY_TYPES[d.t];
+    const baseIncome = ({ resident:26, commerce:40, drugs:52, weapons:34 })[d.t];
+    return {
+      id:i,
+      name:d.n,
+      type:d.t,
+      owner:d.o,
+      // Sahipsiz bölgeler zayıf, çete bölgeleri güçlü başlar
+      troops: d.o === "neutral" ? rndInt(4,9) : rndInt(9,18),
+      income: Math.round(baseIncome * type.incomeMul),
+      defLevel: d.o === "neutral" ? 0 : rndInt(0,1)
+    };
+  });
+  // Oyuncunun başlangıç bölgesi Ganton biraz güçlendirilir
+  const ganton = terrs.find(function(t){ return t.owner === PLAYER; });
+  if(ganton){ ganton.troops = 10; ganton.defLevel = 1; }
+
+  return {
+    version:1,
+    money:CFG.startMoney,
+    rep:0,
+    pool:CFG.startPool,          // boştaki (bölgeye atanmamış) adamlar
+    capacity:CFG.startCapacity,  // maksimum toplam üye
+    weaponLevel:1,
+    day:1, hour:8, minute:0,
+    ticks:0,
+    territories:terrs,
+    log:[],
+    stats:{ battlesWon:0, battlesLost:0, kills:0, losses:0, earned:0, defended:0 },
+    threat:null    // aktif AI karşı saldırısı: {terrId, gang, force, secondsLeft}
+  };
+}
+
+/* ============================================================
+   3. YARDIMCI FONKSİYONLAR
+   ============================================================ */
+function rnd(a,b){ return a + Math.random()*(b-a); }
+function rndInt(a,b){ return Math.floor(rnd(a,b+1)); }
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function clamp(v,a,b){ return Math.max(a, Math.min(b,v)); }
+function fmt(n){ return Math.round(n).toLocaleString("tr-TR"); }
+function money(n){ return "$" + fmt(n); }
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]; }); }
+
+function weapon(){ return WEAPONS[gameState.weaponLevel - 1]; }
+function terr(id){ return gameState.territories[id]; }
+function myTerritories(){ return gameState.territories.filter(function(t){ return t.owner === PLAYER; }); }
+function deployedCount(){ return myTerritories().reduce(function(s,t){ return s + t.troops; }, 0); }
+function totalCrew(){ return gameState.pool + deployedCount(); }
+function rankName(){
+  let r = RANKS[0].name;
+  for(const x of RANKS){ if(gameState.rep >= x.min) r = x.name; }
+  return r;
+}
+function clockStr(){
+  const h = String(gameState.hour).padStart(2,"0");
+  const m = String(Math.floor(gameState.minute/10)*10).padStart(2,"0");
+  return "Gün " + gameState.day + " — " + h + ":" + m;
+}
+/* Bölgenin savunma katsayısı: tip + barikat yükseltmesi + çete bonusu */
+function defenseMultiplier(t){
+  return TERRITORY_TYPES[t.type].defMul * (1 + t.defLevel * 0.18) * GANGS[t.owner].bonus;
+}
+/* Bölgenin toplam savunma gücü (sayısal değer) */
+function defensePower(t){
+  return t.troops * defenseMultiplier(t);
+}
+/* Komşu bölge id'leri (yatay + dikey) */
+function neighbors(id){
+  const r = Math.floor(id / GRID_W), c = id % GRID_W, out = [];
+  if(r > 0)          out.push(id - GRID_W);
+  if(r < GRID_H - 1) out.push(id + GRID_W);
+  if(c > 0)          out.push(id - 1);
+  if(c < GRID_W - 1) out.push(id + 1);
+  return out;
+}
+/* Oyuncu bu bölgeye saldırabilir mi? (kendi bölgesine komşu olmalı)
+   İstisna: hiç bölgen kalmadıysa sokakta yeniden örgütlenirsin ve
+   haritadaki herhangi bir mahalleye baskın yapabilirsin (comeback kuralı). */
+function isAttackable(id){
+  const t = terr(id);
+  if(t.owner === PLAYER) return false;
+  if(myTerritories().length === 0) return true;
+  return neighbors(id).some(function(n){ return terr(n).owner === PLAYER; });
+}
+/* Adam kiralama ücreti — çete büyüdükçe pahalanır */
+function recruitCost(qty){
+  let total = 0, n = totalCrew();
+  for(let i = 0; i < qty; i++){
+    total += Math.round(CFG.recruitBaseCost * (1 + n * 0.045));
+    n++;
+  }
+  return total;
+}
+function capacityCost(){
+  const steps = (gameState.capacity - CFG.startCapacity) / CFG.capacityStep;
+  return Math.round(CFG.capacityBaseCost * Math.pow(1.55, steps));
+}
+function defenseUpgradeCost(t){
+  return Math.round(CFG.defenseUpgradeBase * Math.pow(1.9, t.defLevel));
+}
+
+/* ============================================================
+   4. LOG SİSTEMİ
+   ============================================================ */
+function addLog(msg, kind){
+  const entry = { t:clockStr().replace("Gün ","G"), m:msg, k:kind || "info" };
+  gameState.log.push(entry);
+  if(gameState.log.length > CFG.maxLog) gameState.log.shift();
+  renderLogLine(entry, true);
+}
+function renderLogLine(entry, animate){
+  const box = $("log");
+  const div = document.createElement("div");
+  div.className = "log-line l-" + entry.k;
+  div.innerHTML = '<span class="log-time">[' + esc(entry.t) + ']</span><span class="log-msg">' + entry.m + '</span>';
+  if(!animate) div.style.animation = "none";
+  box.appendChild(div);
+  while(box.children.length > CFG.maxLog) box.removeChild(box.firstChild);
+  box.scrollTop = box.scrollHeight;
+  $("log-count").textContent = gameState.log.length + " kayıt";
+}
+function renderFullLog(){
+  $("log").innerHTML = "";
+  gameState.log.forEach(function(e){ renderLogLine(e, false); });
+  $("log-count").textContent = gameState.log.length + " kayıt";
+}
+/* Çete adını kendi rengiyle vurgular */
+function gangTag(gid){
+  const g = GANGS[gid];
+  return '<span class="hl" style="color:' + g.color + '">' + esc(g.short) + '</span>';
+}
+function terrTag(name){ return '<span class="hl">' + esc(name) + '</span>'; }
+
+/* Kısa bildirim (toast) */
+function toast(msg, kind){
+  const box = $("toasts");
+  const el = document.createElement("div");
+  el.className = "toast " + (kind || "");
+  el.innerHTML = msg;
+  box.appendChild(el);
+  setTimeout(function(){
+    el.style.transition = "opacity .3s, transform .3s";
+    el.style.opacity = "0"; el.style.transform = "translateX(40px)";
+    setTimeout(function(){ el.remove(); }, 320);
+  }, 2600);
+}
+
+/* ============================================================
+   5. KAYIT / YÜKLEME (localStorage)
+   ============================================================ */
+function saveGame(){
+  try{
+    localStorage.setItem(CFG.saveKey, JSON.stringify(gameState));
+  }catch(e){
+    console.warn("Kayıt başarısız:", e);
+  }
+}
+function loadGame(){
+  try{
+    const raw = localStorage.getItem(CFG.saveKey);
+    if(!raw) return null;
+    const s = JSON.parse(raw);
+    // Basit doğrulama — bozuk/eski kayıtları reddet
+    if(!s || !Array.isArray(s.territories) || s.territories.length !== MAP_DEFS.length) return null;
+    if(typeof s.money !== "number" || typeof s.weaponLevel !== "number") return null;
+    if(!s.stats) s.stats = { battlesWon:0, battlesLost:0, kills:0, losses:0, earned:0, defended:0 };
+    if(!Array.isArray(s.log)) s.log = [];
+    return s;
+  }catch(e){
+    console.warn("Kayıt okunamadı:", e);
+    return null;
+  }
+}
+function resetGame(){
+  gameState = createNewState();
+  selectedId = null;
+  addLog("Yeni oyun başlatıldı. " + gangTag("grove") + " sadece " + terrTag("Ganton") + " bölgesine sahip.", "info");
+  addLog("Hedef: Los Santos'un tamamını ele geçir.", "info");
+  saveGame();
+  renderAll();
+}
+
+/* ============================================================
+   6. RENDER — HARİTA
+   ============================================================ */
+function renderMap(){
+  const map = $("map");
+  map.innerHTML = "";
+  gameState.territories.forEach(function(t){
+    const g = GANGS[t.owner];
+    const type = TERRITORY_TYPES[t.type];
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "cell " + g.cls;
+    if(t.owner === PLAYER) btn.classList.add("mine");
+    if(t.id === selectedId) btn.classList.add("selected");
+    if(isAttackable(t.id)) btn.classList.add("attackable");
+
+    const threatened = gameState.threat && gameState.threat.terrId === t.id;
+    if(threatened) btn.classList.add("under-attack");
+
+    btn.title = t.name + " — " + g.name + " · " + type.name + " · " + t.troops + " asker · " + money(t.income) + "/tur";
+    btn.innerHTML =
+      '<span class="c-name">' + esc(t.name) + '</span>' +
+      (t.defLevel > 0 ? '<span class="c-def">🛡' + t.defLevel + '</span>' : '') +
+      '<span class="c-bottom">' +
+        '<span class="c-troops">👤' + t.troops + '</span>' +
+        '<span class="c-type">' + type.icon + '</span>' +
+      '</span>' +
+      (threatened ? '<span class="siren-badge">SALDIRI ALTINDA</span>' : '');
+
+    btn.addEventListener("click", function(){ selectTerritory(t.id); });
+    map.appendChild(btn);
+  });
+}
+
+/* Lejant: her çetenin kaç bölgesi var */
+function renderLegend(){
+  const counts = {};
+  Object.keys(GANGS).forEach(function(k){ counts[k] = 0; });
+  gameState.territories.forEach(function(t){ counts[t.owner]++; });
+  $("legend").innerHTML = Object.keys(GANGS).map(function(k){
+    return '<span class="lg"><i style="background:' + GANGS[k].color + '"></i>' +
+           esc(GANGS[k].name) + ' <b>' + counts[k] + '</b></span>';
+  }).join("");
+}
+
+/* ============================================================
+   7. RENDER — ÜST İSTATİSTİK PANELİ
+   ============================================================ */
+function renderStats(){
+  $("st-money").textContent = money(gameState.money);
+  $("st-rep").textContent = fmt(gameState.rep);
+  $("st-rank").textContent = rankName();
+  $("st-crew").textContent = totalCrew() + " / " + gameState.capacity;
+  $("st-pool").textContent = "Boşta: " + gameState.pool;
+  $("st-gun").textContent = weapon().name;
+  $("st-gunmul").textContent = "Sv." + weapon().lvl + " · x" + weapon().mul.toFixed(2);
+  $("st-clock").textContent = clockStr();
+  $("st-terr").textContent = "Bölge: " + myTerritories().length + "/" + gameState.territories.length;
+}
+
+/* ============================================================
+   8. RENDER — BÖLGE DETAY PANELİ
+   ============================================================ */
+function selectTerritory(id){
+  selectedId = id;
+  renderMap();
+  renderTerritoryPanel();
+}
+
+function renderTerritoryPanel(){
+  const box = $("terr-panel");
+  if(selectedId === null){
+    box.innerHTML = '<p class="note">Haritadan bir bölge seç.<br><b>Yeşil çerçeveli</b> bölgeler senin, <b>kırmızı çerçeveli</b> bölgelere saldırabilirsin.</p>';
+    $("terr-index").textContent = "—";
+    return;
+  }
+  const t = terr(selectedId);
+  const g = GANGS[t.owner];
+  const type = TERRITORY_TYPES[t.type];
+  const mine = t.owner === PLAYER;
+  const canAttack = isAttackable(t.id);
+  const threatened = gameState.threat && gameState.threat.terrId === t.id;
+
+  $("terr-index").textContent = "#" + (t.id + 1) + " · " +
+    String.fromCharCode(65 + (t.id % GRID_W)) + (Math.floor(t.id / GRID_W) + 1);
+
+  let html =
+    '<div class="terr-title">' +
+      '<div><h3>' + esc(t.name) + '</h3><div class="terr-type">' + type.icon + ' ' + esc(type.name) + '</div></div>' +
+      '<span class="owner-chip" style="background:' + g.color + '22; color:' + g.color + '; border-color:' + g.color + '66">' + esc(g.short) + '</span>' +
+    '</div>' +
+    '<div class="terr-grid">' +
+      '<div class="tstat"><div class="k">Asker</div><div class="v">' + t.troops + '</div>' +
+        '<div class="bar"><i style="width:' + clamp(t.troops * 3, 4, 100) + '%; background:' + g.color + '"></i></div></div>' +
+      '<div class="tstat"><div class="k">Savunma Gücü</div><div class="v">' + fmt(defensePower(t)) + '</div>' +
+        '<div class="bar"><i style="width:' + clamp(defensePower(t) * 1.8, 4, 100) + '%; background:#ff8f5c"></i></div></div>' +
+      '<div class="tstat"><div class="k">Gelir</div><div class="v" style="color:var(--ok)">' + money(t.income) + '</div>' +
+        '<div class="k" style="margin-top:2px">her ' + CFG.incomeEveryTicks + ' sn</div></div>' +
+      '<div class="tstat"><div class="k">Barikat</div><div class="v">' + t.defLevel + ' / ' + CFG.defenseUpgradeMax + '</div>' +
+        '<div class="k" style="margin-top:2px">+' + Math.round(t.defLevel * 18) + '% direnç</div></div>' +
+    '</div>';
+
+  html += '<div class="act-grid">';
+
+  if(mine){
+    // Kendi bölgem: takviye, geri çekme, barikat yükseltme
+    if(threatened){
+      html += '<button class="btn attack" id="a-defend">🛡 SAVUNMAYA GEÇ (' + gameState.threat.secondsLeft + 'sn)</button>';
+    }
+    html += '<button class="btn good" id="a-reinforce"' + (gameState.pool <= 0 ? " disabled" : "") + '>➕ TAKVİYE GÖNDER (boşta: ' + gameState.pool + ')</button>';
+    html += '<button class="btn sm" id="a-withdraw"' + (t.troops <= 0 ? " disabled" : "") + '>➖ ADAM GERİ ÇEK</button>';
+    if(t.defLevel < CFG.defenseUpgradeMax){
+      const c = defenseUpgradeCost(t);
+      html += '<button class="btn warn sm" id="a-upgrade"' + (gameState.money < c ? " disabled" : "") + '>🧱 SAVUNMAYI YÜKSELT — ' + money(c) + '</button>';
+    }else{
+      html += '<button class="btn sm" disabled>🧱 SAVUNMA MAKSİMUM</button>';
+    }
+  }else if(canAttack){
+    html += '<button class="btn attack" id="a-attack"' + (gameState.pool < 1 ? " disabled" : "") + '>⚔ SALDIRI DÜZENLE</button>';
+    if(gameState.pool < 1) html += '<p class="note">Saldırı için boşta adamın yok. Mağazadan <b>Adam Kirala</b>.</p>';
+  }else{
+    html += '<button class="btn" disabled>⛔ MENZİL DIŞINDA</button>';
+    html += '<p class="note">Bu bölge senin bölgelerinden hiçbirine komşu değil. Önce yolundaki mahalleleri ele geçir.</p>';
+  }
+
+  html += '</div>';
+
+  if(!mine){
+    html += '<p class="note">Sahip: <b>' + esc(g.name) + '</b> · Çete bonusu <b>x' + g.bonus.toFixed(2) + '</b> · Tip direnci <b>x' + type.defMul.toFixed(2) + '</b></p>';
+  }
+
+  box.innerHTML = html;
+
+  // Buton olayları
+  const bind = function(id, fn){ const el = $(id); if(el) el.addEventListener("click", fn); };
+  bind("a-attack",    function(){ openAttackModal(t.id); });
+  bind("a-reinforce", function(){ openTroopMoveModal(t.id, "in"); });
+  bind("a-withdraw",  function(){ openTroopMoveModal(t.id, "out"); });
+  bind("a-upgrade",   function(){ upgradeDefense(t.id); });
+  bind("a-defend",    function(){ openTroopMoveModal(t.id, "in"); });
+}
+
+/* ============================================================
+   9. RENDER — MAĞAZA
+   ============================================================ */
+function renderShop(){
+  const box = $("shop-panel");
+  const c1 = recruitCost(1), c5 = recruitCost(5);
+  const full = totalCrew() >= gameState.capacity;
+  const nextW = WEAPONS[gameState.weaponLevel]; // undefined ise maksimum
+  const capCost = capacityCost();
+
+  let html = "";
+
+  /* Adam kiralama */
+  html +=
+    '<div class="shop-row">' +
+      '<div class="shop-ico">👤</div>' +
+      '<div class="shop-info"><div class="t">Adam Kirala</div>' +
+        '<div class="d">Çeteye yeni üye. ' + (full ? '<span style="color:#ff8f8f">Kapasite dolu!</span>' : 'Kapasite: ' + totalCrew() + '/' + gameState.capacity) + '</div></div>' +
+      '<div style="display:flex; flex-direction:column; gap:4px">' +
+        '<button class="btn sm" id="s-hire1"' + ((full || gameState.money < c1) ? " disabled" : "") + '>+1 · ' + money(c1) + '</button>' +
+        '<button class="btn sm" id="s-hire5"' + ((totalCrew() + 5 > gameState.capacity || gameState.money < c5) ? " disabled" : "") + '>+5 · ' + money(c5) + '</button>' +
+      '</div>' +
+    '</div>';
+
+  /* Kapasite (kışla) */
+  html +=
+    '<div class="shop-row">' +
+      '<div class="shop-ico">🏚</div>' +
+      '<div class="shop-info"><div class="t">Kışla Genişlet</div>' +
+        '<div class="d">Maksimum üye kapasitesi +' + CFG.capacityStep + ' (şu an ' + gameState.capacity + ')</div></div>' +
+      '<button class="btn sm" id="s-cap"' + (gameState.money < capCost ? " disabled" : "") + '>' + money(capCost) + '</button>' +
+    '</div>';
+
+  /* Silah yükseltme */
+  if(nextW){
+    html +=
+      '<div class="shop-row">' +
+        '<div class="shop-ico">🔫</div>' +
+        '<div class="shop-info"><div class="t">Silah Yükselt → ' + esc(nextW.name) + '</div>' +
+          '<div class="d">Hasar çarpanı x' + weapon().mul.toFixed(2) + ' → <span style="color:#ffb454">x' + nextW.mul.toFixed(2) + '</span></div></div>' +
+        '<button class="btn warn sm" id="s-gun"' + (gameState.money < nextW.cost ? " disabled" : "") + '>' + money(nextW.cost) + '</button>' +
+      '</div>';
+  }else{
+    html +=
+      '<div class="shop-row">' +
+        '<div class="shop-ico">🔫</div>' +
+        '<div class="shop-info"><div class="t">Cephanelik Maksimum</div>' +
+          '<div class="d">' + esc(weapon().name) + ' · x' + weapon().mul.toFixed(2) + ' — daha fazlası yok.</div></div>' +
+        '<div class="price">MAX</div>' +
+      '</div>';
+  }
+
+  /* Sokak doktoru — hızlı asker takviyesi (rep karşılığı değil, para) */
+  const healCost = 800;
+  html +=
+    '<div class="shop-row">' +
+      '<div class="shop-ico">🚑</div>' +
+      '<div class="shop-info"><div class="t">Sokak Doktoru</div>' +
+        '<div class="d">Yaralı 3 adamı ayağa kaldırır (kapasite gerekir)</div></div>' +
+      '<button class="btn good sm" id="s-heal"' + ((gameState.money < healCost || totalCrew() + 3 > gameState.capacity) ? " disabled" : "") + '>' + money(healCost) + '</button>' +
+    '</div>';
+
+  /* İstatistik özeti */
+  const s = gameState.stats;
+  html +=
+    '<p class="note" style="margin-top:11px">' +
+      'Kazanılan savaş: <b>' + s.battlesWon + '</b> · Kaybedilen: <b>' + s.battlesLost + '</b> · ' +
+      'Savunulan bölge: <b>' + s.defended + '</b><br>' +
+      'Etkisiz hale getirilen düşman: <b>' + s.kills + '</b> · Kendi kaybın: <b>' + s.losses + '</b><br>' +
+      'Toplam kazanç: <b>' + money(s.earned) + '</b>' +
+    '</p>';
+
+  box.innerHTML = html;
+
+  const bind = function(id, fn){ const el = $(id); if(el) el.addEventListener("click", fn); };
+  bind("s-hire1", function(){ hire(1); });
+  bind("s-hire5", function(){ hire(5); });
+  bind("s-cap",   buyCapacity);
+  bind("s-gun",   upgradeWeapon);
+  bind("s-heal",  function(){
+    if(gameState.money < healCost || totalCrew() + 3 > gameState.capacity) return;
+    gameState.money -= healCost;
+    gameState.pool += 3;
+    addLog("Sokak doktoru 3 yaralıyı ayağa kaldırdı. " + money(healCost) + " ödendi.", "money");
+    afterAction();
+  });
+}
+
+/* ============================================================
+   10. MAĞAZA AKSİYONLARI
+   ============================================================ */
+function hire(qty){
+  const cost = recruitCost(qty);
+  if(gameState.money < cost){ toast("Yeterli paran yok.", "bad"); return; }
+  if(totalCrew() + qty > gameState.capacity){ toast("Kapasite yetersiz — kışlanı genişlet.", "warn"); return; }
+  gameState.money -= cost;
+  gameState.pool += qty;
+  addLog(qty + " yeni adam çeteye katıldı. <span class='hl'>-" + money(cost) + "</span>", "money");
+  afterAction();
+}
+function buyCapacity(){
+  const cost = capacityCost();
+  if(gameState.money < cost){ toast("Yeterli paran yok.", "bad"); return; }
+  gameState.money -= cost;
+  gameState.capacity += CFG.capacityStep;
+  addLog("Kışla genişletildi. Yeni kapasite: <span class='hl'>" + gameState.capacity + "</span>", "money");
+  afterAction();
+}
+function upgradeWeapon(){
+  const next = WEAPONS[gameState.weaponLevel];
+  if(!next){ toast("Zaten en iyi silahtasın.", "warn"); return; }
+  if(gameState.money < next.cost){ toast("Yeterli paran yok.", "bad"); return; }
+  gameState.money -= next.cost;
+  gameState.weaponLevel++;
+  gameState.rep += 15;
+  addLog("Cephanelik yükseltildi: <span class='hl'>" + esc(next.name) + "</span> (hasar x" + next.mul.toFixed(2) + ")", "money");
+  toast("🔫 " + next.name + " alındı!");
+  afterAction();
+}
+function upgradeDefense(id){
+  const t = terr(id);
+  if(t.owner !== PLAYER || t.defLevel >= CFG.defenseUpgradeMax) return;
+  const cost = defenseUpgradeCost(t);
+  if(gameState.money < cost){ toast("Yeterli paran yok.", "bad"); return; }
+  gameState.money -= cost;
+  t.defLevel++;
+  addLog(terrTag(t.name) + " bölgesine barikat kuruldu (Seviye " + t.defLevel + "). Direnç +18%", "money");
+  afterAction();
+}
+
+/* Her aksiyondan sonra: ekranı tazele + kaydet */
+function afterAction(){
+  renderStats(); renderMap(); renderLegend(); renderTerritoryPanel(); renderShop();
+  saveGame();
+}
+function renderAll(){
+  renderStats(); renderMap(); renderLegend(); renderTerritoryPanel(); renderShop(); renderFullLog();
+}
+
+/* ============================================================
+   11. MODAL ALTYAPISI
+   ============================================================ */
+function openModal(html){
+  $("modal").innerHTML = html;
+  $("overlay").classList.add("on");
+}
+function closeModal(){
+  $("overlay").classList.remove("on");
+  $("modal").innerHTML = "";
+}
+$("overlay").addEventListener("click", function(e){
+  if(e.target === $("overlay") && !battleBusy) closeModal();
+});
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape" && !battleBusy) closeModal();
+});
+
+/* ============================================================
+   12. ASKER TAŞIMA (Takviye / Geri Çekme)
+   ============================================================ */
+function openTroopMoveModal(id, dir){
+  const t = terr(id);
+  const max = dir === "in" ? gameState.pool : t.troops;
+  if(max <= 0){ toast(dir === "in" ? "Boşta adamın yok." : "Bölgede adam yok.", "warn"); return; }
+  const title = dir === "in" ? "Takviye Gönder" : "Adam Geri Çek";
+
+  openModal(
+    '<div class="modal-head"><h3>' + title + ' — ' + esc(t.name) + '</h3><button class="x" id="m-x">×</button></div>' +
+    '<div class="modal-body">' +
+      '<p class="note" style="margin-top:0">' +
+        (dir === "in"
+          ? 'Boştaki adamlarını bu bölgeye yerleştir. Bölgedeki asker sayısı savunma gücünü belirler.'
+          : 'Bölgeden adam çekersen savunması zayıflar ama boştaki güç saldırıda kullanılabilir.') +
+      '</p>' +
+      '<div class="slider-row">' +
+        '<input type="range" id="m-range" min="1" max="' + max + '" value="' + Math.max(1, Math.ceil(max/2)) + '">' +
+        '<span class="slider-val" id="m-val">' + Math.max(1, Math.ceil(max/2)) + '</span>' +
+      '</div>' +
+      '<p class="note">Bölgedeki asker: <b>' + t.troops + '</b> · Boştaki adam: <b>' + gameState.pool + '</b></p>' +
+    '</div>' +
+    '<div class="modal-foot">' +
+      '<button class="btn" id="m-cancel">VAZGEÇ</button>' +
+      '<button class="btn good" id="m-ok">ONAYLA</button>' +
+    '</div>'
+  );
+
+  const range = $("m-range");
+  range.addEventListener("input", function(){ $("m-val").textContent = range.value; });
+  $("m-x").addEventListener("click", closeModal);
+  $("m-cancel").addEventListener("click", closeModal);
+  $("m-ok").addEventListener("click", function(){
+    const n = parseInt(range.value, 10);
+    if(dir === "in"){
+      if(n > gameState.pool) return;
+      gameState.pool -= n; t.troops += n;
+      addLog(n + " adam " + terrTag(t.name) + " bölgesine takviye gönderildi.", "info");
+    }else{
+      if(n > t.troops) return;
+      t.troops -= n; gameState.pool += n;
+      addLog(n + " adam " + terrTag(t.name) + " bölgesinden geri çekildi.", "info");
+    }
+    closeModal();
+    afterAction();
+  });
+}
+
+/* ============================================================
+   13. SAVAŞ SİSTEMİ — SALDIRI MODALI
+   ============================================================ */
+function openAttackModal(id){
+  const t = terr(id);
+  if(!isAttackable(id)) return;
+  const maxMen = gameState.pool;
+  if(maxMen < 1){ toast("Saldıracak adamın yok.", "bad"); return; }
+  // Açılış değeri: ~%75 zafer ihtimali verecek en küçük kuvvet (elindekiyle sınırlı)
+  let start = 1;
+  for(let n = 1; n <= maxMen; n++){
+    start = n;
+    if(estimateBattle(n, weapon().mul, t.troops, defenseMultiplier(t), 60).chance >= 0.75) break;
+  }
+
+  openModal(
+    '<div class="modal-head"><h3>⚔ Saldırı Planı — ' + esc(t.name) + '</h3><button class="x" id="m-x">×</button></div>' +
+    '<div class="modal-body">' +
+      '<p class="note" style="margin-top:0">' +
+        'Hedef: ' + gangTag(t.owner) + ' · Savunma gücü <b>' + fmt(defensePower(t)) + '</b> ' +
+        '(' + t.troops + ' asker × barikat ' + t.defLevel + ')<br>' +
+        'Silahın: <b>' + esc(weapon().name) + '</b> (x' + weapon().mul.toFixed(2) + ')' +
+      '</p>' +
+      '<div class="slider-row">' +
+        '<input type="range" id="m-range" min="1" max="' + maxMen + '" value="' + start + '">' +
+        '<span class="slider-val" id="m-val">' + start + '</span>' +
+      '</div>' +
+      '<div class="odds">' +
+        '<div style="font-size:10px; letter-spacing:1.2px; text-transform:uppercase; color:var(--txt-mute); font-weight:700">Tahmini Güç Dengesi</div>' +
+        '<div class="odds-bar">' +
+          '<div class="odds-me" id="odds-me" style="width:50%">50%</div>' +
+          '<div class="odds-en" id="odds-en" style="width:50%">50%</div>' +
+        '</div>' +
+        '<p class="note" id="odds-txt"></p>' +
+      '</div>' +
+    '</div>' +
+    '<div class="modal-foot">' +
+      '<button class="btn" id="m-cancel">VAZGEÇ</button>' +
+      '<button class="btn attack" id="m-go">SALDIRIYI BAŞLAT</button>' +
+    '</div>'
+  );
+
+  const range = $("m-range");
+  function refreshOdds(){
+    const men = parseInt(range.value, 10);
+    $("m-val").textContent = men;
+    // Gerçek savaş modelini 240 kez koşturup dürüst bir zafer ihtimali çıkar
+    const est = estimateBattle(men, weapon().mul, t.troops, defenseMultiplier(t), 240);
+    const p = est.chance;
+    $("odds-me").style.width = Math.round(p*100) + "%";
+    $("odds-en").style.width = Math.round((1-p)*100) + "%";
+    $("odds-me").textContent = Math.round(p*100) + "%";
+    $("odds-en").textContent = Math.round((1-p)*100) + "%";
+    let verdict;
+    if(p > 0.85)      verdict = '<span style="color:#6ee87c">Ezici üstünlük — kolay zafer.</span>';
+    else if(p > 0.60) verdict = '<span style="color:#a8e06b">Üstünsün ama kayıp verirsin.</span>';
+    else if(p > 0.35) verdict = '<span style="color:#ffb454">Başa baş — kumar oynuyorsun.</span>';
+    else              verdict = '<span style="color:#ff6b6b">Dezavantajlısın — intihar görevi.</span>';
+    $("odds-txt").innerHTML =
+      'Zafer ihtimali <b>%' + Math.round(p*100) + '</b> · ' +
+      'Beklenen kaybın <b>~' + Math.round(est.avgLoss) + '</b> adam, ' +
+      'düşman kaybı <b>~' + Math.round(est.avgKill) + '</b><br>' + verdict;
+  }
+  range.addEventListener("input", refreshOdds);
+  refreshOdds();
+
+  $("m-x").addEventListener("click", closeModal);
+  $("m-cancel").addEventListener("click", closeModal);
+  $("m-go").addEventListener("click", function(){
+    const men = parseInt(range.value, 10);
+    if(men < 1 || men > gameState.pool) return;
+    startBattle(t.id, men);
+  });
+}
+/* ============================================================
+   14. SAVAŞ SİMÜLASYONU — 3 DALGA (WAVE SYSTEM)
+   Formül (her dalga için):
+     Saldırı gücü = (adam sayısı × silah çarpanı) × rastgele varyans
+     Savunma gücü = (asker × çete bonusu × tip direnci × barikat) × varyans
+   Kayıplar bu iki gücün oranına göre dağıtılır; 3 dalga sonunda
+   düşman temizlendiyse ya da sahadaki etkin gücün üstünse bölge senindir.
+
+   simulateBattle() saf (pure) bir fonksiyondur: hem gerçek savaşı hesaplar
+   hem de saldırı ekranındaki zafer ihtimalini Monte Carlo ile tahmin etmek
+   için kullanılır. Böylece ekranda gösterilen yüzde, gerçek savaş modeliyle
+   birebir aynı matematiği kullanır.
+   ============================================================ */
+const BATTLE_WAVES = 3;
+
+function simulateBattle(atkMen, wMul, defMen, defMul){
+  const rec = [];
+  let a = atkMen, d = defMen, aLoss = 0, dLoss = 0, w = 0;
+
+  while(w < BATTLE_WAVES && a > 0 && d > 0){
+    w++;
+    const atkPower = a * wMul * rnd(0.80, 1.25);
+    const defPower = d * defMul * rnd(0.80, 1.25);
+    const ratio = atkPower / (atkPower + defPower);
+
+    // Kayıplar: güçlü taraf daha az kaybeder
+    const dl = clamp(Math.round(d * clamp(ratio * rnd(0.42, 0.72), 0.05, 0.90)), 0, d);
+    const al = clamp(Math.round(a * clamp((1 - ratio) * rnd(0.40, 0.70), 0.04, 0.85)), 0, a);
+
+    d -= dl; a -= al; dLoss += dl; aLoss += al;
+    rec.push({ wave:w, atkLoss:al, defLoss:dl, atkLeft:a, defLeft:d, favorable:ratio > 0.5 });
+  }
+
+  // Sonuç: düşman temizlendiyse kesin zafer. Aksi halde 3 dalga sonunda
+  // sahada kalan güç payına göre düşmanın hattı çöker mi diye bakılır.
+  // Sert bir eşik yerine yumuşak geçiş kullanılır (pay %20 altı kesin yenilgi,
+  // %80 üstü kesin zafer, arası olasılıksal) — böylece kaç adam göndereceğin
+  // gerçek bir karar hâline gelir, kıl payı fark her şeyi belirlemez.
+  let won = false;
+  if(a > 0){
+    if(d <= 0){
+      won = true;
+    }else{
+      const share = (a * wMul) / (a * wMul + d * defMul);
+      won = Math.random() < clamp((share - 0.20) / 0.60, 0, 1);
+    }
+  }
+  return { won:won, atkLeft:a, defLeft:d, atkLoss:aLoss, defLoss:dLoss, waves:rec };
+}
+
+/* Aynı modeli N kez koşturarak dürüst bir zafer ihtimali üretir */
+function estimateBattle(atkMen, wMul, defMen, defMul, runs){
+  let wins = 0, lossSum = 0, killSum = 0;
+  for(let i = 0; i < runs; i++){
+    const r = simulateBattle(atkMen, wMul, defMen, defMul);
+    if(r.won) wins++;
+    lossSum += r.atkLoss; killSum += r.defLoss;
+  }
+  return { chance:wins / runs, avgLoss:lossSum / runs, avgKill:killSum / runs };
+}
+
+/* Gerçek saldırı: sonuç önce hesaplanır, sonra dalga dalga ekrana dökülür */
+function startBattle(terrId, men){
+  const t = terr(terrId);
+  const enemyGang = t.owner;
+  const wMul = weapon().mul;
+  const defMul = defenseMultiplier(t);
+
+  battleBusy = true;
+  gameState.pool -= men;   // adamlar sahaya sürüldü
+
+  const sim = simulateBattle(men, wMul, t.troops, defMul);
+
+  openModal(
+    '<div class="modal-head"><h3>🔥 ' + esc(t.name) + ' Çatışması</h3></div>' +
+    '<div class="modal-body">' +
+      '<p class="note" style="margin-top:0">' + men + ' Grove üyesi vs ' + gangTag(enemyGang) + ' (' + t.troops + ' asker)</p>' +
+      '<div class="wave-log" id="wl"></div>' +
+      '<div id="wl-result"></div>' +
+    '</div>' +
+    '<div class="modal-foot" id="wl-foot"></div>'
+  );
+
+  addLog("⚔ " + terrTag(t.name) + " bölgesine saldırı başladı! " + men + " adam sevk edildi.", "war");
+
+  function wl(txt, cls){
+    const box = $("wl");
+    if(!box) return;
+    const d = document.createElement("div");
+    d.className = "wave-line " + (cls || "w-dim");
+    d.innerHTML = txt;
+    box.appendChild(d);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  wl("&gt; Konvoy yola çıktı... hedef " + esc(t.name), "w-dim");
+
+  let idx = 0;
+  function playWave(){
+    if(idx >= sim.waves.length){ finish(); return; }
+    const w = sim.waves[idx++];
+
+    wl("<b>" + w.wave + ". Dalga:</b> " + w.atkLoss + " adam kaybettiniz, " +
+       w.defLoss + " " + GANGS[enemyGang].short + " üyesi etkisiz hale getirildi.",
+       w.favorable ? "w-ok" : "w-bad");
+    wl("&nbsp;&nbsp;&nbsp;Sahada kalan → Sen: " + w.atkLeft + " · Düşman: " + w.defLeft, "w-dim");
+
+    addLog(w.wave + ". Dalga (" + esc(t.name) + "): -" + w.atkLoss + " bizden, -" + w.defLoss + " " +
+           GANGS[enemyGang].short + ".", "war");
+
+    if(w.atkLeft <= 0){ wl("&gt; Tüm ekibin yere serildi!", "w-bad"); finish(); return; }
+    if(w.defLeft <= 0){ wl("&gt; Düşman hattı çöktü!", "w-ok"); finish(); return; }
+
+    setTimeout(playWave, 950);
+  }
+
+  function finish(){
+    const st = gameState.stats;
+    st.kills += sim.defLoss;
+    st.losses += sim.atkLoss;
+
+    if(sim.won){
+      // Zafer: bölge el değiştirir, hayatta kalanlar bölgede konuşlanır
+      const oldOwner = t.owner;
+      const repGain = 25 + Math.round(sim.defLoss * 2.2) + t.defLevel * 5;
+      const loot = Math.round(t.income * rnd(6, 12));
+      if(sim.defLeft > 0) wl("&gt; Kalan " + sim.defLeft + " düşman mahalleyi terk etti.", "w-ok");
+
+      t.owner = PLAYER;
+      t.troops = sim.atkLeft;
+      t.defLevel = Math.max(0, t.defLevel - 1);   // barikatlar çatışmada hasar aldı
+      gameState.rep += repGain;
+      gameState.money += loot;
+      st.battlesWon++;
+      st.earned += loot;
+
+      $("wl-result").innerHTML = '<div class="result-banner win">BÖLGE ELE GEÇİRİLDİ</div>';
+      wl("&gt; " + esc(t.name) + " artık Grove Street toprağı. Ganimet: " + money(loot), "w-ok");
+      addLog("✅ " + terrTag(t.name) + " " + gangTag(oldOwner) + " çetesinden alındı! +" +
+             repGain + " saygınlık, +" + money(loot) + " ganimet.", "win");
+      toast("✅ " + t.name + " ele geçirildi!");
+    }else{
+      // Yenilgi: hayatta kalanların yarısı geri döner
+      const survivors = Math.floor(sim.atkLeft * 0.5);
+      gameState.pool += survivors;
+      t.troops = Math.max(1, sim.defLeft);
+      gameState.rep = Math.max(0, gameState.rep - 8);
+      st.battlesLost++;
+
+      $("wl-result").innerHTML = '<div class="result-banner lose">SALDIRI PÜSKÜRTÜLDÜ</div>';
+      wl("&gt; Geri çekilme! " + survivors + " adam sağ kurtuldu.", "w-bad");
+      addLog("❌ " + terrTag(t.name) + " saldırısı başarısız. " + sim.atkLoss +
+             " adam kaybedildi, " + survivors + " kişi geri döndü.", "lose");
+      toast("❌ Saldırı püskürtüldü.", "bad");
+    }
+
+    $("wl-foot").innerHTML = '<button class="btn" id="wl-close">KAPAT</button>';
+    $("wl-close").addEventListener("click", function(){ closeModal(); afterAction(); });
+    battleBusy = false;
+    afterAction();
+  }
+
+  setTimeout(playWave, 700);
+}
+
+
+/* ============================================================
+   15. AI — DÜŞMAN KARŞI SALDIRISI (COUNTER-ATTACK)
+   Rastgele zamanlarda düşman çete oyuncunun bölgesine saldırı ilan
+   eder. Oyuncunun geri sayım bitmeden takviye göndermesi gerekir.
+   ============================================================ */
+function maybeLaunchCounterAttack(){
+  if(gameState.threat) return;                 // aynı anda tek tehdit
+  const mine = myTerritories();
+  if(mine.length === 0) return;                // saldırılacak bölgen yok
+  if(mine.length <= 1 && gameState.ticks < 40) return; // başlangıçta acımasız olmasın
+
+  // Saldırgan çete: agresiflik ağırlıklı seçim
+  const pool = [];
+  ENEMY_GANGS.forEach(function(g){
+    const owns = gameState.territories.filter(function(t){ return t.owner === g; }).length;
+    if(owns === 0) return;
+    const weight = Math.round(GANGS[g].aggression * 100);
+    for(let i = 0; i < weight; i++) pool.push(g);
+  });
+  if(!pool.length) return;
+  const gang = pick(pool);
+
+  // Hedef: saldırgana komşu olan oyuncu bölgesi (yoksa rastgele bölge)
+  const adjacent = mine.filter(function(t){
+    return neighbors(t.id).some(function(n){ return terr(n).owner === gang; });
+  });
+  const target = adjacent.length ? pick(adjacent) : pick(mine);
+
+  // Saldırı gücü: oyuncunun ilerlemesine göre ölçeklenir
+  const scale = 1 + myTerritories().length * 0.14 + gameState.weaponLevel * 0.08;
+  const force = Math.max(4, Math.round(rnd(5, 11) * scale * GANGS[gang].bonus));
+
+  gameState.threat = {
+    terrId:target.id,
+    gang:gang,
+    force:force,
+    secondsLeft:CFG.counterAttackSeconds
+  };
+
+  addLog("🚨 " + gangTag(gang) + " çetesi " + terrTag(target.name) + " bölgesine saldırıyor! " +
+         "Tahmini güç: <span class='hl'>" + force + "</span> kişi. Takviye için " +
+         CFG.counterAttackSeconds + " saniyen var!", "ai");
+  toast("🚨 " + GANGS[gang].name + " " + target.name + " bölgesine saldırıyor!", "bad");
+  renderAlarm();
+}
+
+/* Alarm bandını güncelle */
+function renderAlarm(){
+  const el = $("alarm");
+  const th = gameState.threat;
+  if(!th){ el.classList.remove("on"); return; }
+  const t = terr(th.terrId);
+  el.classList.add("on");
+  $("alarm-txt").innerHTML =
+    '<b>' + esc(GANGS[th.gang].name) + '</b> · <b>' + esc(t.name) + '</b> bölgesine saldırıyor (~' + th.force + ' kişi). ' +
+    'Bölgede <b>' + t.troops + '</b> asker var — takviye gönder!';
+  $("alarm-cd").textContent = th.secondsLeft + "s";
+}
+
+/* Karşı saldırıyı çöz — süre dolduğunda otomatik çalışır */
+function resolveCounterAttack(){
+  const th = gameState.threat;
+  if(!th) return;
+  const t = terr(th.terrId);
+  gameState.threat = null;
+
+  // Savunma bölgede kaldıysa hesapla
+  const defPower = defensePower(t) * rnd(0.85, 1.20);
+  const atkPower = th.force * GANGS[th.gang].bonus * rnd(0.80, 1.20);
+
+  const defLoss = clamp(Math.round(t.troops * clamp(atkPower / (atkPower + defPower) * rnd(0.45,0.80), 0.05, 0.95)), 0, t.troops);
+  const atkLoss = Math.round(th.force * clamp(defPower / (atkPower + defPower) * rnd(0.45,0.80), 0.05, 0.95));
+
+  t.troops -= defLoss;
+  gameState.stats.losses += defLoss;
+  gameState.stats.kills += atkLoss;
+
+  if(defPower >= atkPower && t.troops > 0){
+    // Savunma başarılı
+    const rep = 18 + Math.round(atkLoss * 1.5);
+    gameState.rep += rep;
+    gameState.stats.defended++;
+    addLog("🛡 " + terrTag(t.name) + " savunuldu! " + gangTag(th.gang) + " " + atkLoss +
+           " adam kaybederek geri çekildi. (-" + defLoss + " bizden, +" + rep + " saygınlık)", "win");
+    toast("🛡 " + t.name + " savunuldu!");
+  }else{
+    // Bölge kaybedildi
+    t.owner = th.gang;
+    t.troops = Math.max(2, th.force - atkLoss);
+    t.defLevel = Math.max(0, t.defLevel - 1);
+    gameState.rep = Math.max(0, gameState.rep - 20);
+    gameState.stats.battlesLost++;
+    addLog("💀 " + terrTag(t.name) + " kaybedildi! Bölge artık " + gangTag(th.gang) + " kontrolünde. " +
+           defLoss + " adam öldü, -20 saygınlık.", "lose");
+    toast("💀 " + t.name + " kaybedildi!", "bad");
+
+    // Oyuncunun hiç bölgesi kalmadıysa: yenilgi ekranı + comeback modu
+    if(myTerritories().length === 0) onDefeat();
+  }
+  renderAlarm();
+  afterAction();
+}
+
+/* ============================================================
+   16. AI — ÇETELER ARASI SAVAŞ (harita canlı kalsın diye)
+   ============================================================ */
+function aiGangWar(){
+  const attackers = gameState.territories.filter(function(t){
+    return t.owner !== PLAYER && t.owner !== "neutral" && t.troops > 8;
+  });
+  if(!attackers.length) return;
+  const src = pick(attackers);
+  const targets = neighbors(src.id)
+    .map(terr)
+    .filter(function(t){ return t.owner !== src.owner && t.owner !== PLAYER; });
+  if(!targets.length) return;
+  const tgt = pick(targets);
+
+  const atk = (src.troops * 0.55) * GANGS[src.owner].bonus * rnd(0.8,1.3);
+  const def = defensePower(tgt) * rnd(0.8,1.3);
+  const sent = Math.round(src.troops * 0.5);
+  src.troops -= sent;
+
+  if(atk > def){
+    const oldOwner = tgt.owner;
+    tgt.owner = src.owner;
+    tgt.troops = Math.max(2, Math.round(sent * 0.6));
+    addLog(gangTag(src.owner) + ", " + gangTag(oldOwner) + " çetesinden " + terrTag(tgt.name) + " bölgesini aldı.", "ai");
+  }else{
+    tgt.troops = Math.max(1, tgt.troops - Math.round(sent * 0.4));
+    addLog(gangTag(src.owner) + " çetesinin " + terrTag(tgt.name) + " saldırısı püskürtüldü.", "ai");
+  }
+}
+
+/* ============================================================
+   17. ANA OYUN DÖNGÜSÜ (GAME LOOP) — her 1 saniye
+   ============================================================ */
+function gameTick(){
+  if(!gameState) return;
+  gameState.ticks++;
+
+  /* --- Oyun içi saat --- */
+  gameState.minute += CFG.minutesPerTick;
+  while(gameState.minute >= 60){
+    gameState.minute -= 60;
+    gameState.hour++;
+    if(gameState.hour >= 24){
+      gameState.hour = 0;
+      gameState.day++;
+      onNewDay();
+    }
+  }
+
+  /* --- Pasif gelir --- */
+  if(gameState.ticks % CFG.incomeEveryTicks === 0){
+    const mine = myTerritories();
+    if(!mine.length){
+      // Bölgesizken sokak işlerinden küçük bir gelir — comeback mümkün kalsın
+      if(gameState.money < CFG.recruitBaseCost * 3){
+        gameState.money += 140;
+        gameState.stats.earned += 140;
+        addLog("🥡 Sokak işlerinden kırıntı toplandı: <span class='hl'>+" + money(140) + "</span>", "money");
+      }
+    }else{
+      let gross = mine.reduce(function(s,t){ return s + t.income; }, 0);
+      // Saygınlık bonusu: her 200 rep +%5 gelir
+      const repBonus = 1 + Math.floor(gameState.rep / 200) * 0.05;
+      gross = Math.round(gross * repBonus);
+      gameState.money += gross;
+      gameState.stats.earned += gross;
+      addLog("💵 " + mine.length + " bölgeden haraç toplandı: <span class='hl'>+" + money(gross) + "</span>" +
+             (repBonus > 1 ? " (saygınlık bonusu x" + repBonus.toFixed(2) + ")" : ""), "money");
+    }
+  }
+
+  /* --- Aktif tehdit geri sayımı --- */
+  if(gameState.threat){
+    gameState.threat.secondsLeft--;
+    if(gameState.threat.secondsLeft <= 0){
+      resolveCounterAttack();
+    }else{
+      renderAlarm();
+      // Panel açıksa geri sayım butonunu tazele
+      if(selectedId === gameState.threat.terrId) renderTerritoryPanel();
+    }
+  }else if(Math.random() < CFG.aiTickChance && !battleBusy){
+    maybeLaunchCounterAttack();
+  }
+
+  /* --- Düşman çeteler kendi aralarında savaşır --- */
+  if(Math.random() < CFG.aiWarChance) aiGangWar();
+
+  /* --- Bölgelerde yavaş asker toplanması (sahipsiz + düşman) --- */
+  if(gameState.ticks % 12 === 0){
+    gameState.territories.forEach(function(t){
+      if(t.owner === PLAYER) return;
+      if(t.owner === "neutral"){ if(Math.random() < 0.25) t.troops++; }
+      else if(Math.random() < 0.45) t.troops = Math.min(40, t.troops + 1);
+    });
+  }
+
+  /* --- Zafer kontrolü --- */
+  if(myTerritories().length === gameState.territories.length){
+    onVictory();
+  }
+
+  renderStats();
+  renderMap();
+  renderLegend();
+  if(gameState.ticks % 5 === 0) renderShop();     // fiyatlar kapasiteye göre değişir
+  if(gameState.ticks % 10 === 0) saveGame();      // otomatik kayıt
+}
+
+/* Yeni gün: küçük olaylar */
+function onNewDay(){
+  const mine = myTerritories();
+  addLog("🌅 Gün " + gameState.day + " başladı. " + mine.length + " bölge kontrol ediliyor.", "info");
+
+  // Bölge sayısına göre rastgele günlük olay
+  const roll = Math.random();
+  if(roll < 0.22 && mine.length){
+    const t = pick(mine);
+    const bonus = Math.round(t.income * rnd(8, 16));
+    gameState.money += bonus;
+    gameState.stats.earned += bonus;
+    addLog("📦 " + terrTag(t.name) + " bölgesinde büyük bir mal sevkiyatı yapıldı: +" + money(bonus), "money");
+  }else if(roll < 0.36 && mine.length){
+    const t = pick(mine);
+    const lost = Math.min(t.troops, rndInt(1,2));
+    if(lost > 0){
+      t.troops -= lost;
+      addLog("🚔 " + terrTag(t.name) + " bölgesine polis baskını! " + lost + " adam tutuklandı.", "lose");
+    }
+  }else if(roll < 0.48 && totalCrew() < gameState.capacity){
+    gameState.pool++;
+    addLog("🤝 Mahalleden bir genç çeteye katıldı. (+1 üye)", "info");
+  }
+  saveGame();
+}
+
+/* Tüm bölgeler kaybedildiğinde — oyun kilitlenmez, comeback modu açılır */
+function onDefeat(){
+  addLog("☠ Tüm bölgelerini kaybettin! Sokakta beş parasızsın. Artık haritadaki " +
+         "<span class='hl'>herhangi bir mahalleye</span> baskın yapabilirsin.", "lose");
+  toast("☠ Tüm bölgeleri kaybettin!", "bad");
+  if(battleBusy) return;   // savaş modalı açıksa üstüne bindirme
+  openModal(
+    '<div class="modal-head"><h3>☠ Sokağa Düştün</h3><button class="x" id="m-x">×</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="result-banner lose" style="margin-top:0">BÖLGE YOK</div>' +
+      '<p class="note">Grove Street\'in elinde tek bir mahalle bile kalmadı.<br>' +
+      'Gün: <b>' + gameState.day + '</b> · Saygınlık: <b>' + fmt(gameState.rep) + '</b> · ' +
+      'Kazanılan savaş: <b>' + gameState.stats.battlesWon + '</b><br><br>' +
+      'Yine de bitmedi: elindeki adamlarla <b>haritadaki herhangi bir bölgeye</b> baskın ' +
+      'yapıp mahalleyi geri alabilirsin. Adamın yoksa sokak işlerinden küçük bir gelir damlar.</p>' +
+    '</div>' +
+    '<div class="modal-foot">' +
+      '<button class="btn" id="m-ok">SOKAKTA SAVAŞ</button>' +
+      '<button class="btn attack" id="m-new">YENİ OYUN</button>' +
+    '</div>'
+  );
+  $("m-x").addEventListener("click", closeModal);
+  $("m-ok").addEventListener("click", closeModal);
+  $("m-new").addEventListener("click", function(){ victoryShown = false; resetGame(); closeModal(); });
+}
+
+/* Tüm harita alındığında */
+let victoryShown = false;
+function onVictory(){
+  if(victoryShown) return;
+  victoryShown = true;
+  addLog("👑 TÜM LOS SANTOS GROVE STREET'İN! Oyunu kazandın.", "win");
+  openModal(
+    '<div class="modal-head"><h3>👑 Los Santos Senin</h3><button class="x" id="m-x">×</button></div>' +
+    '<div class="modal-body">' +
+      '<div class="result-banner win" style="margin-top:0">ZAFER</div>' +
+      '<p class="note">36 bölgenin tamamı Grove Street Families kontrolünde.<br>' +
+      'Gün: <b>' + gameState.day + '</b> · Saygınlık: <b>' + fmt(gameState.rep) + '</b> · ' +
+      'Kazanılan savaş: <b>' + gameState.stats.battlesWon + '</b> · ' +
+      'Toplam kazanç: <b>' + money(gameState.stats.earned) + '</b></p>' +
+    '</div>' +
+    '<div class="modal-foot"><button class="btn good" id="m-ok">DEVAM ET</button></div>'
+  );
+  $("m-x").addEventListener("click", closeModal);
+  $("m-ok").addEventListener("click", closeModal);
+}
+
+/* ============================================================
+   18. YARDIM VE SIFIRLAMA
+   ============================================================ */
+$("btn-help").addEventListener("click", function(){
+  openModal(
+    '<div class="modal-head"><h3>Nasıl Oynanır</h3><button class="x" id="m-x">×</button></div>' +
+    '<div class="modal-body" style="font-size:12.5px; line-height:1.75; color:#c3ccc6">' +
+      '<p><b style="color:#fff">1 · Amaç</b><br>Ganton\'dan başlayıp 6×6\'lık Los Santos haritasının tamamını Grove Street bayrağı altında topla.</p>' +
+      '<p style="margin-top:9px"><b style="color:#fff">2 · Ekonomi</b><br>Sahip olduğun her bölge ' + CFG.incomeEveryTicks + ' saniyede bir haraç üretir. Uyuşturucu bölgeleri (💊) en çok, sivil yerleşimler (🏠) en az kazandırır. Silah depoları (🔫) az kazandırır ama savunması güçlüdür.</p>' +
+      '<p style="margin-top:9px"><b style="color:#fff">3 · Saldırı</b><br>Sadece <b>kendi bölgene komşu</b> mahallelere saldırabilirsin (kırmızı çerçeveli hücreler). Saldırı 3 dalga halinde simüle edilir: <i>(adam sayısı × silah çarpanı)</i> ile <i>(asker × çete bonusu × tip direnci × barikat)</i> karşılaştırılır.</p>' +
+      '<p style="margin-top:9px"><b style="color:#fff">4 · Savunma</b><br>Düşman çeteler rastgele bölgelerine saldırır. Alarm çaldığında <b>' + CFG.counterAttackSeconds + ' saniye</b> içinde takviye göndermezsen bölgeyi kaybedersin. Barikat yükseltmeleri direnci kalıcı artırır.</p>' +
+      '<p style="margin-top:9px"><b style="color:#fff">5 · Kayıt</b><br>Oyun otomatik olarak tarayıcının localStorage hafızasına kaydedilir. Sayfayı kapatıp döndüğünde kaldığın yerden devam edersin.</p>' +
+    '</div>' +
+    '<div class="modal-foot"><button class="btn good" id="m-ok">ANLADIM</button></div>'
+  );
+  $("m-x").addEventListener("click", closeModal);
+  $("m-ok").addEventListener("click", closeModal);
+});
+
+$("btn-reset").addEventListener("click", function(){
+  openModal(
+    '<div class="modal-head"><h3>Yeni Oyun</h3><button class="x" id="m-x">×</button></div>' +
+    '<div class="modal-body"><p class="note" style="margin-top:0; font-size:12.5px">' +
+      'Tüm ilerlemen silinecek: para, saygınlık, bölgeler, çete gücü ve olay günlüğü sıfırlanacak. Emin misin?</p></div>' +
+    '<div class="modal-foot">' +
+      '<button class="btn" id="m-cancel">VAZGEÇ</button>' +
+      '<button class="btn attack" id="m-ok">EVET, SIFIRLA</button>' +
+    '</div>'
+  );
+  $("m-x").addEventListener("click", closeModal);
+  $("m-cancel").addEventListener("click", closeModal);
+  $("m-ok").addEventListener("click", function(){
+    victoryShown = false;
+    resetGame();
+    closeModal();
+    toast("Yeni oyun başladı.");
+  });
+});
+
+/* ============================================================
+   19. BAŞLATMA (BOOTSTRAP)
+   ============================================================ */
+function initGame(){
+  const saved = loadGame();
+  if(saved){
+    gameState = saved;
+    gameState.threat = null;           // sayfa yenilendiğinde aktif tehdit iptal
+    renderAll();
+    addLog("💾 Kayıt yüklendi — Gün " + gameState.day + ", " + myTerritories().length + " bölge.", "info");
+  }else{
+    gameState = createNewState();
+    addLog("Los Santos, 1992. " + gangTag("grove") + " sadece " + terrTag("Ganton") + " bölgesini elinde tutuyor.", "info");
+    addLog("Ballas ve Vagos sokakları basmış durumda. Mahalleyi geri al.", "info");
+    renderAll();
+  }
+  // İlk bölge seçili gelsin
+  const first = myTerritories()[0];
+  if(first) selectTerritory(first.id);
+
+  if(tickTimer) clearInterval(tickTimer);
+  tickTimer = setInterval(gameTick, 1000);
+}
+
+// Sayfadan ayrılırken son durumu kaydet
+window.addEventListener("beforeunload", function(){ if(gameState) saveGame(); });
+
+initGame();
+</script>
+</body>
+</html>
