@@ -58,3 +58,10 @@ Dosya saf ASCII tutuldu; SA'nin varsayilan fontu Turkce karakter basmaz.
 Sanny Builder'da `cheats.txt` -> Compile -> `CHEATS.cs`.
 `CHEATS.cs` ve `cheats.fxt` dosyalarini `GTA San Andreas/CLEO/` klasorune,
 FXT'yi `CLEO/CLEO_TEXT/` altina koyun.
+
+### 5. Derleme hatasi duzeltmesi
+Sanny Builder'in decompile ciktisinda 2. satir `Alloc($1, 411)` seklindeydi.
+Sanny'de `$` + rakam "su indeksteki global degisken" anlamina geldigi icin
+derleyici `$1` adini indeks sanip "Global variable 1 is out of range" hatasi
+veriyordu. Degisken `$CM_ZONE_NAME` olarak yeniden adlandirildi (ayni indeks,
+411). Bu kusur orijinal decompile ciktisinda da vardi.

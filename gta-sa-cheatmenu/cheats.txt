@@ -1,5 +1,5 @@
 {$CLEO .cs}
-Alloc($1, 411)
+Alloc($CM_ZONE_NAME, 411)
 Alloc($PLAYER_ACTOR, 3)
 Alloc($PLAYER_GROUP, 11)
 Alloc($PLAYER_CHAR, 2)
@@ -6253,11 +6253,11 @@ goto @CHEATS_51462
 :CHEATS_50703
 print_help 'CH254'
 0@, 1@, 2@ = get_char_coordinates $PLAYER_ACTOR
-s$1 = get_name_of_info_zone 0@ {y} 1@ {z} 2@
+s$CM_ZONE_NAME = get_name_of_info_zone 0@ {y} 1@ {z} 2@
 4@ = 1
 
 :GangZone_Loop
-3@ = get_zone_gang_strength s$1 {gangId} 4@
+3@ = get_zone_gang_strength s$CM_ZONE_NAME {gangId} 4@
 gosub @GangZone_Print
 wait 0
 if
@@ -6303,7 +6303,7 @@ goto_if_false @GangZone_SetUp
 3@ = 100
 
 :GangZone_SetUp
-set_zone_gang_strength s$1 {gangId} 4@ {density} 3@
+set_zone_gang_strength s$CM_ZONE_NAME {gangId} 4@ {density} 3@
 
 :GangZone_ChkDown
 if and
@@ -6317,7 +6317,7 @@ goto_if_false @GangZone_SetDown
 3@ = 0
 
 :GangZone_SetDown
-set_zone_gang_strength s$1 {gangId} 4@ {density} 3@
+set_zone_gang_strength s$CM_ZONE_NAME {gangId} 4@ {density} 3@
 
 :GangZone_ChkExit
 if
