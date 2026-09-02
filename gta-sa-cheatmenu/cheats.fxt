@@ -1,0 +1,269 @@
+CHT1 Silah Secenekleri
+CHT2 Hava Durumu
+CHT3 Aranma Seviyesi
+CHT4 Zaman Ayarlari
+CHT5 Bot Ayarlari
+CHT6 Arac Ayarlari
+CHT7 Arac Olusturma
+CHT8 Oyuncu Ayarlari
+CHT9 Trafik Ayarlari
+CHT10 Diger
+CHT11 Mackop Menu
+CHT12 Silah Sec
+CHT13 Dovus Aletleri
+CHT14 Tabancalar
+CHT15 Dusuk Seviye Beceriler
+CHT16 Orta Seviye Beceriler
+CHT17 Yuksek Seviye Beceriler
+CHT19 Oyunu Kaydet
+CHT20 Hava durumunu ayarlamak icin SAG ve SOL ok tuslarini kullanin. Kabul etmek icin ~k~~PED_SPRINT~ tusuna, ve gelmek icin ~k~~VEHICLE_ENTER_EXIT~ tusuna basin.
+CHT21 Cephane Doldurma
+CHT22 Sonsuz Cephane
+CHT23 Aranma Seviyesini Ayarla
+CHT24 Aranma Seviyesini Kaldir
+CHT25 Asla Aranmama
+CHT26 Aranma seviyesini ayarlamak icin 1-6 tuslari arasinda secim yapin. Geri gelmek icin ~k~~VEHICLE_ENTER_EXIT~ tusuna basin.
+CHT27 Zamani Hizlandir
+CHT28 Sifirla
+CHT29 Zamani Yavaslat
+CHT30 Riot Karakterler
+CHT31 CJ'ye Saldirirlar
+CHT32 Karakterlere Silah Verir
+CHT33 Ver: 9mm
+CHT34 Ver: AK-47
+CHT35 Ver: Fuze
+CHT36 Daha Iyi Arac Kontrolu
+CHT37 Araclar Su Ustunde Gider
+CHT38 Araclar Ucar
+CHT39 Yuksek Ziplama
+CHT40 Tank Arac
+CHT41 Nitro
+CHT42 Arac Yuzer
+CHT43 Otomatik Sofor Modu
+CHT44 Ucan Gemiler
+CHT45 Kabul etmek icin ~k~~VEHICLE_ENTER_EXIT~ tusuna basin.
+CHT46 Ayarlamak icin SAG ve SOL tuslarini kullanin. Tamamlamak icin YUKARI OK tusuna basin.
+CHT47 Isaretli Yere Isinlan
+CHT48 Cete Ayarlari
+CHT49 San Fierro Icinde Ceteler
+CHT50 Las Venturas Icinde Ceteler
+CHT51 Country & Desert Icinde Ceteler
+CHT52 Ballas
+CHT53 Vagos
+CHT54 Grove Street
+CHT55 Cete Savasi Baslat
+CHT56 Tum Adalarin Kilidini Ac
+CHT57 Max Can Ve Zirh
+CHT58 Max Can
+CHT59 Max Zirh
+CHT60 Istatistikler
+CHT61 Sonsuz Can
+CHT62 Para Ayarlari
+CHT63 Yorulmadan Kosma
+CHT64 Silahlari Sirtta Tasima
+CHT65 Sismanlik: ~1~
+CHT66 Guc: ~1~
+CHT67 Kas: ~1~
+CHT68 Seksilik: ~1~
+CHT69 Arac Surme Becerisi: ~1~
+CHT70 Ucak Surme Becerisi: ~1~
+CHT71 Motorsiklet Surme Becerisi: ~1~
+CHT72 Bisiklet Surme Becerisi: ~1~
+CHT73 Sans: ~1~
+CHT74 Saygi: ~1~
+CHT75 Istatistigi secmek icin SAG ve SOL tuslarini kullanin, istatistigi degistirmek icin YUKARI OK ve ASAGI OK tuslarini kullanin. Tamamlamak icin ~k~~PED_SPRINT~ tusuna basin.
+CHT76 Asla Acikmassiniz
+CHT77 $~1~
+CHT78 Miktari ayarlamak icin SAG ve SOL tuslarini kullanin, hizlandirmak icin SHIFT tusunu kullanin. Tamamlamak icin YUKARI OK tusuna basin.
+CHT79 Sonsuz Oksijen
+CHT80 Pompali Tufekler
+CHT81 SMGler
+CHT82 Saldiri Tufekleri
+CHT83 Tufekler
+CHT84 Agir Silahlar
+CHT85 Patlayici Silahlar
+CHT86 Diger
+CHT87 Diger 2
+CHT88 Hediyeler
+CHT89 Musta
+CHT90 Golf Sopasi
+CHT91 Jop
+CHT92 Bicak
+CHT93 Beyzbol Sopasi
+CHT94 Kurek
+CHT95 Isteka
+CHT96 Katana
+CHT97 Motorlu Testere
+CHT98 Tabanca
+CHT99 Susturuculu Tabanca
+CH100 Deagle
+CH101 Pompali Tufek
+CH102 Sawn-Off Tufegi
+CH103 Savas Tufegi
+CH104 Tec-9
+CH105 Micro-SMG
+CH106 SMG
+CH107 AK-47
+CH108 M4
+CH109 Tufek
+CH110 Sniper
+CH111 Fuze
+CH112 Isi Duyarli Fuze
+CH113 Alev Silahi
+CH114 Minigun
+CH115 El Bombasi
+CH116 Molotof
+CH117 Gaz Bombasi
+CH118 C4
+CH119 Sprey Boya
+CH120 Yangin Tupu
+CH121 Kamera
+CH122 Gece Gorus Gozlugu
+CH123 Termal Gozluk
+CH124 Parasut
+CH125 Uzun Dildo
+CH126 Kisa Dildo
+CH127 Uzun Vibrator
+CH128 Kisa Vibrator
+CH129 Cicekler
+CH130 Baston
+CH131 Jetpack
+CH132 Gorunmez Araclar
+CH133 Yesil Isiklar
+CH134 Agresif Suruculer
+CH135 Pembe Araclar
+CH136 Siyah Araclar
+CH137 Bisikletler
+CH138 Gemiler
+CH139 Off-Road Araclari
+CH140 Sedan Araclar
+CH141 Ucaklar
+CH142 Helikopterler
+CH143 Endustriyal
+CH144 Hile ~g~Aktif~w~
+CH145 Hile ~r~Aktif Degil~w~
+CH146 Kamu Araclari
+CH147 Spor Araclar
+CH148 Lowriderlar
+CH149 Ustu Acik Araclar
+CH150 Diger
+CH151 Sayfa 1
+CH152 Sayfa 2
+CH153 Sayfa 3
+CH154 Aksesuarlar
+CH155 Polis (LS)
+CH156 Polis (SF)
+CH157 Polis (LV)
+CH158 Bagaj Dorsesi 1
+CH159 Bagaj Dorsesi 2
+CH160 Ucak Merdiveni
+CH161 Tarim Ekipmani
+CH162 Hizmet Romorku
+CH163 Dorse 1
+CH164 Dorse 2
+CH165 Dorse 3
+CH166 $1
+CH167 $10
+CH168 $100
+CH169 $1000
+CH170 $10000
+CH171 $100000
+CH172 $1000000
+CH173 -$1
+CH174 -$10
+CH175 -$100
+CH176 -$1000
+CH177 -$10000
+CH178 -$100000
+CH179 -$1000000
+CH180 Para Ekle
+CH181 Para Eksilt
+CH182 Los Santos
+CH183 Countryside
+CH184 San Fierro
+CH185 Desert
+CH186 Las Venturas
+CH187 Mini Oyunlar
+CH188 Gorev Sec
+CH189 Big Smoke
+CH190 Ryder
+CH191 Sweet
+CH192 Cesar
+CH193 C.R.A.S.H.
+CH194 OG Loc
+CH195 Catalina
+CH196 The Truth
+CH197 Garage
+CH198 Wu Zi Mu
+CH199 Wang Cars
+CH200 Zero
+CH201 Toreno
+CH202 Four Dragons
+CH203 Caligula's
+CH204 Madd Dogg
+CH205 Sweet 2
+CH206 Mansion
+CH207 Airfield
+CH208 They Crawled From Uranus
+CH209 Dualuty
+CH210 Go Go Space Monkey
+CH211 Let's Get Ready To Bumble
+CH212 Off-Track Betting
+CH213 Riot
+CH214 End of the Line Pt. 1
+CH215 End of the Line Pt. 2
+CH216 End of the Line Pt. 3
+CH217 Loco Syndicate
+CH218 Ekran Goruntusu Al
+CH219 Birincil rengi secmek icin SAG ve SOL tuslarini kullanin, ikincil rengi secmek icin YUKARI OK ve ASAGI OK tuslarini kullanin. Geri donmek icin ~k~~VEHICLE_ACCELERATE~ tusuna basin.
+CH220 Araci Tamir Et
+CH221 Sinirsiz Can
+CH222 Araca Hidrolik Koy
+CH223 Araca Nitro Koy
+CH224 Agir Arac
+CH225 Renk Degistir
+CH226 Karakter Sec
+CH227 Bir karakter secmek icin SAG ve SOL ok tuslarini kullanin. Kabul etmek icin YUKARI OK tusunu kullanin.
+CH228 Tum Karakterleri Kaldir
+CH229 Tum Interiorlarin Kilidini Ac
+CH230 Dovus Stili
+CH231 Standart
+CH232 Normal
+CH233 Box
+CH234 Karate
+CH235 Kickbox
+CH236 Sopa/Kurek
+CH237 Bicak
+CH238 Kilic
+CH239 Testere
+CH240 Dildo
+CH241 Tabanca Kamcisi
+CH242 Zamani Durdur
+CH243 Kendi etrafinda hareket etmek icin OK tuslarini kullanin, yukseklik ve yon ayarlamak icin WASD tuslarini kullanin. Tamamlamak icin ~k~~VEHICLE_ENTER_EXIT~ tusuna basin.
+CH244 Saat Sec
+CH245 Saati ayarlamak icin SAG ve SOL tuslarini kullanin, dakikayi ayarlamak icin ~g~YUKARI OK~ ve ~r~ASAGI OK~ tuslarini kullanin, gun ayarlamak icin SHIFT tusunu kullanin. Tamamlamak icin ~k~~VEHICLE_ENTER_EXIT~ tusuna basin.
+CH246 Cephane Ayarla
+CH247 Silahi degistirmek icin SAG ve SOL tuslarini kullanin, cephaneyi secmek icin YUKARI OK ve ASAGI OK tuslarini kullanin, hizlandirmak icin SHIFT tusunu kullanin. Tamamlamak icin ~k~~VEHICLE_ENTER_EXIT~ tusuna basin.
+CH248 Aracin Kilidini Ac
+CH249 Araci Kilitle
+CH250 Otomatik Sofor Modu
+CH251 Cikmak icin ~k~~VEHICLE_HORN~ tusuna basin.
+CH252 Aranma Seviyesini Kilitle
+CH253 Cete Bolgelerini Ayarla
+CH254 Cete secmek icin SAG ve SOL, yogunlugu degistirmek icin YUKARI OK ve ASAGI OK tuslarini kullanin. Hizli degistirmek icin SHIFT tusunu basili tutun. Kabul etmek icin ~k~~VEHICLE_ENTER_EXIT~ tusuna basin.
+CH255 Grove Street: ~1~
+CH256 Vagos: ~1~
+CH257 Ballas: ~1~
+CH258 Araclar Ters Donmez
+CH259 Bisikletten Dusmeme
+CH260 San Fierro Rifa: ~1~
+CH261 Da Nang Boys: ~1~
+CH262 Mafya: ~1~
+CH263 Triadlar: ~1~
+CH264 Varrios Los Aztecas: ~1~
+CH265 Cete Yarat
+CH266 San Fierro Rifa
+CH267 Da Nang Boys
+CH268 Mafya
+CH269 Triadlar
+CH270 Varrios Los Aztecas
