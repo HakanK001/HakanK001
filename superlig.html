@@ -5745,7 +5745,9 @@
       let played = false;
       q.routes.forEach(function(route){
         if(!route.step || route.dest) return;
-        if(done < QUALI_STEPS[route.step].week) return;
+        // Kupa ve Avrupa maç günlerindeki gibi bir hafta bekle: tur sırası geldiğinde
+        // önce bildirim çıksın, elle oynamak istemezsen bir hafta sonra kendi oynansın
+        if(done < Math.min(QUALI_STEPS[route.step].week + 1, state.fixtures.length)) return;
         const tie = route.ties.find(function(t){ return t.step === route.step; });
         if(!tie || cupMatchResolved(tie.m)) return;
         playTie(tie.m, q.guests, 2);
@@ -6497,17 +6499,28 @@
       const q = state.euro.quali;
       if(q && !q.done){
         euroQualiDrawDue(); // rakibi bildirime yazabilmek için kura çekilmiş olmalı
+        const qDue = [];
         q.routes.forEach(function(rt){
           if(!rt.step || rt.dest) return;
           const st = QUALI_STEPS[rt.step];
           if(done < st.week) return;
           const tie = rt.ties.find(function(t){ return t.step === rt.step; });
-          const opp = tie ? tie.opp : null;
-          out.push({key: 'quali:' + rt.team + ':' + rt.step, tab: 'avrupa', icon: '🛫',
-            color: teamNoticeColor(rt.team), team: rt.team,
-            title: trAffix(rt.team, 'gen') + (opp ? ' ' + opp + ' ile' : '') + ' ' + st.name + ' maçı var!',
-            sub: 'Çift maç · kazanırsa ' + destLabel(st.win) + ', kaybederse ' + destLabel(st.lose)});
+          if(tie && cupMatchResolved(tie.m)) return; // elle oynanmış, artık beklemiyor
+          qDue.push({team: rt.team, step: rt.step, st: st, opp: tie ? tie.opp : null});
         });
+        if(qDue.length === 1){
+          const d = qDue[0];
+          out.push({key: 'quali:' + d.team + ':' + d.step, tab: 'avrupa', icon: '🛫',
+            color: teamNoticeColor(d.team), team: d.team,
+            title: trAffix(d.team, 'gen') + (d.opp ? ' ' + d.opp + ' ile' : '') + ' ' + d.st.name + ' maçı var!',
+            sub: 'Çift maç · kazanırsa ' + destLabel(d.st.win) + ', kaybederse ' + destLabel(d.st.lose)});
+        } else if(qDue.length > 1){
+          out.push({key: qDue.map(function(d){ return 'quali:' + d.team + ':' + d.step; }).join('|'),
+            tab: 'avrupa', icon: '🛫', color: teamNoticeColor(qDue[0].team), team: qDue[0].team,
+            title: 'Avrupa ön elemesi — ' + qDue.length + ' takımımız sahada',
+            sub: qDue.slice(0, 3).map(function(d){ return d.team + ' – ' + (d.opp || '?') + ' (' + d.st.name + ')'; }).join(' · ')
+              + (qDue.length > 3 ? ' · +' + (qDue.length - 3) + ' eşleşme daha' : '')});
+        }
       }
       if(state.euro.comps){
         const euroDue = [];
