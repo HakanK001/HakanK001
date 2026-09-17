@@ -168,6 +168,14 @@
   .rank-conf { color: #3fc99a; font-weight: 600; }
   .rank-rel { color: #e06464; font-weight: 600; }
 
+  .sl-md-notice { display: flex; align-items: center; gap: 10px; padding: 9px 12px; margin-bottom: 10px;
+    background: var(--bg-primary); border: 1px solid var(--border-tertiary); border-left: 3px solid var(--accent);
+    border-radius: var(--radius-md); box-shadow: var(--card-shadow); }
+  .sl-md-icon { font-size: 16px; line-height: 1; flex-shrink: 0; }
+  .sl-md-text { flex: 1; min-width: 0; }
+  .sl-md-title { font-size: 13px; font-weight: 600; }
+  .sl-md-sub { font-size: 11px; color: var(--text-tertiary); overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 560px) { .sl-md-sub { white-space: normal; } }
   .sl-week-pill { display: inline-block; padding: 2px 8px; border-radius: 12px; background: var(--info-bg); color: var(--info-text); font-size: 11px; font-weight: 500; }
   .sl-season-pill { display: inline-block; padding: 2px 8px; border-radius: 12px; background: var(--bg-secondary); color: var(--text-secondary); font-size: 11px; font-weight: 500; }
   .sl-banner { background: linear-gradient(135deg, #185FA5, #378ADD); color: #fff; padding: 14px 16px; border-radius: var(--radius-lg); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -408,6 +416,8 @@
         <input type="file" id="import-file" accept="application/json,.json" style="display:none;">
         <button class="sl-btn sl-btn-icon" id="reset-btn" title="Sıfırla">↻</button>
       </div>
+
+      <div id="matchday-notice" style="display:none;"></div>
 
       <div id="week-summary-container"></div>
 
@@ -2338,7 +2348,7 @@
       document.getElementById('leader-banner-container').innerHTML = '';
       chartSelectedTeams = null;
       syncSimControlsUI();
-      renderFavSelect(); buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderTrophies();
+      renderFavSelect(); buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderTrophies(); renderMatchdayNotice();
     };
     reader.readAsText(file);
   }
@@ -4422,25 +4432,6 @@
     return null;
   }
   // Lig simüle edilirken kupa turunun sırası geldiyse kullanıcıyı Kupa ekranına götür
-  function maybeGoToCup(){
-    if(!state.cup || state.cup.champion) return false;
-    const act = activeCupRoundInfo();
-    if(!act || act.r.matches.length === 0) return false;
-    if(act.ri > 0 && !state.cup.rounds[act.ri - 1].done) return false;
-    if(fullyPlayedWeekCount() < act.r.week) return false;
-    if(!state.cupPrompted) state.cupPrompted = {};
-    if(state.cupPrompted[act.r.key]) return false;
-    state.cupPrompted[act.r.key] = true;
-    scheduleSave();
-    switchTab('coppa');
-    const card = document.getElementById('coppa-active-card');
-    if(card){
-      card.style.transition = 'box-shadow 0.3s';
-      card.style.boxShadow = '0 0 0 2px var(--accent), var(--card-shadow)';
-      setTimeout(function(){ card.style.boxShadow = ''; }, 1800);
-    }
-    return true;
-  }
   function applyCupFatigue(r){
     if(!state.cupFatigue) state.cupFatigue = {};
     const nextWeek = fullyPlayedWeekCount();
@@ -5345,50 +5336,6 @@
     renderEuro();
   }
   // Avrupa maç gününün/turunun sırası geldiyse kullanıcıyı Avrupa sekmesine götür
-  function maybeGoToEuro(){
-    if(!state.euro) return false;
-    const done = fullyPlayedWeekCount();
-    if(!state.euroPrompted) state.euroPrompted = {};
-    // Ön eleme turu sırası geldiyse önce oraya götür
-    const q = state.euro.quali;
-    if(q && !q.done){
-      for(let r = 0; r < q.routes.length; r++){
-        const rt = q.routes[r];
-        if(!rt.step || rt.dest) continue;
-        const st = QUALI_STEPS[rt.step];
-        if(done < st.week) continue;
-        const tag = 'quali:' + rt.team + ':' + rt.step;
-        if(state.euroPrompted[tag]) continue;
-        state.euroPrompted[tag] = true;
-        scheduleSave();
-        switchTab('avrupa');
-        return true;
-      }
-      return false;
-    }
-    for(let i = 0; i < EURO_DEFS.length; i++){
-      const def = EURO_DEFS[i];
-      const c = euroComp(def.key); if(!c || c.champion) continue;
-      const unit = euroNextUnit(c);
-      if(!unit || unit.matches.length === 0) continue;
-      if(done < unit.week) continue;
-      const tag = def.key + ':' + unit.type + unit.index;
-      if(state.euroPrompted[tag]) continue;
-      state.euroPrompted[tag] = true;
-      state.euro.view = def.key;
-      scheduleSave();
-      switchTab('avrupa');
-      const card = document.getElementById('euro-active-card');
-      if(card){
-        card.style.transition = 'box-shadow 0.3s';
-        card.style.boxShadow = '0 0 0 2px ' + def.color + ', var(--card-shadow)';
-        setTimeout(function(){ card.style.boxShadow = ''; }, 1800);
-      }
-      return true;
-    }
-    return false;
-  }
-
   /* ============ SEZON GEÇİŞİ ============ */
   // --- sezon arası: gelişim, emeklilik, transfer piyasası ---
   function developPlayer(p){
@@ -6388,7 +6335,7 @@
     syncSimControlsUI(); syncEuroTabVisibility();
     invalidateStandings(); invalidatePlayers();
     saveNow();
-    renderFavSelect(); buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderTrophies();
+    renderFavSelect(); buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderTrophies(); renderMatchdayNotice();
     document.getElementById('leader-banner-container').innerHTML = '';
     showChampionBanner(champion.name, rel.map(function(s){ return s.name; }), pN, history[0].season, history[0].coppaWinner);
     showAwardsModal(history[0].season, history[0].awards, history[0].coppaWinner, history[0].euroWinners);
@@ -6405,6 +6352,102 @@
     b.appendChild(btn);
   }
 
+  /* ============ KUPA / AVRUPA HAFTASI BİLDİRİMİ ============
+     Kupa turunun ya da Avrupa maç gününün sırası geldiğinde kullanıcıyı zorla
+     başka sekmeye atmak yerine lig ekranında bir şerit gösterilir: istersen
+     "Bak" ile gidersin, istersen kapatırsın. Dokunmazsan lig bir hafta daha
+     ilerleyince o tur zaten otomatik oynanır. */
+  function pendingCompNotices(){
+    const out = [];
+    const done = fullyPlayedWeekCount();
+    if(state.cup && !state.cup.champion){
+      const act = activeCupRoundInfo();
+      if(act && act.r.matches.length > 0 && (act.ri === 0 || state.cup.rounds[act.ri - 1].done) && done >= act.r.week){
+        out.push({key: 'cup:' + act.r.key, tab: 'coppa', icon: '🏆', color: '#F0C04A',
+          title: CUP_LABEL + ' haftası', sub: act.r.name + ' oynanmaya hazır'});
+      }
+    }
+    if(state.euro){
+      const q = state.euro.quali;
+      if(q && !q.done){
+        const due = [];
+        q.routes.forEach(function(rt){
+          if(!rt.step || rt.dest) return;
+          const st = QUALI_STEPS[rt.step];
+          if(done < st.week) return;
+          due.push(rt.team + ' · ' + st.name);
+        });
+        if(due.length){
+          out.push({key: 'quali:' + due.join('|'), tab: 'avrupa', icon: '🛫', color: '#4f9eea',
+            title: 'Avrupa ön eleme haftası', sub: due.join(' · ')});
+        }
+      }
+      if(state.euro.comps){
+        const euroDue = [];
+        EURO_DEFS.forEach(function(def){
+          const c = euroComp(def.key);
+          if(!c || c.champion) return;
+          const unit = euroNextUnit(c);
+          if(!unit || unit.matches.length === 0) return;
+          if(done < unit.week) return;
+          euroDue.push({key: def.key + ':' + unit.type + unit.index, name: def.name,
+            view: def.key, color: def.color, round: unit.name});
+        });
+        // Aynı hafta birden çok kupa oynanacaksa dört ayrı şerit yerine tek şerit
+        const byRound = {};
+        euroDue.forEach(function(e){ (byRound[e.round] = byRound[e.round] || []).push(e); });
+        Object.keys(byRound).forEach(function(round){
+          const g = byRound[round];
+          if(g.length === 1){
+            out.push({key: g[0].key, tab: 'avrupa', view: g[0].view, icon: '🌍', color: g[0].color,
+              title: g[0].name + ' haftası', sub: round + ' oynanmaya hazır'});
+          } else {
+            out.push({key: g.map(function(x){ return x.key; }).join('|'), tab: 'avrupa', view: g[0].view,
+              icon: '🌍', color: g[0].color, title: 'Avrupa haftası',
+              sub: g.map(function(x){ return x.name; }).join(' · ') + ' — ' + round});
+          }
+        });
+      }
+    }
+    return out;
+  }
+  function noticeDismissed(key){
+    return !!(state.noticeSeen && state.noticeSeen[key]);
+  }
+  function renderMatchdayNotice(){
+    const host = document.getElementById('matchday-notice'); if(!host) return;
+    host.innerHTML = '';
+    const items = pendingCompNotices().filter(function(n){ return !noticeDismissed(n.key); });
+    if(items.length === 0){ host.style.display = 'none'; return; }
+    host.style.display = '';
+    items.forEach(function(n){
+      const bar = document.createElement('div'); bar.className = 'sl-md-notice';
+      bar.style.borderLeftColor = n.color;
+      const ic = document.createElement('span'); ic.className = 'sl-md-icon'; ic.textContent = n.icon;
+      const txt = document.createElement('div'); txt.className = 'sl-md-text';
+      txt.innerHTML = '<div class="sl-md-title">' + n.title + '</div><div class="sl-md-sub">' + n.sub + '</div>';
+      const go = document.createElement('button'); go.className = 'sl-btn sl-btn-primary';
+      go.style.cssText = 'height:28px; font-size:11px;';
+      go.textContent = 'Bak →';
+      go.addEventListener('click', function(){
+        if(n.view && state.euro){ state.euro.view = n.view; }
+        switchTab(n.tab);
+      });
+      const close = document.createElement('button'); close.className = 'sl-btn';
+      close.style.cssText = 'height:28px; width:28px; font-size:11px; padding:0;';
+      close.textContent = '✕';
+      close.title = 'Bu bildirimi kapat — tur lig ilerleyince otomatik oynanır';
+      close.addEventListener('click', function(){
+        if(!state.noticeSeen) state.noticeSeen = {};
+        state.noticeSeen[n.key] = true;
+        saveNow(); // kapatma kararı hemen kalıcı olsun
+        renderMatchdayNotice();
+      });
+      bar.appendChild(ic); bar.appendChild(txt); bar.appendChild(go); bar.appendChild(close);
+      host.appendChild(bar);
+    });
+  }
+
   /* ============ AKSİYONLAR ============ */
   // Bir hafta tamamlandığında çalışan ortak işler (haber, kupa, sakatlık, TD)
   function afterWeekPlayed(wk, advance){
@@ -6413,7 +6456,7 @@
     renderStandings(); renderWeekSummary(); checkLeaderChange();
     refreshNewsForWeek(wk);
     if(allDone){ playDueCupRounds(); euroPlayDue(); checkMilestones(wk); rollAvailability(wk); checkManagerChanges(wk); }
-    if(allDone && !maybeGoToCup()) maybeGoToEuro();
+    renderMatchdayNotice();
     if(advance && allDone && state.viewWeek < state.fixtures.length - 1){ state.viewWeek++; buildFixtures(); }
     else { buildFixtures(); }
     scheduleSave();
@@ -6922,7 +6965,7 @@
     chartSelectedTeams = null;
     saveNow();
     closeTeamDetail(); closeHistoryDetail();
-    renderFavSelect(); buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderTrophies();
+    renderFavSelect(); buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderTrophies(); renderMatchdayNotice();
   }
   // Avrupa sekmesi yalnızca kupalar başladığında görünür
   function syncEuroTabVisibility(){
@@ -6937,7 +6980,8 @@
     for(let i=0;i<tabs.length;i++){ tabs[i].classList.toggle('active', tabs[i].dataset.tab === tab); }
     const contents = document.querySelectorAll('.sl-tab-content');
     for(let i=0;i<contents.length;i++){ contents[i].style.display = contents[i].id === 'tab-' + tab ? 'block' : 'none'; }
-    if(tab === 'tahminler'){ renderFanPoll(); renderPundits(); }
+    if(tab === 'lig') renderMatchdayNotice();
+    else if(tab === 'tahminler'){ renderFanPoll(); renderPundits(); }
     else if(tab === 'coppa'){ renderCoppaActive(); renderCup(); }
     else if(tab === 'avrupa') renderEuro();
     else if(tab === 'manset') renderNewsFeed();
@@ -7003,7 +7047,7 @@
     renderStandings(); updateFixtureValues(); renderWeekSummary(); checkLeaderChange();
     refreshNewsForWeek(wk);
     playDueCupRounds();
-    if(state.results[wk].every(function(r){ return r && r[0] !== null && r[1] !== null; })){ checkMilestones(wk); rollAvailability(wk); checkManagerChanges(wk); if(!maybeGoToCup()) maybeGoToEuro(); }
+    if(state.results[wk].every(function(r){ return r && r[0] !== null && r[1] !== null; })){ checkMilestones(wk); rollAvailability(wk); checkManagerChanges(wk); renderMatchdayNotice(); }
     if(teamDetailIdx !== null) renderTeamDetail();
     scheduleSave();
   });
@@ -7054,7 +7098,7 @@
   syncSimControlsUI(); syncEuroTabVisibility();
   applyTheme((function(){ try { return localStorage.getItem(THEME_KEY) || 'dark'; } catch(e){ return 'dark'; } })());
   renderFavSelect();
-  buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary();
+  buildFixtures(); renderStandings(); renderHistoryTab(); renderWeekSummary(); renderMatchdayNotice();
   if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')){
     navigator.serviceWorker.register('superlig-sw.js').catch(function(){});
   }
