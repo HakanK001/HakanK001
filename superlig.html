@@ -4912,12 +4912,16 @@
     // Kutucuk yerinde güncellenir: skor yazarken odak kaybolmasın diye
     // takım satırları yeniden kurulmaz, sadece uzatma/penaltı ve toplam tazelenir.
     let extraSig = null;
+    // Kutular yerinde kaldığı için simülasyonla yazılan skoru kendileri göstermez;
+    // hepsini kaydedip sync() sırasında modelden tazeliyoruz (yazdığın kutuya dokunmadan).
+    const liveIns = [];
     const numIn = function(get, set, ph){
       const i = document.createElement('input');
       i.type = 'number'; i.min = 0; i.max = 30; i.className = 'sl-br-in';
       i.placeholder = ph || '';
       const v = get();
       i.value = (v === null || v === undefined) ? '' : v;
+      liveIns.push({el: i, get: get});
       const apply = function(){
         const raw = i.value.trim();
         set(raw === '' ? null : Math.max(0, Math.min(30, parseInt(raw) || 0)));
@@ -4960,6 +4964,15 @@
       });
       const sig = [tieLegsComplete(m) && tieLegsLevel(m), aetSet(m) && tieLevel(m)].join('|');
       if(sig !== extraSig){ extraSig = sig; buildExtras(); }
+      // Skor kutularını modelle eşitle: silinmişleri at, odaktakini rahat bırak
+      for(let k = liveIns.length - 1; k >= 0; k--){
+        const o = liveIns[k];
+        if(!o.el.parentNode){ liveIns.splice(k, 1); continue; }
+        if(document.activeElement === o.el) continue;
+        const cv = o.get();
+        const sv = (cv === null || cv === undefined) ? '' : String(cv);
+        if(o.el.value !== sv) o.el.value = sv;
+      }
       simHost.innerHTML = '';
       if(editable && !cupMatchResolved(m)){
         const lbl = nextTieStepLabel(m, legCount);
