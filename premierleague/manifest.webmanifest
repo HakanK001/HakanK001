@@ -1,0 +1,20 @@
+{
+  "id": "./",
+  "name": "Premier Lig Simülatörü",
+  "short_name": "Premier Lig",
+  "description": "20 takım, 38 hafta, FA Cup ve Avrupa kupalarıyla Türkçe Premier Lig simülatörü.",
+  "lang": "tr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#080a0e",
+  "theme_color": "#080a0e",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

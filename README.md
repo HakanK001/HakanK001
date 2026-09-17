@@ -1,13 +1,32 @@
 # ⚽ Futbol Sezon Simülatörü
 
-Tamamen çevrimdışı çalışan, tek dosyalık (framework'süz) sezon simülatörü. İki ayrı sürüm var; ikisi de aynı motoru ve aynı özellikleri paylaşır, yalnızca içerikleri farklıdır ve **birbirinden bağımsız kayıt tutarlar**:
+Tamamen çevrimdışı çalışan, tek dosyalık (framework'süz) sezon simülatörü. Üç ayrı sürüm var; ortak motor her ligin takımlarına ve oyun kurallarına uyarlanmıştır ve **birbirinden bağımsız kayıt tutarlar**:
 
 | Dosya | Lig | Kupa | Takım | Hafta |
 |---|---|---|---|---|
 | `seriea.html` | 🇮🇹 Serie A | Coppa Italia | 20 | 38 |
 | `superlig.html` | 🇹🇷 Trendyol Süper Lig | Türkiye Kupası | 18 | 34 |
+| `premierleague.html` → `premierleague/index.html` | 🏴 Premier Lig | FA Cup | 20 | 38 |
 
-İstediğin dosyayı tarayıcıda açman yeterli. İkisini aynı anda kullanabilirsin; kayıtlar ayrı localStorage anahtarlarında tutulur, birbirini bozmaz.
+İstediğin dosyayı tarayıcıda açman yeterli. Üçünü aynı anda kullanabilirsin; kayıtlar ayrı localStorage anahtarlarında tutulur, birbirini bozmaz.
+
+## 🏴 Premier Lig sürümü
+
+`premierleague.html` kısayolunu veya `premierleague/index.html` dosyasını aç. Türkçe arayüz, canlı maçlar, taktikler, takım/oyuncu düzenleme, transferler, haberler, tahminler, grafikler, sezon geçişleri ve bağımsız kayıt sistemi Süper Lig sürümünden korunur.
+
+- 2026/27 kulüpleri: Arsenal, Aston Villa, Bournemouth, Brentford, Brighton & Hove Albion, Chelsea, Coventry City, Crystal Palace, Everton, Fulham, Hull City, Ipswich Town, Leeds United, Liverpool, Manchester City, Manchester United, Newcastle United, Nottingham Forest, Sunderland, Tottenham Hotspur.
+- 20 takım, 38 hafta, 380 lig maçı ve üç küme düşen takım. Sonraki sezonlarda İngiliz lig sistemi havuzundan yükselme; havuz Championship ile sınırlı değildir.
+- Puan, genel averaj, atılan gol; tam eşitlikte ikili maç puanı ve deplasman golü. Hâlâ eşitse alfabetik sıralama: gerçek ligdeki belirleyici play-off bu oyunda yoktur.
+- FA Cup: 20 lig ekibi + 44 konuk, Son 64'ten final, her tur açık kura. Yarı final ve final Wembley’de iç saha avantajı olmadan; beraberlikte uzatma/penaltı, tekrar maçı yok.
+- Avrupa ikinci sezonda başlar. Sabit 2026/27 modeli: ilk 5 doğrudan ŞL, FA Cup hakkı + sıradaki takım doğrudan AL, sıradaki takım KL play-off. EFL Cup ayrıca oynanmaz; onun hakkı lige devredilir. UEFA katsayıları, Avrupa şampiyonuna ek kontenjan ve alt ligdeki kupa galibinin Avrupa katılımı modellenmez. Konferans Ligi 6, ŞL/AL 8 lig maçı.
+- İngiliz kulüpleri yabancı Avrupa havuzundan çıkarıldı: aynı kulüp hem yerli hem yabancı olarak turnuvaya giremez.
+- Lig kupası sayıları **1992 sonrası Premier League** dönemidir, eski First Division şampiyonlukları eklenmez. FA Cup arşivi tüm dönemleri kapsar; ikisi de 2025/26 sonundan başlar. Avrupa arşivi yalnızca oyun içi kupaları içerir.
+- Oyuncu/teknik direktör/yorumcu isimleri, güçler, taraftar büyüklükleri, haberler ve fikstür **kurgusaldır**. Stadyum kapasiteleri yaklaşık oyun değerleridir. Oyuncular gerçek transfer listesini temsil etmez.
+- Ayrı localStorage anahtarları, kayıt dosyası kimliği, PWA manifesti ve `/premierleague/` worker kapsamı. Diğer liglerin JSON kayıtları reddedilir. Başka worker’ların önbellekleri silinmez.
+
+Doğrulama: `node tests/premierleague.test.cjs` — fikstür bütünlüğü, sıralama, kupa turları, tarafsız saha, üç sezon geçişi, Avrupa katılımı ve kayıt ayrımı. Tarayıcıda görsel test yapılmadı.
+
+Veri ve kural kaynakları (8 Eylül 2026 kontrolü): [Premier League kulüpleri](https://www.premierleague.com/en/clubs), [2026/27 takımları](https://www.nbcconnecticut.com/news/sports/soccer/premier-league-teams-2026-27/3765925/), [puan eşitliği](https://www.premierleague.com/en/news/4183163/why-are-arsenal-above-chelsea-in-the-table-despite-having-the-same-records), [Avrupa kontenjanları](https://www.premierleague.com/en/news/373663), [beşinci ŞL hakkı](https://www.premierleague.com/en/news/4573748), [FA Cup](https://www.thefa.com/competitions/thefacup), [2026 FA Cup finali](https://www.thefa.com/news/2026/may/16/emirates-fa-cup-final-chelsea-v-manchester-city-report-20261605), [FA Cup final arşivi](https://www.thefa.com/competitions/thefacup/fa-cup-finals), [2026 Premier League şampiyonu](https://www.premierleague.com/en/news/4662306/arsenal-win-2025-26-premier-league-title-ending-22-year-wait-to-be-crowned-champions-again).
 
 ## 🇹🇷 Süper Lig sürümü (`superlig.html`)
 
