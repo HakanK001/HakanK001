@@ -1,0 +1,272 @@
+# Logosu gereken kulüpler (269)
+# SL = Süper Lig uygulaması, SA = Serie A uygulaması
+
+SL SA  Aberdeen
+SL     Adana Demirspor
+SL     Adanaspor
+SL SA  AEK Atina
+SL SA  AIK
+SL SA  Ajax
+SL     Alanyaspor
+SL     Altay
+SL     Altınordu
+SL     Amed SF
+SL SA  Anderlecht
+SL     Ankaragücü
+SL     Antalyaspor
+SL SA  Antwerp
+SL SA  APOEL
+SL SA  Aris
+SL SA  Arsenal
+   SA  Ascoli
+SL SA  Astana
+SL SA  Astana B
+SL SA  Aston Villa
+SL SA  Atalanta
+SL SA  Athletic Bilbao
+SL SA  Atletico Madrid
+   SA  Avellino
+SL SA  AZ Alkmaar
+SL SA  Ballkani
+SL     Bandırmaspor
+SL SA  Barcelona
+   SA  Bari
+SL SA  Basel
+   SA  Başakşehir
+SL SA  Bayer Leverkusen
+SL SA  Bayern Münih
+SL SA  Benfica
+SL SA  Beşiktaş
+SL SA  Boavista
+SL SA  Bodø/Glimt
+SL SA  Bologna
+SL     Boluspor
+SL SA  Borac
+SL SA  Borussia Dortmund
+SL SA  Braga
+SL SA  Bragança
+SL SA  Brentford
+   SA  Brescia
+SL SA  Brest
+SL SA  Brighton
+SL SA  Brøndby
+SL     Bursaspor
+   SA  Cagliari
+   SA  Catania
+   SA  Catanzaro
+SL SA  Celje
+SL SA  Celta Vigo
+SL SA  Celtic
+SL SA  Cercle Brugge
+   SA  Cesena
+SL SA  CFR Cluj
+SL SA  Chelsea
+SL SA  Club Brugge
+SL SA  Como
+   SA  Cosenza
+   SA  Cremonese
+SL SA  Crvena Zvezda
+SL SA  Crystal Palace
+SL     Çaykur Rizespor
+SL     Çorum FK
+SL     Denizlispor
+SL SA  Dinamo Kyiv
+SL SA  Dinamo Minsk
+SL SA  Dinamo Zagreb
+SL     Diyarbekirspor
+SL SA  Djurgården
+SL SA  Djurgården B
+SL SA  Eintracht Frankfurt
+SL     Elazığspor
+   SA  Empoli
+SL     Erzurumspor
+SL     Esenler Erokspor
+SL     Etimesgut Belediyespor
+SL SA  Everton
+SL     Eyüpspor
+SL     Fatih Karagümrük
+SL SA  FCSB
+SL SA  Fenerbahçe
+SL SA  Ferencvaros
+SL SA  Feyenoord
+SL SA  Fiorentina
+   SA  Foggia
+SL SA  Fredrikstad
+SL SA  Freiburg
+   SA  Frosinone
+SL SA  Fulham
+SL SA  Galatasaray
+SL     Gaziantep FK
+SL     Gençlerbirliği
+SL SA  Genk
+   SA  Genoa
+SL SA  Gent
+SL     Giresunspor
+SL SA  Girona
+SL     Göztepe
+SL SA  Guimaraes
+SL SA  Hajduk Split
+SL SA  Hammarby
+SL     Hatayspor
+SL SA  Hearts
+SL SA  Heidenheim
+   SA  Hellas Verona
+SL SA  HJK Helsinki
+SL SA  Hoffenheim
+SL SA  Iberia 1999
+SL     Iğdır FK
+SL SA  Inter
+SL     İstanbul Başakşehir
+SL SA  Jagiellonia
+SL SA  Juventus
+SL     Karacabey Belediyespor
+SL     Kasımpaşa
+SL     Kayserispor
+SL     Keçiörengücü
+SL     Kırklarelispor
+SL SA  Klaksvík
+SL     Kocaelispor
+SL     Konyaspor
+SL SA  Kopenhag
+SL SA  Kryvbas
+SL SA  Larne
+SL SA  LASK
+SL SA  Lazio
+   SA  Lecce
+SL SA  Lech Poznan
+SL SA  Legia B
+SL SA  Legia Varşova
+SL SA  Lens
+SL SA  Levski Sofya
+SL SA  Lille
+SL SA  Lillestrøm
+SL SA  Lincoln Red Imps
+SL SA  Liverpool
+SL SA  Ludogorets
+SL SA  Lugano
+SL SA  Lyon
+SL SA  Maccabi Tel Aviv
+SL SA  Mainz
+SL SA  Mallorca
+SL SA  Malmö
+SL SA  Manchester City
+SL SA  Manchester United
+SL     Manisa FK
+SL SA  Marsilya
+SL     Menemen FK
+SL SA  Midtjylland
+SL SA  Milan
+SL SA  Milsami
+SL SA  Mladá Boleslav
+   SA  Modena
+SL SA  Molde
+SL SA  Monaco
+   SA  Monza
+SL SA  Mönchengladbach
+SL SA  Nantes
+SL SA  Napoli
+SL     Nazilli Belediyespor
+SL SA  Newcastle
+SL SA  Nice
+SL SA  Noah
+SL SA  Nottingham Forest
+SL SA  Olimpija
+SL SA  Olympiakos
+SL SA  Omonia
+SL SA  Osasuna
+   SA  Padova
+SL SA  Pafos
+SL SA  Paks
+   SA  Palermo
+SL SA  Panathinaikos
+SL SA  Panevėžys
+SL SA  PAOK
+   SA  Parma
+SL SA  Partizan
+SL     Pendikspor
+   SA  Perugia
+   SA  Pescara
+SL SA  Petrocub
+   SA  Pisa
+SL SA  Porto
+SL SA  PSG
+SL SA  PSV
+SL SA  Puskás Akadémia
+SL SA  Qarabağ
+SL SA  Rakow
+SL SA  Rangers
+SL SA  Rapid Viyana
+SL SA  Rayo Vallecano
+SL SA  RB Leipzig
+SL SA  Real Betis
+SL SA  Real Madrid
+SL SA  Real Sociedad
+SL SA  Red Bull Salzburg
+   SA  Reggiana
+SL SA  Reims
+SL SA  Rennes
+SL SA  Riga FC
+SL SA  Rijeka
+SL SA  Rio Ave
+SL SA  Roma
+SL SA  Rosenborg
+SL SA  Sabah
+SL SA  Sabail
+SL     Sakaryaspor
+   SA  Salernitana
+   SA  Sampdoria
+SL     Samsunspor
+SL     Sarıyer
+   SA  Sassuolo
+SL     Serik Belediyespor
+SL SA  Servette
+SL SA  Sevilla
+SL SA  Shakhtar Donetsk
+SL SA  Shamrock Rovers
+SL SA  Sheriff Tiraspol
+SL SA  Silkeborg
+SL SA  Sivasspor
+SL SA  Slavia Prag
+SL SA  Slovan Bratislava
+   SA  SPAL
+SL SA  Sparta Prag
+SL SA  Spartak Trnava
+   SA  Spezia
+SL SA  Sporting Lizbon
+SL SA  St. Gilloise B
+SL SA  Standard Liege
+SL SA  Strasbourg
+SL SA  Struga
+SL SA  Sturm Graz
+SL SA  Stuttgart
+SL     Şanlıurfaspor
+   SA  Ternana
+SL SA  Torino
+SL SA  Torpedo Kutaisi
+SL SA  Tottenham
+SL SA  Toulouse
+SL SA  Trabzonspor
+SL     Tuzlaspor
+SL SA  Twente
+SL SA  Udinese
+SL SA  Union Berlin
+SL SA  Union Saint-Gilloise
+SL SA  Universitatea Craiova
+SL SA  Utrecht
+SL     Ümraniyespor
+SL SA  Vaduz
+SL SA  Valencia
+SL     Vanspor
+   SA  Venezia
+SL SA  Víkingur
+SL SA  Viktoria Plzen
+SL SA  Villarreal
+SL SA  Werder Bremen
+SL SA  West Ham
+SL SA  Wolfsburg
+SL SA  Wolves
+SL     Yeni Malatyaspor
+SL SA  Young Boys
+SL SA  Zira
+SL     Zonguldak Kömürspor
+SL SA  Zrinjski

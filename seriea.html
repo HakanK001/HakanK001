@@ -151,6 +151,13 @@
   .sl-team-badge::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 42%; background: linear-gradient(180deg, rgba(255,255,255,0.32), transparent); pointer-events: none; }
   .sl-team-badge-lg { width: 15px; height: 16px; }
   .sl-team-badge-xl { width: 28px; height: 31px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.55)); }
+  /* Gerçek kulüp logosu: kalkan biçimi ve iç parlaklık kapanır, oran korunur */
+  .sl-team-logo { clip-path: none; overflow: visible; background-color: transparent;
+    background-size: contain; background-repeat: no-repeat; background-position: center;
+    width: 15px; height: 15px; filter: drop-shadow(0 1px 1.5px rgba(0,0,0,0.45)); }
+  .sl-team-logo::before, .sl-team-logo::after { content: none; }
+  .sl-team-badge-lg.sl-team-logo { width: 17px; height: 17px; }
+  .sl-team-badge-xl.sl-team-logo { width: 30px; height: 30px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5)); }
   .sl-team-badge-xl::before { box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.30); }
 
   #sl-tooltip { position: fixed; background: #2C2C2A; color: #F1EFE8; padding: 5px 9px; border-radius: 4px; font-size: 11px; white-space: nowrap; pointer-events: none; z-index: 9999; opacity: 0; transition: opacity 0.12s; }
@@ -833,6 +840,17 @@
       default: return 'linear-gradient(125deg, ' + top + ' 0%, ' + top + ' 47%, ' + bottom + ' 53%, ' + bottom + ' 100%)';
     }
   }
+  /* ---- Kulüp logoları ----
+     Gerçek armalar data URL olarak aşağıdaki blokta durur; tools/logo-ekle.mjs
+     bu bloğu baştan yazar. Blok boşken uygulama eskisi gibi çizilen kalkan
+     rozeti kullanır, yani logosu olmayan takım da düzgün görünür. */
+  /* LOGO-BLOGU-BASLANGIC */
+  const TEAM_LOGOS = {};
+  /* LOGO-BLOGU-BITIS */
+  function teamLogo(name){
+    if(customTeams[name] && customTeams[name].logo) return customTeams[name].logo;
+    return TEAM_LOGOS[name] || null;
+  }
   function badgeBackground(name){
     const c = getTeamColors(name);
     return patternBackground(getTeamPattern(name), c[0], c[1]);
@@ -867,6 +885,14 @@
   }
   function makeBadge(teamName, sizeClass){
     const badge = document.createElement('span');
+    const logo = teamLogo(teamName);
+    if(logo){
+      // Gerçek arma: kalkan kırpması ve parlaklık katmanları kapanır
+      badge.className = 'sl-team-badge sl-team-logo ' + (sizeClass || '');
+      badge.style.backgroundImage = 'url("' + logo + '")';
+      badge.title = teamName;
+      return badge;
+    }
     badge.className = 'sl-team-badge ' + (sizeClass || '');
     badge.style.background = badgeBackground(teamName);
     return badge;
