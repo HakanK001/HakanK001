@@ -2489,7 +2489,7 @@
       const tdN = document.createElement('td'); tdN.style.cssText='padding:7px 2px 7px 6px; overflow:hidden; white-space:nowrap;';
       const nw = document.createElement('span'); nw.style.cssText='display:inline-flex; align-items:center; gap:6px; min-width:0; max-width:100%;';
       const nt = document.createElement('span'); nt.textContent = (state.favTeam === row.name ? '⭐ ' : '') + row.name; nt.style.cssText='overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
-      nw.appendChild(nt); nw.appendChild(makeBadge(row.name, 'sl-team-badge-lg'));
+      nw.appendChild(makeBadge(row.name, 'sl-team-badge-lg')); nw.appendChild(nt);
       const mom = state.teams[row.idx].momentum || 0;
       if(Math.abs(mom) >= 3){
         const ma = document.createElement('span');
@@ -4018,7 +4018,7 @@
         const tdN = document.createElement('td'); tdN.style.cssText='padding:7px 2px 7px 6px; overflow:hidden; white-space:nowrap;';
         const nw = document.createElement('span'); nw.style.cssText='display:inline-flex; align-items:center; gap:6px; min-width:0; max-width:100%;';
         const nt = document.createElement('span'); nt.textContent = row.name; nt.style.cssText='overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
-        nw.appendChild(nt); nw.appendChild(makeBadge(row.name, 'sl-team-badge-lg')); tdN.appendChild(nw);
+        nw.appendChild(makeBadge(row.name, 'sl-team-badge-lg')); nw.appendChild(nt); tdN.appendChild(nw);
         const ms = function(val){ const td=document.createElement('td'); td.style.cssText='padding:7px 2px; text-align:center; color:var(--text-secondary); font-variant-numeric:tabular-nums;'; td.textContent=val; return td; };
         const tdP = document.createElement('td'); tdP.style.cssText='padding:7px 2px; text-align:right; font-weight:700; font-size:13px; font-variant-numeric:tabular-nums;'; tdP.textContent = row.Pts;
         tr.appendChild(tdR); tr.appendChild(tdN); tr.appendChild(ms(row.P)); tr.appendChild(ms(row.W)); tr.appendChild(ms(row.D)); tr.appendChild(ms(row.L)); tr.appendChild(ms(gd>0?'+'+gd:gd)); tr.appendChild(tdP);
@@ -4475,7 +4475,7 @@
       const nt = document.createElement('span');
       nt.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;' + (isItalian ? ' font-weight:700;' : '');
       nt.textContent = name;
-      nw.appendChild(nt); nw.appendChild(makeBadge(name, 'sl-team-badge-lg')); tdN.appendChild(nw);
+      nw.appendChild(makeBadge(name, 'sl-team-badge-lg')); nw.appendChild(nt); tdN.appendChild(nw);
       const cell = function(v){ const td = document.createElement('td'); td.style.cssText = 'padding:6px 2px; text-align:center; color:var(--text-secondary); font-variant-numeric:tabular-nums;'; td.textContent = v; return td; };
       const tdP = document.createElement('td'); tdP.style.cssText = 'padding:6px 6px 6px 2px; text-align:right; font-weight:700; font-variant-numeric:tabular-nums;'; tdP.textContent = row.Pts;
       tr.appendChild(tdR); tr.appendChild(tdN);
@@ -6255,7 +6255,7 @@
       const td = function(v, css){ const x = document.createElement('td'); x.style.cssText = 'padding:6px 2px; font-variant-numeric:tabular-nums;' + (css || ''); if(typeof v === 'string' || typeof v === 'number') x.textContent = v; else x.appendChild(v); return x; };
       const nw = document.createElement('span'); nw.style.cssText = 'display:inline-flex; align-items:center; gap:6px; min-width:0; max-width:100%;';
       const nt = document.createElement('span'); nt.style.cssText = 'overflow:hidden; text-overflow:ellipsis; white-space:nowrap;'; nt.textContent = r.name;
-      nw.appendChild(nt); nw.appendChild(makeBadge(r.name, 'sl-team-badge-lg'));
+      nw.appendChild(makeBadge(r.name, 'sl-team-badge-lg')); nw.appendChild(nt);
       tr.appendChild(td(i + 1, ' padding-left:8px; color:var(--text-tertiary);'));
       tr.appendChild(td(nw, ' overflow:hidden; white-space:nowrap;'));
       tr.appendChild(td(r.seasons, ' text-align:center; color:var(--text-secondary);'));
