@@ -322,6 +322,10 @@
   .sl-br-in { width: 26px; height: 21px; text-align: center; font-size: 11px; padding: 0; border: 1px solid var(--border-secondary); border-radius: 4px; background: var(--bg-primary); color: var(--text-primary); font-family: inherit; -moz-appearance: textfield; flex-shrink: 0; }
   .sl-br-in::-webkit-outer-spin-button, .sl-br-in::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .sl-br-in:focus { outline: none; border-color: var(--accent); }
+  .sl-br-sim { display: block; width: 100%; margin-top: 4px; padding: 3px 0; background: transparent;
+    border: 1px dashed var(--border-secondary); border-radius: 5px; color: var(--text-tertiary);
+    font-size: 9px; font-family: inherit; cursor: pointer; }
+  .sl-br-sim:hover { color: var(--accent); border-color: var(--accent-border); }
   .sl-br-foot { font-size: 9px; color: var(--text-tertiary); text-align: center; margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--border-tertiary); }
   .sl-br-extra { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 4px; font-size: 9px; color: var(--text-tertiary); }
   .sl-pundit-pick { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 5px; font-size: 10px; font-weight: 700; margin-left: 6px; }
@@ -878,6 +882,28 @@
   function badgeBackground(name){
     const c = getTeamColors(name);
     return patternBackground(getTeamPattern(name), c[0], c[1]);
+  }
+  /* Bildirim şeridinin sol kenarı için kulüp rengi.
+     Siyah/beyaz formalı takımlarda ham renk açık ya da koyu temada kayboluyor;
+     bu yüzden iki renkten daha okunaklı olanı seçip parlaklığı orta banda çekiyoruz.
+     TEAM_COLORS'a dokunulmaz, yalnızca gösterim için türetilir. */
+  function hexToRgbArr(h){
+    h = String(h || '').replace('#', '');
+    if(h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    const n = parseInt(h, 16);
+    if(isNaN(n)) return [68, 68, 68];
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function rgbLum(c){ return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255; }
+  function teamNoticeColor(name){
+    // Kulübün kendi ana rengiyle başla; kimliği bozma, yalnızca uçları kurtar
+    let rgb = hexToRgbArr(teamPrimaryColor(name));
+    const l = rgbLum(rgb);
+    const mix = function(t, target){ return rgb.map(function(v){ return Math.round(v + (target - v) * t); }); };
+    if(l < 0.06) rgb = mix(0.38, 255);       // siyah forma: griye çek, yoksa hiç görünmez
+    else if(l < 0.16) rgb = mix(0.18, 255);  // lacivert/bordo: bir tık aç, tonu koru
+    else if(l > 0.86) rgb = mix(0.32, 0);    // beyaz/sarı: açık temada kaybolmasın
+    return 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
   }
   function teamPrimaryColor(name){
     const [b,t] = getTeamColors(name);
@@ -4322,6 +4348,42 @@
     if(tieLegsLevel(m) && !aetSet(m)) genAet(m, guests);
     if(tieLegsLevel(m) && tieLevel(m) && !m.pens) genPens(m);
   }
+  /* ---- Eşleşmeyi maç maç oynatma ----
+     Bir tıkta yalnızca sıradaki oynanmamış maç oynanır: çift maçlı eşleşmede
+     önce ilk maç, sonra rövanş, gerekirse uzatma ve penaltılar. Böylece kupa ve
+     Avrupa maçları da ligdeki gibi tek tek oynatılabilir. */
+  function nextTieStepLabel(m, legCount){
+    const legs = m.legs || [];
+    for(let li = 0; li < legs.length; li++){
+      if(legs[li][0] === null || legs[li][0] === undefined || legs[li][1] === null || legs[li][1] === undefined){
+        if(legCount > 1) return li === 0 ? '▶ ilk maçı oynat' : '▶ rövanşı oynat';
+        return '▶ maçı oynat';
+      }
+    }
+    if(tieLegsComplete(m) && tieLegsLevel(m)){
+      if(!aetSet(m)) return '▶ uzatmayı oynat';
+      if(tieLevel(m) && !(m.pens && m.pens[0] !== null && m.pens[1] !== null)) return '▶ penaltıları oynat';
+    }
+    return null;
+  }
+  function simulateNextTieStep(m, guests, legCount){
+    ensureTie(m, legCount);
+    for(let li = 0; li < m.legs.length; li++){
+      const l = m.legs[li];
+      if(l[0] === null || l[0] === undefined || l[1] === null || l[1] === undefined){
+        const homeId = li === 0 ? m.h : m.a, awayId = li === 0 ? m.a : m.h;
+        const sc = entSimScore(homeId, awayId, guests);
+        l[0] = sc[0]; l[1] = sc[1];
+        if(!tieLegsComplete(m) || !tieLegsLevel(m)){ m.aet = null; m.pens = null; }
+        return true;
+      }
+    }
+    if(tieLegsComplete(m) && tieLegsLevel(m)){
+      if(!aetSet(m)){ genAet(m, guests); return true; }
+      if(tieLevel(m) && !(m.pens && m.pens[0] !== null && m.pens[1] !== null)){ genPens(m); return true; }
+    }
+    return false;
+  }
   function playCupRound(r){
     r.matches.forEach(function(m){ playTie(m, state.cup ? state.cup.guests : null, r.legs || 1); });
     r.done = true;
@@ -4715,6 +4777,23 @@
       probRow.appendChild(mk('Beraberlik %' + probs.draw, probs.draw));
       probRow.appendChild(mk(entName(m.a, c.guests) + ' %' + probs.away, probs.away));
       block.appendChild(probRow);
+      // Lig aşamasında da tek maçlık simülasyon
+      if(due && (m.hg === null || m.hg === undefined || m.ag === null || m.ag === undefined)){
+        const sBtn = document.createElement('button');
+        sBtn.className = 'sl-eu-sim';
+        sBtn.style.cssText = 'position:absolute; bottom:2px; right:6px; background:transparent; border:none; color:var(--text-tertiary); font-size:10px; cursor:pointer; padding:2px 4px; font-family:inherit;';
+        sBtn.textContent = '▶ maçı simüle et';
+        sBtn.title = 'Yalnızca bu maçı oynat';
+        sBtn.addEventListener('click', function(e){
+          e.stopPropagation();
+          const sc = entSimScore(m.h, m.a, c.guests);
+          m.hg = sc[0]; m.ag = sc[1];
+          scheduleSave();
+          euroFinalizeIfComplete(def.key);
+          renderEuro();
+        });
+        block.appendChild(sBtn);
+      }
       list.appendChild(block);
     });
     card.appendChild(list);
@@ -4829,6 +4908,7 @@
     const nameEls = [];
     const extraHost = document.createElement('div');
     const footHost = document.createElement('div');
+    const simHost = document.createElement('div');
     // Kutucuk yerinde güncellenir: skor yazarken odak kaybolmasın diye
     // takım satırları yeniden kurulmaz, sadece uzatma/penaltı ve toplam tazelenir.
     let extraSig = null;
@@ -4880,6 +4960,22 @@
       });
       const sig = [tieLegsComplete(m) && tieLegsLevel(m), aetSet(m) && tieLevel(m)].join('|');
       if(sig !== extraSig){ extraSig = sig; buildExtras(); }
+      simHost.innerHTML = '';
+      if(editable && !cupMatchResolved(m)){
+        const lbl = nextTieStepLabel(m, legCount);
+        if(lbl){
+          const sb = document.createElement('button'); sb.className = 'sl-br-sim';
+          sb.textContent = lbl;
+          sb.title = 'Yalnızca bu maçı oynat';
+          sb.addEventListener('click', function(){
+            if(!simulateNextTieStep(m, guests, legCount)) return;
+            sync();
+            if(opts.onSave) opts.onSave();
+            if(opts.onChange) opts.onChange();
+          });
+          simHost.appendChild(sb);
+        }
+      }
       footHost.innerHTML = '';
       const agg = tieAggregate(m);
       const anyScore = m.legs.some(function(l){ return l[0] !== null || l[1] !== null; });
@@ -4931,6 +5027,7 @@
     });
     box.appendChild(extraHost);
     box.appendChild(footHost);
+    box.appendChild(simHost);
     sync();
     return box;
   }
@@ -6363,24 +6460,41 @@
     if(state.cup && !state.cup.champion){
       const act = activeCupRoundInfo();
       if(act && act.r.matches.length > 0 && (act.ri === 0 || state.cup.rounds[act.ri - 1].done) && done >= act.r.week){
-        out.push({key: 'cup:' + act.r.key, tab: 'coppa', icon: '🏆', color: '#F0C04A',
-          title: CUP_LABEL + ' haftası', sub: act.r.name + ' oynanmaya hazır'});
+        // Favori takımın bu turdaki rakibi varsa bildirimi ona göre kişiselleştir
+        const fi = favTeamIdx();
+        let fav = null;
+        if(fi !== null){
+          act.r.matches.forEach(function(m){
+            if(m.h === fi) fav = {team: state.favTeam, opp: entName(m.a, state.cup.guests)};
+            else if(m.a === fi) fav = {team: state.favTeam, opp: entName(m.h, state.cup.guests)};
+          });
+        }
+        if(fav){
+          out.push({key: 'cup:' + act.r.key, tab: 'coppa', icon: '🏆',
+            color: teamNoticeColor(fav.team), team: fav.team,
+            title: trAffix(fav.team, 'gen') + ' ' + fav.opp + ' ile ' + CUP_LABEL + ' maçı var!',
+            sub: act.r.name + ' oynanmaya hazır'});
+        } else {
+          out.push({key: 'cup:' + act.r.key, tab: 'coppa', icon: '🏆', color: '#F0C04A',
+            title: CUP_LABEL + ' haftası', sub: act.r.name + ' oynanmaya hazır'});
+        }
       }
     }
     if(state.euro){
       const q = state.euro.quali;
       if(q && !q.done){
-        const due = [];
+        euroQualiDrawDue(); // rakibi bildirime yazabilmek için kura çekilmiş olmalı
         q.routes.forEach(function(rt){
           if(!rt.step || rt.dest) return;
           const st = QUALI_STEPS[rt.step];
           if(done < st.week) return;
-          due.push(rt.team + ' · ' + st.name);
+          const tie = rt.ties.find(function(t){ return t.step === rt.step; });
+          const opp = tie ? tie.opp : null;
+          out.push({key: 'quali:' + rt.team + ':' + rt.step, tab: 'avrupa', icon: '🛫',
+            color: teamNoticeColor(rt.team), team: rt.team,
+            title: trAffix(rt.team, 'gen') + (opp ? ' ' + opp + ' ile' : '') + ' ' + st.name + ' maçı var!',
+            sub: 'Çift maç · kazanırsa ' + destLabel(st.win) + ', kaybederse ' + destLabel(st.lose)});
         });
-        if(due.length){
-          out.push({key: 'quali:' + due.join('|'), tab: 'avrupa', icon: '🛫', color: '#4f9eea',
-            title: 'Avrupa ön eleme haftası', sub: due.join(' · ')});
-        }
       }
       if(state.euro.comps){
         const euroDue = [];
@@ -6390,12 +6504,37 @@
           const unit = euroNextUnit(c);
           if(!unit || unit.matches.length === 0) return;
           if(done < unit.week) return;
-          euroDue.push({key: def.key + ':' + unit.type + unit.index, name: def.name,
-            view: def.key, color: def.color, round: unit.name});
+          // Bu turda ligimizin takımlarının kimlerle oynadığı: bildirimde adıyla geçsin
+          const own = [];
+          unit.matches.forEach(function(m){
+            if(m.h >= 0) own.push({team: entName(m.h, c.guests), opp: entName(m.a, c.guests)});
+            if(m.a >= 0) own.push({team: entName(m.a, c.guests), opp: entName(m.h, c.guests)});
+          });
+          euroDue.push({key: def.key + ':' + unit.type + unit.index, name: def.name, short: def.short || def.name,
+            view: def.key, color: def.color, round: unit.name, own: own});
         });
-        // Aynı hafta birden çok kupa oynanacaksa dört ayrı şerit yerine tek şerit
+        const ownAll = [];
+        euroDue.forEach(function(e){ e.own.forEach(function(o){ ownAll.push({e: e, o: o}); }); });
+        if(ownAll.length === 1){
+          // Tek takımımız oynuyor: kulübün kendi renginde, rakibi adıyla
+          const x = ownAll[0];
+          out.push({key: x.e.key, tab: 'avrupa', view: x.e.view, icon: '🌍',
+            color: teamNoticeColor(x.o.team), team: x.o.team,
+            title: trAffix(x.o.team, 'gen') + ' ' + x.o.opp + ' ile ' + x.e.short + ' maçı var!',
+            sub: x.e.round + ' oynanmaya hazır'});
+        } else if(ownAll.length > 1){
+          // Birden çok takımımız oynuyor: hepsini tek şeritte eşleşmeleriyle listele
+          out.push({key: ownAll.map(function(x){ return x.e.key + '/' + x.o.team; }).join('|'),
+            tab: 'avrupa', view: ownAll[0].e.view, icon: '🌍',
+            color: teamNoticeColor(ownAll[0].o.team), team: ownAll[0].o.team,
+            title: 'Avrupa haftası — ' + ownAll.length + ' takımımız sahada',
+            sub: ownAll.slice(0, 3).map(function(x){ return x.o.team + ' – ' + x.o.opp + ' (' + x.e.short + ')'; }).join(' · ')
+              + (ownAll.length > 3 ? ' · +' + (ownAll.length - 3) + ' maç daha' : '')});
+        }
+        // Takımımızın oynamadığı kupalar için sade şerit; aynı tur adına düşenler tek şeritte
+        const rest = euroDue.filter(function(e){ return e.own.length === 0; });
         const byRound = {};
-        euroDue.forEach(function(e){ (byRound[e.round] = byRound[e.round] || []).push(e); });
+        rest.forEach(function(e){ (byRound[e.round] = byRound[e.round] || []).push(e); });
         Object.keys(byRound).forEach(function(round){
           const g = byRound[round];
           if(g.length === 1){
@@ -6423,9 +6562,18 @@
     items.forEach(function(n){
       const bar = document.createElement('div'); bar.className = 'sl-md-notice';
       bar.style.borderLeftColor = n.color;
-      const ic = document.createElement('span'); ic.className = 'sl-md-icon'; ic.textContent = n.icon;
+      let ic;
+      if(n.team){
+        // Takımı ilgilendiren bildirimde emoji yerine kulübün kendi arması
+        ic = makeBadge(n.team, 'sl-team-badge-lg');
+        ic.classList.add('sl-md-icon');
+      } else {
+        ic = document.createElement('span'); ic.className = 'sl-md-icon'; ic.textContent = n.icon;
+      }
       const txt = document.createElement('div'); txt.className = 'sl-md-text';
-      txt.innerHTML = '<div class="sl-md-title">' + n.title + '</div><div class="sl-md-sub">' + n.sub + '</div>';
+      const tt = document.createElement('div'); tt.className = 'sl-md-title'; tt.textContent = n.title;
+      const ts = document.createElement('div'); ts.className = 'sl-md-sub'; ts.textContent = n.sub;
+      txt.appendChild(tt); txt.appendChild(ts);
       const go = document.createElement('button'); go.className = 'sl-btn sl-btn-primary';
       go.style.cssText = 'height:28px; font-size:11px;';
       go.textContent = 'Bak →';
